@@ -27,6 +27,9 @@ features:
   can_upload_10_10cg_poa:
     actor_type: cookie_id
     description: Allows users to upload POA documentation when completing the 10-10CG.
+  cerner_allow_partial_facilities:
+    actor_type: user
+    description: This will allow cerner facilities to be set to partially cerner or all cerner.
   cerner_override_463:
     actor_type: user
     description: This will show the Cerner facility 463 as `isCerner`.
@@ -73,6 +76,14 @@ features:
   check_in_experience_demographics_confirmation_enabled:
     actor_type: user
     description: Enables the health care pre-check-in experiences to send demographics confirmation.
+    enable_in_development: true
+  check_in_experience_editing_day_of_enabled:
+    actor_type: user
+    description: Enables editing of demographics for the day of check-in experience.
+    enable_in_development: true
+  check_in_experience_editing_pre_check_in_enabled:
+    actor_type: user
+    description: Enables editing of demographics for the pre-check-in experience.
     enable_in_development: true
   check_in_experience_update_information_page_enabled:
     actor_type: user
@@ -252,17 +263,9 @@ features:
     actor_type: user
     description: Display new field operationalHoursSpecialInstructions for VA facilities
     enable_in_development: true
-  find_forms_first_flag:
+  find_forms_show_pdf_modal:
     actor_type: user
-    description: Enhances Find A Forms Flag 1.
-    enable_in_development: true
-  find_forms_second_flag:
-    actor_type: user
-    description: Enhances Find A Forms Flag 2.
-    enable_in_development: true
-  find_forms_third_flag:
-    actor_type: user
-    description: Enhances Find A Forms Flag 3.
+    description: Shows the PDF modal for the Find VA Forms page.
     enable_in_development: true
   file_upload_short_workflow_enabled:
     actor_type: user
@@ -291,10 +294,6 @@ features:
   gibct_school_ratings:
     actor_type: user
     description: Show/Hide the school ratings section of the Comparison Tool School Profile Page.
-  gi_sandbox_comparison_tool_toggle:
-    actor_type: user
-    description: Shows gi-bill-comparison-tool-sandbox CT if active else shows the gi-bill-comparison-tool CT.
-    enable_in_development: true
   hlr_v2:
     actor_type: user
     description: Enable showing Higher-Level Review v2

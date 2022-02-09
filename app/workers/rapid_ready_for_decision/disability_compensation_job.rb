@@ -4,20 +4,10 @@ require 'lighthouse/veterans_health/client'
 require 'sidekiq/form526_job_status_tracker/job_tracker'
 require 'sidekiq/form526_job_status_tracker/metrics'
 
-module FastTrack
+module RapidReadyForDecision
   class DisabilityCompensationJob
     include Sidekiq::Worker
     include Sidekiq::Form526JobStatusTracker::JobTracker
-
-    ERROR_REPORT_EMAILS = [
-      'natasha.ibrahim@gsa.gov',
-      'emily.theis@gsa.gov',
-      'julia.l.allen@gsa.gov',
-      'tadhg.ohiggins@gsa.gov',
-      'mattgardner@navapbc.com',
-      'yangyang@navapbc.com',
-      'yoom@navapbc.com'
-    ].freeze
 
     extend SentryLogging
     # NOTE: This is apparently at most about 4.5 hours.
@@ -52,16 +42,18 @@ module FastTrack
       end
     end
 
+    class AccountNotFoundError < StandardError; end
+
     private
 
     def bp_readings(client)
       @bp_readings ||= client.list_resource('observations')
-      @bp_readings.present? ? FastTrack::HypertensionObservationData.new(@bp_readings).transform : []
+      @bp_readings.present? ? RapidReadyForDecision::HypertensionObservationData.new(@bp_readings).transform : []
     end
 
     def medications(client)
       @medications ||= client.list_resource('medications')
-      @medications.present? ? FastTrack::HypertensionMedicationRequestData.new(@medications).transform : []
+      @medications.present? ? RapidReadyForDecision::HypertensionMedicationRequestData.new(@medications).transform : []
     end
 
     def send_fast_track_engineer_email_for_testing(form526_submission_id, error_message, backtrace)
@@ -72,35 +64,38 @@ module FastTrack
              "The error was: #{error_message}. The backtrace was:\n #{backtrace.join(",\n ")}"
       ActionMailer::Base.mail(
         from: ApplicationMailer.default[:from],
-        to: ERROR_REPORT_EMAILS.join(', '),
+        to: Settings.rrd.alerts.recipients,
         subject: 'Fast Track Hypertension Errored',
         body: body
       ).deliver_now
     end
 
     def get_icn(form526_submission)
-      account(form526_submission).icn.presence
+      account_record = account(form526_submission)
+      raise AccountNotFoundError, "for user_uuid: #{form526_submission.user_uuid} or their edipi" unless account_record
+
+      account_record.icn.presence
     end
 
     def account(form526_submission)
       user_uuid = form526_submission.user_uuid.presence
       edipi = form526_submission.auth_headers['va_eauth_dodedipnid'].presence
       # rubocop:disable Lint/UselessAssignment
-      account = Account.where(idme_uuid: user_uuid).first if user_uuid
-      account ||= Account.where(logingov_uuid: user_uuid).first if user_uuid
-      account ||= Account.where(edipi: edipi).first if edipi
+      account = Account.find_by(idme_uuid: user_uuid) if user_uuid
+      account ||= Account.find_by(logingov_uuid: user_uuid) if user_uuid
+      account ||= Account.find_by(edipi: edipi) if edipi
       # rubocop:enable Lint/UselessAssignment
     end
 
     def upload_pdf_and_attach_special_issue(form526_submission, pdf)
-      FastTrack::HypertensionUploadManager.new(form526_submission).handle_attachment(pdf.render)
+      RapidReadyForDecision::HypertensionUploadManager.new(form526_submission).handle_attachment(pdf.render)
       if Flipper.enabled?(:disability_hypertension_compensation_fast_track_add_rrd)
-        FastTrack::HypertensionSpecialIssueManager.new(form526_submission).add_special_issue
+        RapidReadyForDecision::HypertensionSpecialIssueManager.new(form526_submission).add_special_issue
       end
     end
 
     def pdf(full_name, bpreadings, medications)
-      FastTrack::HypertensionPdfGenerator.new(full_name, bpreadings, medications).generate
+      RapidReadyForDecision::HypertensionPdfGenerator.new(full_name, bpreadings, medications).generate
     end
   end
 end
