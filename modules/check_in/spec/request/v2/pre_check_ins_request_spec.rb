@@ -11,6 +11,8 @@ RSpec.describe 'V2::PreCheckInsController', type: :request do
     allow(Flipper).to receive(:enabled?).with('check_in_experience_enabled').and_return(true)
     allow(Flipper).to receive(:enabled?).with('check_in_experience_pre_check_in_enabled').and_return(true)
     allow(Flipper).to receive(:enabled?).with('check_in_experience_logging_enabled').and_return(true)
+    allow(Flipper).to receive(:enabled?).with('check_in_experience_set_pre_checkin_status').and_return(true)
+    allow(Flipper).to receive(:enabled?).with('check_in_experience_lorota_401_mapping_enabled').and_return(true)
 
     Rails.cache.clear
   end
@@ -220,7 +222,8 @@ RSpec.describe 'V2::PreCheckInsController', type: :request do
         allow(Flipper).to receive(:enabled?)
           .with(:check_in_experience_demographics_confirmation_enabled).and_return(true)
         allow(Flipper).to receive(:enabled?)
-          .with(:check_in_experience_chip_service_nok_confirmation_update_enabled).and_return(true)
+          .with(:check_in_experience_no_demographics_confirmation_for_unverified_enabled)
+          .and_return(true)
       end
 
       it 'returns successful response' do

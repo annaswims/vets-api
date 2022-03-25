@@ -92,6 +92,8 @@ describe 'Power of Attorney', swagger_doc: 'modules/claims_api/app/swagger/claim
               .to receive(:validate_poa_code_for_current_user!).and_return(true)
             stub_poa_verification
             stub_mpi
+            allow_any_instance_of(BGS::PersonWebService)
+              .to receive(:find_by_ssn).and_return({ file_nbr: '123456789' })
 
             with_okta_user(scopes) do
               submit_request(example.metadata)
@@ -253,6 +255,8 @@ describe 'Power of Attorney', swagger_doc: 'modules/claims_api/app/swagger/claim
             stub_mpi
 
             with_okta_user(scopes) do
+              allow_any_instance_of(BGS::PersonWebService)
+                .to receive(:find_by_ssn).and_return({ file_nbr: '123456789' })
               allow_any_instance_of(ClaimsApi::PowerOfAttorneyUploader).to receive(:store!)
               submit_request(example.metadata)
             end
@@ -339,6 +343,80 @@ describe 'Power of Attorney', swagger_doc: 'modules/claims_api/app/swagger/claim
           end
 
           it 'returns a 404 response' do |example|
+            assert_response_matches_metadata(example.metadata)
+          end
+        end
+      end
+
+      describe 'Getting a 422 response' do
+        response '422', 'Unprocessable Entity' do
+          schema JSON.parse(File.read(Rails.root.join('spec', 'support', 'schemas', 'claims_api', 'errors',
+                                                      'default.json')))
+
+          let(:scopes) { %w[claim.read claim.write] }
+          let(:power_of_attorney) { create(:power_of_attorney_without_doc) }
+          let(:attachment) do
+            Rack::Test::UploadedFile.new("#{::Rails.root}/modules/claims_api/spec/fixtures/extras.pdf")
+          end
+          let(:id) { power_of_attorney.id }
+
+          before do |example|
+            stub_poa_verification
+            stub_mpi
+
+            with_okta_user(scopes) do
+              allow_any_instance_of(BGS::PersonWebService)
+                .to receive(:find_by_ssn).and_return(nil)
+              submit_request(example.metadata)
+            end
+          end
+
+          after do |example|
+            example.metadata[:response][:content] = {
+              'application/json' => {
+                example: JSON.parse(response.body, symbolize_names: true)
+              }
+            }
+          end
+
+          it 'returns a valid 422 response' do |example|
+            assert_response_matches_metadata(example.metadata)
+          end
+        end
+      end
+
+      describe 'Getting a 424 response' do
+        response '424', 'Failed Dependency' do
+          schema JSON.parse(File.read(Rails.root.join('spec', 'support', 'schemas', 'claims_api', 'errors',
+                                                      'default.json')))
+
+          let(:scopes) { %w[claim.read claim.write] }
+          let(:power_of_attorney) { create(:power_of_attorney_without_doc) }
+          let(:attachment) do
+            Rack::Test::UploadedFile.new("#{::Rails.root}/modules/claims_api/spec/fixtures/extras.pdf")
+          end
+          let(:id) { power_of_attorney.id }
+
+          before do |example|
+            stub_poa_verification
+            stub_mpi
+
+            with_okta_user(scopes) do
+              allow_any_instance_of(BGS::PersonWebService)
+                .to receive(:find_by_ssn).and_raise(BGS::ShareError.new('HelloWorld'))
+              submit_request(example.metadata)
+            end
+          end
+
+          after do |example|
+            example.metadata[:response][:content] = {
+              'application/json' => {
+                example: JSON.parse(response.body, symbolize_names: true)
+              }
+            }
+          end
+
+          it 'returns a valid 424 response' do |example|
             assert_response_matches_metadata(example.metadata)
           end
         end

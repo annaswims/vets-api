@@ -8,6 +8,8 @@ require 'common/client/errors'
 RSpec.describe 'user', type: :request do
   include JsonSchemaMatchers
 
+  let(:attributes) { response.parsed_body.dig('data', 'attributes') }
+
   describe 'GET /mobile/v0/user' do
     before { iam_sign_in }
 
@@ -26,8 +28,6 @@ RSpec.describe 'user', type: :request do
           end
         end
       end
-
-      let(:attributes) { response.parsed_body.dig('data', 'attributes') }
 
       it 'returns an ok response' do
         expect(response).to have_http_status(:ok)
@@ -158,6 +158,7 @@ RSpec.describe 'user', type: :request do
             disabilityRating
             lettersAndDocuments
             militaryServiceHistory
+            paymentHistory
             userProfileUpdate
             directDepositBenefitsUpdate
           ]
@@ -174,6 +175,7 @@ RSpec.describe 'user', type: :request do
             disabilityRating
             lettersAndDocuments
             militaryServiceHistory
+            paymentHistory
             userProfileUpdate
             secureMessaging
           ]
@@ -233,6 +235,7 @@ RSpec.describe 'user', type: :request do
             %w[
               appeals
               appointments
+              paymentHistory
               userProfileUpdate
             ]
           )
@@ -258,6 +261,29 @@ RSpec.describe 'user', type: :request do
               claims
               disabilityRating
               lettersAndDocuments
+              militaryServiceHistory
+              paymentHistory
+              userProfileUpdate
+            ]
+          )
+        end
+      end
+
+      context 'with a user who does not have access to bgs' do
+        before do
+          iam_sign_in(FactoryBot.build(:iam_user, :no_participant_id))
+          VCR.use_cassette('payment_information/payment_information') do
+            VCR.use_cassette('user/get_facilities_no_ids', match_requests_on: %i[method uri]) do
+              get '/mobile/v0/user', headers: iam_headers
+            end
+          end
+        end
+
+        it 'does not include paymentHistory' do
+          expect(attributes['authorizedServices']).to eq(
+            %w[
+              appeals
+              appointments
               militaryServiceHistory
               userProfileUpdate
             ]
@@ -364,8 +390,6 @@ RSpec.describe 'user', type: :request do
         end
       end
 
-      let(:attributes) { response.parsed_body.dig('data', 'attributes') }
-
       it 'returns empty appropriate facilities list' do
         expect(attributes['health']).to include(
           {
@@ -383,6 +407,86 @@ RSpec.describe 'user', type: :request do
               }
             ]
           }
+        )
+      end
+    end
+
+    context 'with no upstream errors for logingov user' do
+      before do
+        iam_sign_in(FactoryBot.build(:iam_user, :logingov))
+        VCR.use_cassette('payment_information/payment_information') do
+          VCR.use_cassette('user/get_facilities') do
+            get '/mobile/v0/user', headers: iam_headers
+          end
+        end
+      end
+
+      it 'returns an ok response' do
+        expect(response).to have_http_status(:ok)
+      end
+
+      it 'returns a user profile response with the expected schema' do
+        expect(response.body).to match_json_schema('user')
+      end
+
+      it 'includes sign-in service' do
+        expect(attributes['profile']['signinService']).to eq('IDME')
+      end
+
+      it 'includes the service the user has access to' do
+        expect(attributes['authorizedServices']).to eq(
+          %w[
+            appeals
+            appointments
+            claims
+            directDepositBenefits
+            disabilityRating
+            lettersAndDocuments
+            militaryServiceHistory
+            paymentHistory
+            userProfileUpdate
+            directDepositBenefitsUpdate
+          ]
+        )
+      end
+    end
+
+    context 'when EVSS service fails' do
+      let(:user) { FactoryBot.build(:iam_user, :logingov) }
+
+      before do
+        iam_sign_in(user)
+      end
+
+      it 'does not include directDepositBenefitsUpdate in the authorized services' do
+        response_details = { 'messages' => 'something went wrong' }
+        allow_any_instance_of(PPIUPolicy).to receive(:access_update?).and_raise(
+          EVSS::ErrorMiddleware::EVSSError.new(
+            response_details['messages'], response_details['messages'], response_details
+          )
+        )
+        expect(Rails.logger).to receive(:error).with(
+          'Mobile user serializer error when fetching from EVSS', user_uuid: user.uuid, details: 'something went wrong'
+        )
+
+        VCR.use_cassette('payment_information/payment_information') do
+          VCR.use_cassette('user/get_facilities') do
+            get '/mobile/v0/user', headers: iam_headers
+          end
+        end
+
+        expect(attributes['authorizedServices']).to eq(
+          %w[
+            appeals
+            appointments
+            claims
+            directDepositBenefits
+            disabilityRating
+            lettersAndDocuments
+            militaryServiceHistory
+            paymentHistory
+            userProfileUpdate
+          ]
         )
       end
     end

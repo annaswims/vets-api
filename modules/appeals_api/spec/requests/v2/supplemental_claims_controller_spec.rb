@@ -10,10 +10,10 @@ describe AppealsApi::V2::DecisionReviews::SupplementalClaimsController, type: :r
     "/services/appeals/v2/decision_reviews/#{path}"
   end
 
-  let(:minimum_data) { fixture_to_s 'valid_200995_minimum.json' }
-  let(:data) { fixture_to_s 'valid_200995.json' }
-  let(:extra_data) { fixture_to_s 'valid_200995_extra.json' }
-  let(:headers) { fixture_as_json 'valid_200995_headers.json' }
+  let(:minimum_data) { fixture_to_s 'valid_200995_minimum.json', version: 'v2' }
+  let(:data) { fixture_to_s 'valid_200995.json', version: 'v2' }
+  let(:extra_data) { fixture_to_s 'valid_200995_extra.json', version: 'v2' }
+  let(:headers) { fixture_as_json 'valid_200995_headers.json', version: 'v2' }
 
   let(:parsed) { JSON.parse(response.body) }
 
@@ -129,7 +129,7 @@ describe AppealsApi::V2::DecisionReviews::SupplementalClaimsController, type: :r
       end
 
       it 'without upload' do
-        mod_data = JSON.parse(fixture_to_s('valid_200995_extra.json'))
+        mod_data = JSON.parse(fixture_to_s('valid_200995_extra.json', version: 'v2'))
         # manually setting this to simulate a submission without upload indicated
         mod_data['data']['attributes']['evidenceSubmission']['evidenceType'] = ['retrieval']
 
@@ -187,21 +187,6 @@ describe AppealsApi::V2::DecisionReviews::SupplementalClaimsController, type: :r
           expect(body['errors']).to be_an Array
           expect(body.dig('errors', 0, 'detail')).to eq "The request body isn't a JSON object"
         end
-      end
-    end
-
-    context 'when request body includes chars outside the windows-1252 charset' do
-      it 'returns an error' do
-        invalid_data = JSON.parse(data)
-        invalid_data['data'].merge!(
-          { 'type' => '∑upplementalClaim' }
-        )
-
-        post(path, params: invalid_data.to_json, headers: headers)
-
-        expect(response.status).to eq(422)
-        expect(parsed['errors'][0]['detail']).to include 'Invalid characters'
-        expect(parsed['errors'][0]['meta']).to include 'pattern'
       end
     end
 

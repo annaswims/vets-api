@@ -610,7 +610,7 @@ RSpec.describe FormProfile, type: :model do
       'income' => [
         {
           'veteranOrSpouse' => 'VETERAN',
-          'compensationAndPension' => '3444.7'
+          'compensationAndPension' => '3000'
         }
       ]
     }
@@ -753,6 +753,41 @@ RSpec.describe FormProfile, type: :model do
     }
   end
 
+  let(:v26_1880_expected) do
+    {
+      'fullName' => {
+        'first' => user.first_name&.capitalize,
+        'middle' => user.middle_name&.capitalize,
+        'last' => user.last_name&.capitalize,
+        'suffix' => user.suffix
+      },
+      'dateOfBirth' => '1809-02-12',
+      'applicantAddress' => {
+        'street' => street_check[:street],
+        'street2' => street_check[:street2],
+        'city' => user.address[:city],
+        'state' => user.address[:state],
+        'country' => user.address[:country],
+        'postal_code' => user.address[:zip][0..4]
+      },
+      'contactPhone' => us_phone,
+      'contactEmail' => user.pciu_email,
+      'periodsOfService' => [
+        {
+          'serviceBranch' => 'Air Force',
+          'dateRange' => {
+            'from' => '2007-04-01',
+            'to' => '2016-06-01'
+          }
+        }
+      ],
+      'currentlyActiveDuty' => {
+        'yes' => true
+      },
+      'activeDuty' => true
+    }
+  end
+
   let(:v28_8832_expected) do
     {
       'claimantAddress' => {
@@ -882,6 +917,13 @@ RSpec.describe FormProfile, type: :model do
     end
 
     context 'with a user that can prefill financial status report' do
+      let(:comp_and_pen_payments) do
+        [
+          { payment_date: DateTime.now - 2.months, payment_amount: '1500' },
+          { payment_date: DateTime.now - 10.days, payment_amount: '3000' }
+        ]
+      end
+
       before do
         allow_any_instance_of(BGS::PeopleService).to(
           receive(:find_person_by_participant_id).and_return({ file_nbr: '796043735' })
@@ -889,13 +931,17 @@ RSpec.describe FormProfile, type: :model do
         allow_any_instance_of(User).to(
           receive(:participant_id).and_return('600061742')
         )
+        allow_any_instance_of(DebtManagementCenter::PaymentsService).to(
+          receive(:compensation_and_pension).and_return(comp_and_pen_payments)
+        )
+        allow_any_instance_of(DebtManagementCenter::PaymentsService).to(
+          receive(:education).and_return(nil)
+        )
         allow(user).to receive(:authorize).and_return(true)
       end
 
       it 'returns a prefilled 5655 form' do
-        VCR.use_cassette('bgs/payment_service/payment_history') do
-          expect_prefilled('5655')
-        end
+        expect_prefilled('5655')
       end
     end
 
@@ -1110,6 +1156,7 @@ RSpec.describe FormProfile, type: :model do
           686C-674
           28-8832
           28-1900
+          26-1880
         ].each do |form_id|
           it "returns prefilled #{form_id}" do
             expect_prefilled(form_id)

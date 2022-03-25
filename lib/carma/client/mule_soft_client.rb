@@ -14,13 +14,17 @@ module CARMA
       # @param payload [String] JSON payload to submit
       # @return [Faraday::Env]
       def create_submission(payload)
-        do_post('submit', payload)
+        with_monitoring do
+          do_post('submit', payload)
+        end
       end
 
       # @param payload [String] JSON payload to submit
       # @return [Faraday::Env]
       def upload_attachments(payload)
-        do_post('addDocument', payload)
+        with_monitoring do
+          do_post('addDocument', payload)
+        end
       end
 
       private
@@ -48,7 +52,7 @@ module CARMA
 
       def raise_error_unless_success(resource, status)
         Rails.logger.info "[Form 10-10CG] Submission to '#{resource}' resource resulted in response code #{status}"
-        return if status == 200
+        return if [200, 201].include? status
 
         raise Common::Exceptions::SchemaValidationErrors, ["Expecting 200 status but received #{status}"]
       end

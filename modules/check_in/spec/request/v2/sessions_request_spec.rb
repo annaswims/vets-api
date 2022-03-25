@@ -12,6 +12,8 @@ RSpec.describe 'V2::SessionsController', type: :request do
       .with('check_in_experience_enabled').and_return(true)
     allow(Flipper).to receive(:enabled?)
       .with('check_in_experience_logging_enabled').and_return(true)
+    allow(Flipper).to receive(:enabled?).with('check_in_experience_set_pre_checkin_status').and_return(false)
+    allow(Flipper).to receive(:enabled?).with('check_in_experience_lorota_401_mapping_enabled').and_return(true)
 
     Rails.cache.clear
   end
@@ -43,6 +45,10 @@ RSpec.describe 'V2::SessionsController', type: :request do
           'status' => 'success',
           'uuid' => uuid
         }
+      end
+
+      before do
+        allow(Flipper).to receive(:enabled?).with('check_in_experience_refresh_pre_checkin').and_return(false)
       end
 
       it 'returns read.none permissions' do
@@ -77,6 +83,7 @@ RSpec.describe 'V2::SessionsController', type: :request do
       end
 
       before do
+        allow(Flipper).to receive(:enabled?).with('check_in_experience_refresh_pre_checkin').and_return(false)
         VCR.use_cassette 'check_in/lorota/token/token_200' do
           post '/check_in/v2/sessions', session_params
         end
@@ -87,6 +94,61 @@ RSpec.describe 'V2::SessionsController', type: :request do
 
         expect(response.status).to eq(200)
         expect(JSON.parse(response.body)).to eq(resp)
+      end
+    end
+
+    context 'with CHIP refresh precheckin endpoint' do
+      let(:uuid) { Faker::Internet.uuid }
+      let(:session_params) do
+        {
+          params: {
+            session: {
+              uuid: uuid,
+              last4: '5555',
+              last_name: 'Johnson'
+            }
+          }
+        }
+      end
+      let(:resp) do
+        {
+          'permissions' => 'read.full',
+          'status' => 'success',
+          'uuid' => uuid
+        }
+      end
+
+      before do
+        allow(Flipper).to receive(:enabled?).with('check_in_experience_refresh_pre_checkin').and_return(true)
+        VCR.use_cassette 'check_in/lorota/token/token_200' do
+          post '/check_in/v2/sessions', session_params
+        end
+      end
+
+      context 'succeeding with refresh' do
+        it 'returns a success response' do
+          VCR.use_cassette('check_in/chip/refresh_pre_check_in/refresh_pre_check_in_200', erb: { uuid: uuid }) do
+            VCR.use_cassette 'check_in/chip/token/token_200' do
+              get "/check_in/v2/sessions/#{uuid}"
+
+              expect(response.status).to eq(200)
+              expect(JSON.parse(response.body)).to eq(resp)
+            end
+          end
+        end
+      end
+
+      context 'throwing error' do
+        it 'returns a success response' do
+          VCR.use_cassette('check_in/chip/refresh_pre_check_in/refresh_pre_check_in_500', erb: { uuid: uuid }) do
+            VCR.use_cassette 'check_in/chip/token/token_200' do
+              get "/check_in/v2/sessions/#{uuid}"
+
+              expect(response.status).to eq(200)
+              expect(JSON.parse(response.body)).to eq(resp)
+            end
+          end
+        end
       end
     end
   end
@@ -156,12 +218,121 @@ RSpec.describe 'V2::SessionsController', type: :request do
     end
 
     context 'when JWT token and Redis entries are absent' do
+      before do
+        expect_any_instance_of(::V2::Chip::Client).not_to receive(:set_precheckin_started).with(anything)
+      end
+
       it 'returns a success response' do
         VCR.use_cassette 'check_in/lorota/token/token_200' do
           post '/check_in/v2/sessions', session_params
 
           expect(response.status).to eq(200)
           expect(JSON.parse(response.body)).to eq(resp)
+        end
+      end
+    end
+
+    context 'when LoROTA returns a 401 for token' do
+      context 'when 401 mapping feature flag is enabled' do
+        let(:resp) do
+          {
+            'errors' => [
+              {
+                'title' => 'Authentication Error',
+                'detail' => 'Authentication Error',
+                'code' => 'LOROTA-MAPPED-API_401',
+                'status' => '401'
+              }
+            ]
+          }
+        end
+
+        it 'returns a 401 error' do
+          VCR.use_cassette 'check_in/lorota/token/token_401' do
+            post '/check_in/v2/sessions', session_params
+
+            expect(response.status).to eq(401)
+            expect(JSON.parse(response.body)).to eq(resp)
+          end
+        end
+      end
+
+      context 'when 401 mapping feature flag is disabled' do
+        let(:resp) do
+          {
+            'errors' => [
+              {
+                'title' => 'Operation failed',
+                'detail' => 'Operation failed',
+                'code' => 'VA900',
+                'status' => '400'
+              }
+            ]
+          }
+        end
+
+        before do
+          allow(Flipper).to receive(:enabled?).with('check_in_experience_lorota_401_mapping_enabled').and_return(false)
+        end
+
+        it 'returns a 400 error' do
+          VCR.use_cassette 'check_in/lorota/token/token_401' do
+            post '/check_in/v2/sessions', session_params
+
+            expect(response.status).to eq(400)
+            expect(JSON.parse(response.body)).to eq(resp)
+          end
+        end
+      end
+    end
+
+    context 'when pre_checkin' do
+      before do
+        allow(Flipper).to receive(:enabled?).with('check_in_experience_set_pre_checkin_status').and_return(true)
+      end
+
+      let(:session_params) do
+        {
+          params: {
+            session: {
+              uuid: uuid,
+              last4: '5555',
+              last_name: 'Johnson',
+              check_in_type: 'preCheckIn'
+            }
+          }
+        }
+      end
+
+      context 'when CHIP sets precheckin started status successfully' do
+        it 'returns a success response' do
+          VCR.use_cassette('check_in/chip/set_precheckin_started/set_precheckin_started_200',
+                           erb: { uuid: uuid }) do
+            VCR.use_cassette 'check_in/chip/token/token_200' do
+              VCR.use_cassette 'check_in/lorota/token/token_200' do
+                post '/check_in/v2/sessions', session_params
+
+                expect(response.status).to eq(200)
+                expect(JSON.parse(response.body)).to eq(resp)
+              end
+            end
+          end
+        end
+      end
+
+      context 'when CHIP returns error for precheckin started call' do
+        it 'returns a success response' do
+          VCR.use_cassette('check_in/chip/set_precheckin_started/set_precheckin_started_500',
+                           erb: { uuid: uuid }) do
+            VCR.use_cassette 'check_in/chip/token/token_200' do
+              VCR.use_cassette 'check_in/lorota/token/token_200' do
+                post '/check_in/v2/sessions', session_params
+
+                expect(response.status).to eq(200)
+                expect(JSON.parse(response.body)).to eq(resp)
+              end
+            end
+          end
         end
       end
     end

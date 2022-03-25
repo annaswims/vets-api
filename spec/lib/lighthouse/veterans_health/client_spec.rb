@@ -51,26 +51,24 @@ RSpec.describe Lighthouse::VeteransHealth::Client do
         allow(@client).to receive(:authenticate).and_return bearer_token_object
       end
 
-      describe 'when requesting any valid resource' do
-        let(:random_resource_str) do
-          %w[observations medications OBSERVATIONS MeDICATions].sample
-        end
+      %w[observations medication_requests OBSERVATIONS MeDICATion_REQuests].each do |resource_str|
+        describe "when requesting #{resource_str}" do
+          it 'authenticates to Lighthouse and retrieves a bearer token' do
+            @client.list_resource(resource_str)
+            expect(@client.instance_variable_get(:@bearer_token)).to eq 'blah'
+          end
 
-        it 'authenticates to Lighthouse and retrieves a bearer token' do
-          @client.list_resource(random_resource_str)
-          expect(@client.instance_variable_get(:@bearer_token)).to eq 'blah'
-        end
+          it 'sets the headers to include the bearer token' do
+            headers = {
+              'Accept' => 'application/json',
+              'Content-Type' => 'application/json',
+              'User-Agent' => 'Vets.gov Agent',
+              'Authorization': 'Bearer blah'
+            }
 
-        it 'sets the headers to include the bearer token' do
-          headers = {
-            'Accept' => 'application/json',
-            'Content-Type' => 'application/json',
-            'User-Agent' => 'Vets.gov Agent',
-            'Authorization': 'Bearer blah'
-          }
-
-          @client.list_resource(random_resource_str)
-          expect(@client.instance_variable_get(:@headers_hash)).to eq headers
+            @client.list_resource(resource_str)
+            expect(@client.instance_variable_get(:@headers_hash)).to eq headers
+          end
         end
       end
 
@@ -108,11 +106,11 @@ RSpec.describe Lighthouse::VeteransHealth::Client do
           expect_any_instance_of(
             Lighthouse::VeteransHealth::Client
           ).to receive(:perform_get).with(medications_api_path, params_hash).and_call_original
-          @client.list_resource('medications')
+          @client.list_resource('medication_requests')
         end
 
         it 'returns the api response' do
-          expect(@client.list_resource('medications')).to eq generic_response
+          expect(@client.list_resource('medication_requests')).to eq generic_response
         end
 
         context 'when the response is larger than one page' do
@@ -154,7 +152,7 @@ RSpec.describe Lighthouse::VeteransHealth::Client do
               { 'second': 'page' },
               { 'last': 'page' }
             ].as_json
-            expect(@client.list_resource('medications').body['entry']).to match expected_entries
+            expect(@client.list_resource('medication_requests').body['entry']).to match expected_entries
           end
         end
       end
@@ -175,7 +173,7 @@ RSpec.describe Lighthouse::VeteransHealth::Client do
         end
 
         it 'raises an exception and message' do
-          expect { @client.list_resource('medications') }.to raise_exception(Faraday::TimeoutError, 'timeout')
+          expect { @client.list_resource('medication_requests') }.to raise_exception(Faraday::TimeoutError, 'timeout')
         end
       end
     end

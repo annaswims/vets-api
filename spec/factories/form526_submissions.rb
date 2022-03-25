@@ -2,11 +2,13 @@
 
 FactoryBot.define do
   factory :form526_submission do
-    user_uuid { SecureRandom.uuid }
+    transient do
+      user { create(:disabilities_compensation_user) }
+    end
+    user_uuid { user.uuid }
     saved_claim { create(:va526ez) }
     submitted_claim_id { nil }
     auth_headers_json do
-      user = build(:disabilities_compensation_user)
       EVSS::DisabilityCompensationAuthHeaders.new(user).add_headers(EVSS::AuthHeaders.new(user).to_h).to_json
     end
     form_json do
@@ -17,6 +19,18 @@ FactoryBot.define do
   trait :with_uploads do
     form_json do
       File.read("#{::Rails.root}/spec/support/disability_compensation_form/submissions/with_uploads.json")
+    end
+  end
+
+  trait :hypertension_claim_for_increase do
+    form_json do
+      File.read("#{::Rails.root}/spec/support/disability_compensation_form/submissions/only_526_hypertension.json")
+    end
+  end
+
+  trait :asthma_claim_for_increase do
+    form_json do
+      File.read("#{::Rails.root}/spec/support/disability_compensation_form/submissions/only_526_asthma.json")
     end
   end
 

@@ -51,13 +51,10 @@ AppealsApi::Engine.routes.draw do
       end
 
       namespace :notice_of_disagreements do
-        resources :evidence_submissions,
-                  only: %i[create show],
-                  controller: '/appeals_api/v1/decision_reviews/notice_of_disagreements/evidence_submissions'
+        resources :evidence_submissions, only: %i[create show]
       end
 
-      resources :notice_of_disagreements, only: %i[create show],
-                                          controller: '/appeals_api/v1/decision_reviews/notice_of_disagreements' do
+      resources :notice_of_disagreements, only: %i[create show] do
         collection do
           get 'schema'
           post 'validate'

@@ -234,6 +234,10 @@ RSpec.describe 'Health Care Application Integration', type: %i[request serialize
             expect_async_submit
           end
 
+          it 'increments statsd' do
+            expect { subject }.to trigger_statsd_increment('api.1010ez.submission_attempt')
+          end
+
           it 'renders success', run_at: '2017-01-31' do
             VCR.use_cassette('hca/submit_anon', match_requests_on: [:body]) do
               subject
@@ -260,6 +264,7 @@ RSpec.describe 'Health Care Application Integration', type: %i[request serialize
         it 'renders success and delete the saved form', run_at: '2017-01-31' do
           VCR.use_cassette('hca/submit_auth', match_requests_on: [:body]) do
             expect_any_instance_of(ApplicationController).to receive(:clear_saved_form).with('1010ez').once
+            expect_any_instance_of(HealthCareApplication).to receive(:prefill_fields)
             subject
             expect(JSON.parse(response.body)).to eq(body)
           end

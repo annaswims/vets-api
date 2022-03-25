@@ -84,6 +84,10 @@ RSpec.describe V0::CaregiversAssistanceClaimsController, type: :controller do
 
       post controller_action, params: params
 
+      log = PersonalInformationLog.last
+      expect(log.error_class).to eq('1010CGValidationError')
+      expect(log.data).to eq({ 'form' => {} })
+
       res_body = JSON.parse(response.body)
 
       expect(response.status).to eq(422)
@@ -154,6 +158,14 @@ RSpec.describe V0::CaregiversAssistanceClaimsController, type: :controller do
           errors: expected_errors
         )
       end
+    end
+
+    it 'records caregiver stats' do
+      form_data = claim.form
+      params = { caregivers_assistance_claim: { form: form_data } }
+      expect_any_instance_of(Form1010cg::Auditor).to receive(:record_caregivers)
+
+      post :create, params: params
     end
 
     it 'submits claim using Form1010cg::Service' do

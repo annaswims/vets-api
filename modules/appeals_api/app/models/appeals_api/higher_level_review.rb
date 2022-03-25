@@ -6,6 +6,10 @@ require 'common/exceptions'
 module AppealsApi
   class HigherLevelReview < ApplicationRecord
     include HlrStatus
+    include PdfOutputPrep
+
+    attr_readonly :auth_headers
+    attr_readonly :form_data
 
     scope :pii_expunge_policy, lambda {
       where('updated_at < ? AND status IN (?)', 7.days.ago, COMPLETE_STATUSES)
@@ -48,7 +52,7 @@ module AppealsApi
       ).new(self)
     end
 
-    # V2
+    # V2 Start
     def veteran
       @veteran ||= Appellant.new(
         type: :veteran,
@@ -57,7 +61,6 @@ module AppealsApi
       )
     end
 
-    # V2
     def claimant
       @claimant ||= Appellant.new(
         type: :claimant,
@@ -65,6 +68,16 @@ module AppealsApi
         form_data: data_attributes&.dig('claimant')
       )
     end
+
+    def signing_appellant
+      claimant.signing_appellant? ? claimant : veteran
+    end
+
+    def appellant_local_time
+      signing_appellant.timezone ? created_at.in_time_zone(signing_appellant.timezone) : created_at.utc
+    end
+
+    # V2 End
 
     def first_name
       auth_headers['X-VA-First-Name']
@@ -153,11 +166,8 @@ module AppealsApi
     end
 
     def email
-      veteran_data&.dig('emailAddressText').to_s.strip
-    end
-
-    def email_v2
-      veteran_data&.dig('email').to_s.strip
+      # V2 and V1 access the email data via different keys ('email' vs 'emailAddressText')
+      veteran.email.presence || veteran_data&.dig('emailAddressText').to_s.strip
     end
 
     def benefit_type
@@ -213,32 +223,6 @@ module AppealsApi
       veterans_local_time.strftime '%Y'
     end
 
-    def date_signed_v2
-      timezone = claimant.timezone || veteran.timezone
-
-      timezone ? created_at.in_time_zone(timezone) : created_at.utc
-    end
-
-    def signing_appellant
-      claimant.signing_appellant? ? claimant : veteran
-    end
-
-    def signature_v2
-      "#{signing_appellant.full_name[0...180]}\n- Signed by digital authentication to api.va.gov"
-    end
-
-    def date_signed_v2_mm
-      date_signed_v2.strftime '%m'
-    end
-
-    def date_signed_v2_dd
-      date_signed_v2.strftime '%d'
-    end
-
-    def date_signed_v2_yyyy
-      date_signed_v2.strftime '%Y'
-    end
-
     def consumer_name
       auth_headers&.dig('X-Consumer-Username')
     end
@@ -248,8 +232,9 @@ module AppealsApi
     end
 
     def update_status!(status:, code: nil, detail: nil)
+      current_status = self.status
       update_handler = Events::Handler.new(event_type: :hlr_status_updated, opts: {
-                                             from: self.status,
+                                             from: current_status,
                                              to: status,
                                              status_update_time: Time.zone.now.iso8601,
                                              statusable_id: id
@@ -264,7 +249,7 @@ module AppealsApi
 
       update!(status: status, code: code, detail: detail)
 
-      update_handler.handle!
+      update_handler.handle! unless status == current_status
       email_handler.handle! if status == 'submitted' && email_identifier.present?
     end
 
@@ -282,11 +267,11 @@ module AppealsApi
         'pensionSurvivorsBenefits' => 'PMC',
         'fiduciary' => 'FID',
         'lifeInsurance' => 'INS',
-        'veteransHealthAdministration' => 'OTH',
+        'veteransHealthAdministration' => 'CMP',
         'veteranReadinessAndEmployment' => 'VRE',
-        'loanGuaranty' => 'OTH',
+        'loanGuaranty' => 'CMP',
         'education' => 'EDU',
-        'nationalCemeteryAdministration' => 'OTH'
+        'nationalCemeteryAdministration' => 'NCA'
       }[benefit_type]
     end
 
@@ -303,7 +288,6 @@ module AppealsApi
 
     def email_identifier
       return { id_type: 'email', id_value: email } if email.present?
-      return { id_type: 'email', id_value: email_v2 } if email_v2.present?
 
       icn = mpi_veteran.mpi_icn
 
@@ -336,11 +320,6 @@ module AppealsApi
 
     def veterans_timezone
       veteran_data&.dig('timezone').presence&.strip
-    end
-
-    # V2 version of veterans_local_time
-    def appellant_local_time
-      signing_appellant.timezone ? created_at.in_time_zone(signing_appellant.timezone) : created_at.utc
     end
 
     # validation (header)
@@ -391,6 +370,10 @@ module AppealsApi
         [veteran_data.dig('address', 'addressLine1'),
          veteran_data.dig('address', 'addressLine2'),
          veteran_data.dig('address', 'addressLine3')].compact.map(&:strip).join(' ')
+    end
+
+    def clear_memoized_values
+      @contestable_issues = @veteran = @claimant = @address_combined = nil
     end
   end
 end

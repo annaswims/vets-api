@@ -19,6 +19,8 @@ require 'search_typeahead/service'
 require 'va_profile/exceptions/parser'
 require 'va_profile/service'
 require 'va_notify/service'
+require 'hca/service'
+require 'carma/client/mule_soft_client'
 
 Rails.application.reloader.to_prepare do
   # Initialize session controller metric counters at 0
@@ -89,6 +91,24 @@ Rails.application.reloader.to_prepare do
   StatsD.increment("#{Caseflow::Service::STATSD_KEY_PREFIX}.get_appeals.total", 0)
   StatsD.increment("#{Caseflow::Service::STATSD_KEY_PREFIX}.get_appeals.fail", 0)
 
+  # init 1010ez
+  %w[submit_form health_check].each do |method|
+    %w[total fail].each do |type|
+      StatsD.increment("#{HCA::Service::STATSD_KEY_PREFIX}.#{method}.#{type}", 0)
+    end
+  end
+
+  StatsD.increment("#{HCA::Service::STATSD_KEY_PREFIX}.submission_attempt", 0)
+  StatsD.increment("#{HCA::Service::STATSD_KEY_PREFIX}.validation_error", 0)
+  StatsD.increment("#{HCA::Service::STATSD_KEY_PREFIX}.failed_wont_retry", 0)
+
+  # init mulesoft
+  %w[create_submission upload_attachments do_post].each do |method|
+    %w[total fail].each do |type|
+      StatsD.increment("#{CARMA::Client::MuleSoftClient::STATSD_KEY_PREFIX}.#{method}.#{type}", 0)
+    end
+  end
+
   # init  mvi
   StatsD.increment("#{MPI::Service::STATSD_KEY_PREFIX}.find_profile.total", 0)
   StatsD.increment("#{MPI::Service::STATSD_KEY_PREFIX}.find_profile.fail", 0)
@@ -130,6 +150,12 @@ Rails.application.reloader.to_prepare do
   StatsD.increment(Form1010cg::Auditor.metrics.submission.failure.client.qualification, 0)
   StatsD.increment(Form1010cg::Auditor.metrics.pdf_download, 0)
 
+  StatsD.increment(Form1010cg::Auditor.metrics.submission.caregivers.primary_no_secondary, 0)
+  StatsD.increment(Form1010cg::Auditor.metrics.submission.caregivers.primary_one_secondary, 0)
+  StatsD.increment(Form1010cg::Auditor.metrics.submission.caregivers.primary_two_secondary, 0)
+  StatsD.increment(Form1010cg::Auditor.metrics.submission.caregivers.no_primary_one_secondary, 0)
+  StatsD.increment(Form1010cg::Auditor.metrics.submission.caregivers.no_primary_two_secondary, 0)
+
   # init form 526 - disability compenstation
   StatsD.increment("#{EVSS::Service::STATSD_KEY_PREFIX}.submit_form526.total", 0)
   StatsD.increment("#{EVSS::Service::STATSD_KEY_PREFIX}.submit_form526.fail", 0)
@@ -144,6 +170,8 @@ Rails.application.reloader.to_prepare do
   end
   StatsD.increment(Form526ConfirmationEmailJob::STATSD_ERROR_NAME, 0)
   StatsD.increment(Form526ConfirmationEmailJob::STATSD_SUCCESS_NAME, 0)
+  StatsD.increment(Form526SubmissionFailedEmailJob::STATSD_ERROR_NAME, 0)
+  StatsD.increment(Form526SubmissionFailedEmailJob::STATSD_SUCCESS_NAME, 0)
 
   # init Higher Level Review
 
@@ -253,7 +281,7 @@ Rails.application.reloader.to_prepare do
   StatsD.increment('iam_ssoe_oauth.create_user_session.failure', 0)
   StatsD.increment('iam_ssoe_oauth.inactive_session', 0)
 
-  %w[IDME MHV DSL].each do |cred|
+  %w[IDME MHV DSL LOGINGOV].each do |cred|
     StatsD.increment(
       IAMSSOeOAuth::SessionManager::STATSD_OAUTH_SESSION_KEY, 0, tags: ['type:new', "credential:#{cred}"]
     )

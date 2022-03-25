@@ -24,6 +24,9 @@ RSpec.describe ClaimsApi::VBMSUploadJob, type: :job do
 
     it 'responds properly when there is a 500 error' do
       VCR.use_cassette('vbms/document_upload_500') do
+        allow_any_instance_of(BGS::PersonWebService)
+          .to receive(:find_by_ssn).and_return({ file_nbr: '123456789' })
+
         subject.new.perform(power_of_attorney.id)
         power_of_attorney.reload
         expect(power_of_attorney.vbms_upload_failure_count).to eq(1)
@@ -32,6 +35,9 @@ RSpec.describe ClaimsApi::VBMSUploadJob, type: :job do
 
     it 'creates a second job if there is a failure' do
       VCR.use_cassette('vbms/document_upload_500') do
+        allow_any_instance_of(BGS::PersonWebService)
+          .to receive(:find_by_ssn).and_return({ file_nbr: '123456789' })
+        expect(ClaimsApi::PoaUpdater).not_to receive(:perform_async)
         expect do
           subject.new.perform(power_of_attorney.id)
         end.to change(subject.jobs, :size).by(1)
@@ -40,6 +46,10 @@ RSpec.describe ClaimsApi::VBMSUploadJob, type: :job do
 
     it 'does not create an new job if had 5 failures' do
       VCR.use_cassette('vbms/document_upload_500') do
+        allow_any_instance_of(BGS::PersonWebService)
+          .to receive(:find_by_ssn).and_return({ file_nbr: '123456789' })
+        expect(ClaimsApi::PoaUpdater).not_to receive(:perform_async)
+
         power_of_attorney.update(vbms_upload_failure_count: 4)
         expect do
           subject.new.perform(power_of_attorney.id)
@@ -47,26 +57,31 @@ RSpec.describe ClaimsApi::VBMSUploadJob, type: :job do
       end
     end
 
-    it 'updates the power of attorney record when successful response' do
+    it 'updates the power of attorney record and updates the POA code in BGDS when there\'s a successful response' do
       token_response = OpenStruct.new(upload_token: '<{573F054F-E9F7-4BF2-8C66-D43ADA5C62E7}')
       document_response = OpenStruct.new(upload_document_response: {
         '@new_document_version_ref_id' => '{52300B69-1D6E-43B2-8BEB-67A7C55346A2}',
         '@document_series_ref_id' => '{A57EF6CC-2236-467A-BA4F-1FA1EFD4B374}'
       }.with_indifferent_access)
+      allow_any_instance_of(BGS::PersonWebService)
+        .to receive(:find_by_ssn).and_return({ file_nbr: '123456789' })
       allow_any_instance_of(ClaimsApi::VBMSUploadJob).to receive(:fetch_file_path).and_return('/tmp/path.pdf')
 
       allow_any_instance_of(ClaimsApi::VBMSUploader).to receive(:fetch_upload_token).and_return(token_response)
       allow_any_instance_of(ClaimsApi::VBMSUploader).to receive(:upload_document).and_return(document_response)
       VCR.use_cassette('vbms/document_upload_success') do
+        expect(ClaimsApi::PoaUpdater).to receive(:perform_async)
+
         subject.new.perform(power_of_attorney.id)
         power_of_attorney.reload
+
         expect(power_of_attorney.status).to eq('uploaded')
         expect(power_of_attorney.vbms_document_series_ref_id).to eq('{A57EF6CC-2236-467A-BA4F-1FA1EFD4B374}')
         expect(power_of_attorney.vbms_new_document_version_ref_id).to eq('{52300B69-1D6E-43B2-8BEB-67A7C55346A2}')
       end
     end
 
-    it 'handles the file not found from S3' do
+    it 'rescues file not found from S3, updates POA record, and re-raises to allow Sidekiq retries' do
       VCR.use_cassette('vbms/document_upload_success') do
         token_response = OpenStruct.new(upload_token: '<{573F054F-E9F7-4BF2-8C66-D43ADA5C62E7}')
         OpenStruct.new(upload_document_response: {
@@ -74,20 +89,24 @@ RSpec.describe ClaimsApi::VBMSUploadJob, type: :job do
           '@document_series_ref_id' => '{A57EF6CC-2236-467A-BA4F-1FA1EFD4B374}'
         }.with_indifferent_access)
 
+        allow_any_instance_of(BGS::PersonWebService)
+          .to receive(:find_by_ssn).and_return({ file_nbr: '123456789' })
         allow_any_instance_of(ClaimsApi::VBMSUploader).to receive(:fetch_upload_token).and_return(token_response)
         allow_any_instance_of(ClaimsApi::VBMSUploader).to receive(:upload_document).and_raise(Errno::ENOENT)
-        subject.new.perform(power_of_attorney.id)
+        expect { subject.new.perform(power_of_attorney.id) }.to raise_error(Errno::ENOENT)
         power_of_attorney.reload
         expect(power_of_attorney.status).to eq('errored')
       end
     end
 
-    it "handles 'VBMS::FilenumberDoesNotExist' error" do
+    it "rescues 'VBMS::FilenumberDoesNotExist' error, updates record, and re-raises exception" do
       VCR.use_cassette('vbms/document_upload_success') do
+        allow_any_instance_of(BGS::PersonWebService)
+          .to receive(:find_by_ssn).and_return({ file_nbr: '123456789' })
         allow_any_instance_of(ClaimsApi::VBMSUploader).to receive(:fetch_upload_token)
           .and_raise(VBMS::FilenumberDoesNotExist.new(500, 'HelloWorld'))
 
-        subject.new.perform(power_of_attorney.id)
+        expect { subject.new.perform(power_of_attorney.id) }.to raise_error(VBMS::FilenumberDoesNotExist)
         power_of_attorney.reload
 
         expect(power_of_attorney.status).to eq('errored')
@@ -105,6 +124,8 @@ RSpec.describe ClaimsApi::VBMSUploadJob, type: :job do
           '@document_series_ref_id' => '{A57EF6CC-2236-467A-BA4F-1FA1EFD4B374}'
         }.with_indifferent_access)
 
+        allow_any_instance_of(BGS::PersonWebService)
+          .to receive(:find_by_ssn).and_return({ file_nbr: '123456789' })
         allow_any_instance_of(ClaimsApi::VBMSUploader).to receive(:fetch_upload_token).and_return(token_response)
         allow_any_instance_of(VBMS::Client).to receive(:send_request).and_return(response)
         allow(VBMS::Requests::UploadDocument).to receive(:new).and_return({})

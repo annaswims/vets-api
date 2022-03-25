@@ -39,27 +39,26 @@ module ClaimsApi
           submit_power_of_attorney(poa_code)
         end
 
-        def submit_power_of_attorney(poa_code) # rubocop:disable Metrics/MethodLength
+        def submit_power_of_attorney(poa_code)
           power_of_attorney = ClaimsApi::PowerOfAttorney.find_using_identifier_and_source(header_md5: header_md5,
                                                                                           source_name: source_name)
           unless power_of_attorney&.status&.in?(%w[submitted pending])
-            # use .create! so we don't need to check if it's persisted just to call save (compare w/ v1)
-            power_of_attorney = ClaimsApi::PowerOfAttorney.create!(
+            attributes = {
               status: ClaimsApi::PowerOfAttorney::PENDING,
               auth_headers: auth_headers,
               form_data: params,
-              source_data: source_data,
               current_poa: current_poa_code,
               header_md5: header_md5
-            )
+            }
+            attributes.merge!({ source_data: source_data }) unless token.client_credentials_token?
+
+            # use .create! so we don't need to check if it's persisted just to call save (compare w/ v1)
+            power_of_attorney = ClaimsApi::PowerOfAttorney.create!(attributes)
           end
 
           ClaimsApi::PoaUpdater.perform_async(power_of_attorney.id)
 
-          if enable_vbms_access?
-            ClaimsApi::VBMSUpdater.perform_async(power_of_attorney.id,
-                                                 target_veteran.participant_id)
-          end
+          ClaimsApi::VBMSUpdater.perform_async(power_of_attorney.id) if enable_vbms_access?
 
           # This builds the POA form *AND* uploads it to VBMS
           ClaimsApi::PoaFormBuilderJob.perform_async(power_of_attorney.id)
@@ -129,6 +128,8 @@ module ClaimsApi
         end
 
         def source_name
+          return request.headers['X-Consumer-Username'] if token.client_credentials_token?
+
           "#{current_user.first_name} #{current_user.last_name}"
         end
 

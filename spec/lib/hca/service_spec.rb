@@ -25,6 +25,22 @@ describe HCA::Service do
   let(:current_user) { FactoryBot.build(:user, :loa3, icn: nil) }
 
   describe '#submit_form' do
+    it 'increments statsd' do
+      expect(StatsD).to receive(:increment).with('api.1010ez.submit_form.fail',
+                                                 tags: ['error:VCRErrorsUnhandledHTTPRequestError'])
+      expect(StatsD).to receive(:increment).with('api.1010ez.submit_form.total')
+
+      expect do
+        service.submit_form(build(:health_care_application).parsed_form)
+      end.to raise_error(StandardError)
+
+      allow_any_instance_of(described_class).to receive(:perform).and_return(response)
+      expect(StatsD).not_to receive(:increment).with('api.1010ez.submit_form.fail')
+      expect(StatsD).to receive(:increment).with('api.1010ez.submit_form.total')
+
+      service.submit_form(build(:health_care_application).parsed_form)
+    end
+
     context 'conformance tests', run_at: '2016-12-12' do
       root = Rails.root.join('spec', 'fixtures', 'hca', 'conformance')
       Dir[File.join(root, '*.json')].map { |f| File.basename(f, '.json') }.each do |form|
@@ -49,6 +65,18 @@ describe HCA::Service do
           end.and_return(response)
 
           service.submit_form(json)
+        end
+      end
+    end
+
+    context 'submitting short form' do
+      it 'works', run_at: 'Wed, 16 Mar 2022 20:01:14 GMT' do
+        VCR.use_cassette(
+          'hca/short_form',
+          VCR::MATCH_EVERYTHING.merge(erb: true)
+        ) do
+          result = HCA::Service.new.submit_form(get_fixture('hca/short_form'))
+          expect(result[:success]).to eq(true)
         end
       end
     end
@@ -119,6 +147,14 @@ describe HCA::Service do
 
   describe '#health_check' do
     context 'with a valid request' do
+      it 'increments statsd' do
+        VCR.use_cassette('hca/health_check', match_requests_on: [:body]) do
+          expect do
+            subject.health_check
+          end.to trigger_statsd_increment('api.1010ez.health_check.total')
+        end
+      end
+
       it 'returns the id and a timestamp' do
         VCR.use_cassette('hca/health_check', match_requests_on: [:body]) do
           response = subject.health_check

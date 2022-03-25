@@ -7,6 +7,86 @@ RSpec.describe HealthCareApplication, type: :model do
   let(:inelig_character_of_discharge) { Notification::INELIG_CHARACTER_OF_DISCHARGE }
   let(:login_required) { Notification::LOGIN_REQUIRED }
 
+  describe '#prefill_compensation_type' do
+    before do
+      health_care_application.user = FactoryBot.build(:evss_user)
+    end
+
+    it 'prefills compensation type' do
+      VCR.use_cassette('evss/disability_compensation_form/rating_info_with_disability') do
+        health_care_application.send(:prefill_compensation_type)
+        expect(health_care_application.parsed_form['vaCompensationType']).to eq('highDisability')
+      end
+    end
+
+    context 'with an error' do
+      it 'logs to sentry and doesnt raise the error' do
+        expect(health_care_application).to receive(:log_exception_to_sentry)
+
+        health_care_application.send(:prefill_compensation_type)
+        expect(health_care_application.parsed_form['vaCompensationType']).to eq(nil)
+      end
+    end
+  end
+
+  describe '#prefill_fields' do
+    before do
+      allow(health_care_application).to receive(:prefill_compensation_type)
+    end
+
+    let(:health_care_application) { build(:health_care_application) }
+
+    context 'with missing fields' do
+      before do
+        health_care_application.parsed_form.delete('veteranFullName')
+        health_care_application.parsed_form.delete('veteranDateOfBirth')
+        health_care_application.parsed_form.delete('veteranSocialSecurityNumber')
+      end
+
+      context 'without a user' do
+        it 'does nothing' do
+          expect(health_care_application.send(:prefill_fields)).to eq(nil)
+
+          expect(health_care_application.valid?).to eq(false)
+        end
+      end
+
+      context 'with a user' do
+        before do
+          health_care_application.user = user
+        end
+
+        context 'with a loa1 user' do
+          let(:user) { create(:user) }
+
+          it 'does nothing' do
+            expect(health_care_application.send(:prefill_fields)).to eq(nil)
+
+            expect(health_care_application.valid?).to eq(false)
+          end
+        end
+
+        context 'with a loa3 user' do
+          let(:user) { create(:user, :loa3) }
+
+          it 'sets uneditable fields using user data' do
+            expect(health_care_application).to receive(:prefill_compensation_type)
+
+            expect(health_care_application.valid?).to eq(false)
+            health_care_application.send(:prefill_fields)
+            expect(health_care_application.valid?).to eq(true)
+
+            parsed_form = health_care_application.parsed_form
+
+            expect(parsed_form['veteranFullName']).to eq(user.full_name_normalized.compact.stringify_keys)
+            expect(parsed_form['veteranDateOfBirth']).to eq(user.birth_date)
+            expect(parsed_form['veteranSocialSecurityNumber']).to eq(user.ssn_normalized)
+          end
+        end
+      end
+    end
+  end
+
   describe '.enrollment_status' do
     it 'returns parsed enrollment status' do
       expect_any_instance_of(HCA::EnrollmentEligibility::Service).to receive(:lookup_user).with(
@@ -190,11 +270,25 @@ RSpec.describe HealthCareApplication, type: :model do
   describe '#process!' do
     let(:health_care_application) { build(:health_care_application) }
 
+    it 'calls prefill fields' do
+      expect(health_care_application).to receive(:prefill_fields)
+
+      health_care_application.process!
+    end
+
     context 'with an invalid record' do
       it 'raises a validation error' do
         expect do
           described_class.new(form: {}.to_json).process!
         end.to raise_error(Common::Exceptions::ValidationErrors)
+      end
+
+      it 'triggers statsd' do
+        expect do
+          expect do
+            described_class.new(form: {}.to_json).process!
+          end.to raise_error(Common::Exceptions::ValidationErrors)
+        end.to trigger_statsd_increment('api.1010ez.validation_error')
       end
     end
 
@@ -225,6 +319,16 @@ RSpec.describe HealthCareApplication, type: :model do
           )
           expect(health_care_application.process!).to eq(result)
         end
+
+        context 'with a submission failure' do
+          it 'increments statsd' do
+            expect do
+              expect do
+                health_care_application.process!
+              end.to raise_error(VCR::Errors::UnhandledHTTPRequestError)
+            end.to trigger_statsd_increment('api.1010ez.failed_wont_retry')
+          end
+        end
       end
 
       context 'with async_compatible set' do
@@ -244,6 +348,12 @@ RSpec.describe HealthCareApplication, type: :model do
       expect(health_care_application).to receive(:send_failure_mail).and_call_original
       expect(HCASubmissionFailureMailer).to receive(:build).and_call_original
       health_care_application.update!(state: 'failed')
+    end
+
+    it 'triggers statsd' do
+      expect do
+        health_care_application.update!(state: 'failed')
+      end.to trigger_statsd_increment('api.1010ez.failed_wont_retry')
     end
   end
 

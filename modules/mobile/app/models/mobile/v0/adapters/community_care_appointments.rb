@@ -21,8 +21,7 @@ module Mobile
         # @return Array<Mobile::V0::Appointment> the adapted list of appointment models
         #
         def parse(appointments)
-          appointments_list = appointments[:booked_appointment_collections].first[:booked_cc_appointments]
-          return [] if appointments_list.size.zero?
+          appointments_list = appointments.dig(:booked_appointment_collections, 0, :booked_cc_appointments) || []
 
           appointments_list.map do |appointment_hash|
             location = location(
@@ -62,7 +61,14 @@ module Mobile
             time_zone: time_zone,
             vetext_id: nil,
             reason: nil,
-            is_covid_vaccine: false
+            is_covid_vaccine: false,
+            is_pending: false,
+            proposed_times: nil,
+            type_of_care: nil,
+            patient_phone_number: nil,
+            patient_email: nil,
+            best_time_to_call: nil,
+            friendly_location_name: nil
           }
         end
         # rubocop:enable Metrics/MethodLength

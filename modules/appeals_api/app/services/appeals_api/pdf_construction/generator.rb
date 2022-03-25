@@ -8,6 +8,7 @@ module AppealsApi
       def initialize(appeal, version: 'V1')
         @appeal = appeal
         appeal.update(pdf_version: version)
+        appeal.pdf_output_prep if appeal.respond_to? :pdf_output_prep
         @structure = appeal.pdf_structure(version)
       end
 
@@ -64,10 +65,13 @@ module AppealsApi
       end
 
       def stamp
+        # TODO: temporary fix below - ticket in backlog to refactor this
+        y_coord = appeal.instance_of?(AppealsApi::NoticeOfDisagreement) && appeal.pdf_version == 'V2' ? 778 : 775
+
         stamped_pdf_path = CentralMail::DatestampPdf.new(@unstamped_path).run(
           text: "Submitted by #{appeal.consumer_name} via api.va.gov",
           x: 429,
-          y: 775,
+          y: y_coord,
           text_only: true
         )
 

@@ -12,6 +12,24 @@ describe Mobile::V0::Adapters::CommunityCareAppointments do
     expect(adapted_appointments.size).to eq(17)
   end
 
+  it 'sets appointment request specific values' do
+    is_pending = adapted_appointments.map(&:is_pending).uniq
+    proposed_times = adapted_appointments.map(&:proposed_times).uniq
+    type_of_care = adapted_appointments.map(&:type_of_care).uniq
+    patient_phone_number = adapted_appointments.map(&:patient_phone_number).uniq
+    patient_email = adapted_appointments.map(&:patient_email).uniq
+    best_time_to_call = adapted_appointments.map(&:best_time_to_call).uniq
+    friendly_location_name = adapted_appointments.map(&:friendly_location_name).uniq
+
+    expect(is_pending).to eq([false])
+    expect(proposed_times).to eq([nil])
+    expect(type_of_care).to eq([nil])
+    expect(patient_phone_number).to eq([nil])
+    expect(patient_email).to eq([nil])
+    expect(best_time_to_call).to eq([nil])
+    expect(friendly_location_name).to eq([nil])
+  end
+
   context 'with a booked CC appointment' do
     let(:booked_cc) { adapted_appointments[0] }
 
@@ -60,7 +78,7 @@ describe Mobile::V0::Adapters::CommunityCareAppointments do
     end
 
     it 'has a utc start date' do
-      expect(booked_cc[:start_date_utc]).to eq(DateTime.parse('2020-04-25T13:30:00.000-04:00'))
+      expect(booked_cc[:start_date_utc]).to eq(DateTime.parse('2018-12-20T13:30:00.000-04:00'))
     end
 
     it 'has a booked status' do
@@ -76,11 +94,11 @@ describe Mobile::V0::Adapters::CommunityCareAppointments do
     let(:booked_cc) { adapted_appointments[1] }
 
     it 'has a utc start date' do
-      expect(booked_cc[:start_date_utc].to_s).to eq('2020-12-20 23:15:00 UTC')
+      expect(booked_cc[:start_date_utc].to_s).to eq('2019-01-01 23:15:00 UTC')
     end
 
     it 'has a local start date' do
-      expect(booked_cc[:start_date_local].to_s).to eq('2020-12-20 14:15:00 -0900')
+      expect(booked_cc[:start_date_local].to_s).to eq('2019-01-01 14:15:00 -0900')
     end
 
     it 'has a time_zone' do

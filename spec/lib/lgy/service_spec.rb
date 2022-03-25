@@ -2,11 +2,13 @@
 
 require 'rails_helper'
 require 'lgy/service'
+require 'saved_claim/coe_claim'
 
 describe LGY::Service do
   subject { described_class.new(edipi: user.edipi, icn: user.icn) }
 
   let(:user) { FactoryBot.create(:evss_user, :loa3) }
+  let(:coe_claim) { FactoryBot.create(:coe_claim) }
 
   describe '#get_determination' do
     subject { described_class.new(edipi: user.edipi, icn: user.icn).get_determination }
@@ -56,20 +58,20 @@ describe LGY::Service do
 
   describe '#coe_status' do
     context 'when get_determination is eligible and get_application is a 404' do
-      it 'returns eligible' do
+      it 'returns eligible and reference number' do
         VCR.use_cassette 'lgy/determination_eligible' do
           VCR.use_cassette 'lgy/application_not_found' do
-            expect(subject.coe_status).to eq status: 'eligible'
+            expect(subject.coe_status).to eq status: 'eligible', reference_number: '16934344'
           end
         end
       end
     end
 
     context 'when get_determination is Unable to Determine Automatically and get_application is a 404' do
-      it 'returns unable-to-determine-eligibility' do
+      it 'returns unable-to-determine-eligibility and reference number' do
         VCR.use_cassette 'lgy/determination_unable_to_determine' do
           VCR.use_cassette 'lgy/application_not_found' do
-            expect(subject.coe_status).to eq status: 'unable-to-determine-eligibility'
+            expect(subject.coe_status).to eq status: 'unable-to-determine-eligibility', reference_number: '16934339'
           end
         end
       end
@@ -79,16 +81,18 @@ describe LGY::Service do
       it 'returns correct payload' do
         VCR.use_cassette 'lgy/determination_eligible' do
           VCR.use_cassette 'lgy/application_200_status_submitted' do
-            expect(subject.coe_status).to eq status: 'available', application_create_date: 1_642_619_386_000
+            expect(subject.coe_status).to eq status: 'available', application_create_date: 1_642_619_386_000,
+                                             reference_number: '16934344'
           end
         end
       end
     end
 
     context 'when get_determination is NOT_ELIGIBLE' do
-      it 'returns ineligible' do
+      it 'returns denied and reference number' do
         VCR.use_cassette 'lgy/determination_not_eligible' do
-          expect(subject.coe_status).to eq status: 'ineligible'
+          expect(subject.coe_status).to eq status: 'denied', application_create_date: 1_640_016_802_000,
+                                           reference_number: '16934414'
         end
       end
     end
@@ -103,8 +107,8 @@ describe LGY::Service do
 
         after { VCR.eject_cassette 'lgy/application_not_found' }
 
-        it 'returns pending' do
-          expect(subject.coe_status).to eq status: 'pending'
+        it 'returns pending and reference number' do
+          expect(subject.coe_status).to eq status: 'pending', reference_number: '16934414'
         end
       end
 
@@ -113,8 +117,9 @@ describe LGY::Service do
 
         after { VCR.eject_cassette 'lgy/application_200_status_submitted' }
 
-        it 'returns pending and the application createDate' do
-          expect(subject.coe_status).to eq status: 'pending', application_create_date: 1_642_619_386_000
+        it 'returns pending and the application createDate and the reference number' do
+          expect(subject.coe_status).to eq status: 'pending', application_create_date: 1_642_619_386_000,
+                                           reference_number: '16934414'
         end
       end
 
@@ -123,8 +128,9 @@ describe LGY::Service do
 
         after { VCR.eject_cassette 'lgy/application_200_status_returned' }
 
-        it 'returns pending-upload and the application createDate' do
-          expect(subject.coe_status).to eq status: 'pending-upload', application_create_date: 1_642_619_386_000
+        it 'returns pending-upload and the application createDate and reference number' do
+          expect(subject.coe_status).to eq status: 'pending-upload', application_create_date: 1_642_619_386_000,
+                                           reference_number: '16934414'
         end
       end
     end
@@ -143,6 +149,69 @@ describe LGY::Service do
       it 'returns a 404 not found' do
         VCR.use_cassette 'lgy/documents_coe_file_not_found' do
           expect(subject.get_coe_file.status).to eq 404
+        end
+      end
+    end
+  end
+
+  describe '#put_application' do
+    context 'when submitting a valid coe claim' do
+      it 'returns a valid application response' do
+        VCR.use_cassette 'lgy/application_put' do
+          response = subject.put_application(payload: coe_claim)
+          expect(response.status).to eq 200
+          expect(response.body).to include('id')
+          expect(response.body).to include('create_date')
+        end
+      end
+    end
+
+    context 'when submitting a valid coe claim with prior loans' do
+      it 'returns a valid application response with prior loan data' do
+        VCR.use_cassette 'lgy/application_put' do
+          response = subject.put_application(payload: coe_claim)
+          expect(response.status).to eq 200
+          expect(response.body).to include('status')
+          expect(response.body['relevant_prior_loans']).not_to be_empty
+        end
+      end
+    end
+  end
+
+  describe '#post_document' do
+    context 'when uploading a document to LGY' do
+      it 'returns a valid response' do
+        VCR.use_cassette 'lgy/document_post' do
+          document_data = {
+            'documentType' => '.pdf',
+            'description' => 'Statement of service',
+            'contentsBase64' => Base64.encode64(File.read('spec/fixtures/files/lgy_file.pdf')),
+            'fileName' => 'lgy_file.pdf'
+          }
+
+          response = subject.post_document(payload: document_data)
+          expect(response.status).to eq 201
+          expect(response.body).to include('id')
+          expect(response.body).to include('create_date')
+        end
+      end
+    end
+  end
+
+  describe '#get_coe_documents' do
+    context 'when retrieving the document list from LGY' do
+      before do
+        allow_any_instance_of(User).to receive(:icn).and_return('1012830245V504544')
+        allow_any_instance_of(User).to receive(:edipi).and_return('1007451748')
+      end
+
+      it 'returns a document list' do
+        VCR.use_cassette 'lgy/documents_list' do
+          response = subject.get_coe_documents
+          expect(response.status).to eq 200
+          expect(response.body).to include(include('id'))
+          expect(response.body).to include(include('create_date'))
+          expect(response.body).to include(include('description'))
         end
       end
     end

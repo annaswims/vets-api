@@ -12,7 +12,9 @@ module V1
   class SessionsController < ApplicationController
     skip_before_action :verify_authenticity_token
 
-    REDIRECT_URLS = %w[signup mhv dslogon idme idme_signup logingov logingov_signup custom mfa verify slo].freeze
+    REDIRECT_URLS = %w[signup mhv mhv_verified dslogon dslogon_verified idme idme_verified idme_signup
+                       idme_signup_verified logingov logingov_verified logingov_signup
+                       logingov_signup_verified custom mfa verify slo].freeze
     STATSD_SSO_NEW_KEY = 'api.auth.new'
     STATSD_SSO_SAMLREQUEST_KEY = 'api.auth.saml_request'
     STATSD_SSO_SAMLRESPONSE_KEY = 'api.auth.saml_response'
@@ -87,8 +89,6 @@ module V1
     end
 
     def saml_settings(options = {})
-      # add a forceAuthn value to the saml settings based on the initial options or
-      # default to false
       options[:force_authn] ||= false
       SAML::SSOeSettingsService.saml_settings(options)
     end
@@ -167,23 +167,46 @@ module V1
 
       case type
       when 'mhv'
-        url_service.mhv_url
+        url_service(true).login_url('mhv', 'myhealthevet', AuthnContext::MHV)
+      when 'mhv_verified'
+        url_service(true).login_url('mhv', 'myhealthevet_loa3', AuthnContext::MHV)
       when 'dslogon'
-        url_service.dslogon_url
+        url_service(true).login_url('dslogon', 'dslogon', AuthnContext::DSLOGON)
+      when 'dslogon_verified'
+        url_service(true).login_url('dslogon', 'dslogon_loa3', AuthnContext::DSLOGON)
       when 'idme'
-        url_service.idme_url
+        url_service.login_url('idme', LOA::IDME_LOA1_VETS, AuthnContext::ID_ME, AuthnContext::MINIMUM)
+      when 'idme_verified'
+        url_service.login_url('idme', LOA::IDME_LOA3, AuthnContext::ID_ME, AuthnContext::MINIMUM)
       when 'idme_signup'
-        url_service.idme_signup_url
+        url_service.idme_signup_url(LOA::IDME_LOA1_VETS)
+      when 'idme_signup_verified'
+        url_service.idme_signup_url(LOA::IDME_LOA3)
       when 'logingov'
-        url_service.logingov_url
+        url_service.login_url(
+          'logingov',
+          [IAL::LOGIN_GOV_IAL1, AAL::LOGIN_GOV_AAL2],
+          AuthnContext::LOGIN_GOV,
+          AuthnContext::MINIMUM
+        )
+      when 'logingov_verified'
+        url_service.login_url(
+          'logingov',
+          [IAL::LOGIN_GOV_IAL2, AAL::LOGIN_GOV_AAL2],
+          AuthnContext::LOGIN_GOV,
+          AuthnContext::MINIMUM
+        )
       when 'logingov_signup'
-        url_service.logingov_signup_url
+        url_service.logingov_signup_url([IAL::LOGIN_GOV_IAL1, AAL::LOGIN_GOV_AAL2])
+      when 'logingov_signup_verified'
+        url_service.logingov_signup_url([IAL::LOGIN_GOV_IAL2, AAL::LOGIN_GOV_AAL2])
       when 'mfa'
         url_service.mfa_url
       when 'verify'
         url_service.verify_url
       when 'custom'
-        url_service(false).custom_url params[:authn] if validate_authn_context
+        authn = validate_inbound_login_params
+        url_service.custom_url authn
       end
     end
     # rubocop:enable Metrics/MethodLength
@@ -328,6 +351,7 @@ module V1
 
     def after_login_actions
       Login::AfterLoginActions.new(@current_user).perform
+      Login::UserVerifier.new(@current_user).perform
       log_persisted_session_and_warnings
     end
 
@@ -356,8 +380,7 @@ module V1
       'UNKNOWN'
     end
 
-    def url_service(force_authn = true)
-      force_authn = false unless %w[production staging].include?(Settings.vsp_environment)
+    def url_service(force_authn = false)
       @url_service ||= SAML::PostURLService.new(saml_settings(force_authn: force_authn),
                                                 session: @session_object,
                                                 user: current_user,

@@ -43,6 +43,7 @@ module ClaimsApi
             special_issues: special_issues_per_disability,
             source: source_name
           )
+
           unless auto_claim.id
             existing_auto_claim = ClaimsApi::AutoEstablishedClaim.find_by(md5: auto_claim.md5)
             auto_claim = existing_auto_claim if existing_auto_claim.present?
@@ -116,6 +117,7 @@ module ClaimsApi
           add_deprecation_headers_to_response(response: response, link: ClaimsApi::EndpointDeprecation::V1_DEV_DOCS)
           sanitize_account_type if form_attributes.dig('directDeposit', 'accountType')
           validate_json_schema
+          validate_form_526_submission_values!
           validate_veteran_identifiers(require_birls: true)
           validate_initial_claim
 
@@ -123,7 +125,9 @@ module ClaimsApi
           auto_claim = ClaimsApi::AutoEstablishedClaim.new(
             status: ClaimsApi::AutoEstablishedClaim::PENDING,
             auth_headers: auth_headers,
-            form_data: form_attributes
+            form_data: form_attributes,
+            flashes: flashes,
+            special_issues: special_issues_per_disability
           )
           service.validate_form526(auto_claim.to_internal)
           render json: valid_526_response
@@ -184,6 +188,7 @@ module ClaimsApi
           change_of_address = form_attributes.dig('veteran', 'changeOfAddress')
           return if change_of_address.blank?
 
+          @current_user.last_signed_in = Time.now.iso8601 if @current_user.last_signed_in.blank?
           countries = EVSS::ReferenceData::Service.new(@current_user).get_countries.countries
           return if countries.include?(change_of_address['country'])
 
@@ -230,8 +235,12 @@ module ClaimsApi
         end
 
         def validate_form_526_location_codes!
-          locations_response = EVSS::ReferenceData::Service.new(@current_user).get_separation_locations
-          separation_locations = locations_response.separation_locations
+          # only retrieve separation locations if we'll need them
+          need_locations = form_attributes['serviceInformation']['servicePeriods'].detect do |service_period|
+            Date.parse(service_period['activeDutyEndDate']) > Time.zone.today
+          end
+          separation_locations = retrieve_separation_locations if need_locations
+
           form_attributes['serviceInformation']['servicePeriods'].each do |service_period|
             next if Date.parse(service_period['activeDutyEndDate']) <= Time.zone.today
             next if separation_locations.any? do |location|
@@ -567,7 +576,7 @@ module ClaimsApi
         end
 
         def special_issues_per_disability
-          (form_attributes['disabilities'] || []).map { |disability| special_issues_for_disability(disability) }
+          (form_attributes['disabilities'] || []).map { |disability| special_issues_for_disability(disability) }.compact
         end
 
         def special_issues_for_disability(disability)
@@ -577,6 +586,9 @@ module ClaimsApi
             secondary_special_issues += (secondary_disability['specialIssues'] || [])
           end
           special_issues = primary_special_issues + secondary_special_issues
+
+          # don't build a hash for disabilities that have no 'special_issues'
+          return if special_issues.blank?
 
           mapper = ClaimsApi::SpecialIssueMappers::Bgs.new
           {
@@ -625,6 +637,12 @@ module ClaimsApi
           {
             errors: [{ status: 422, detail: e&.message, source: e&.key }]
           }.to_json
+        end
+
+        def retrieve_separation_locations
+          @current_user.last_signed_in = Time.now.iso8601 if @current_user.last_signed_in.blank?
+          locations_response = EVSS::ReferenceData::Service.new(@current_user).get_separation_locations
+          locations_response.separation_locations
         end
       end
     end

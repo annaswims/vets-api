@@ -18,7 +18,7 @@ module EVSS
       sidekiq_retries_exhausted do |msg, _ex|
         job_exhausted(msg, STATSD_KEY_PREFIX)
         submission = Form526Submission.find msg['args'].first
-        submission.start_but_use_a_birls_id_that_hasnt_been_tried_yet!(
+        submission.submit_with_birls_id_that_hasnt_been_tried_yet!(
           silence_errors_and_log_to_sentry: true,
           extra_content_for_sentry: { job_class: msg['class'].demodulize, job_id: msg['jid'] }
         )
@@ -39,7 +39,7 @@ module EVSS
           response = service.submit_form526(submission.form_to_json(Form526Submission::FORM_526))
           response_handler(response)
         end
-        send_hypertension_fast_track_pilot_email(submission)
+        send_hypertension_fast_track_pilot_email(submission) if submission.rrd_process_selector.rrd_applicable?
       rescue Common::Exceptions::BackendServiceException,
              Common::Exceptions::GatewayTimeout,
              Breakers::OutageException,
@@ -55,10 +55,7 @@ module EVSS
       private
 
       def send_hypertension_fast_track_pilot_email(submission)
-        if submission.single_issue_hypertension_claim? && Flipper
-           .enabled?(:disability_hypertension_compensation_fast_track)
-          HypertensionFastTrackPilotMailer.build(submission).deliver_now
-        end
+        HypertensionFastTrackPilotMailer.build(submission).deliver_now
       end
 
       def response_handler(response)
@@ -75,7 +72,7 @@ module EVSS
       def non_retryable_error_handler(error)
         # update JobStatus, log and metrics in JobStatus#non_retryable_error_handler
         super(error)
-        submission.start_but_use_a_birls_id_that_hasnt_been_tried_yet!(
+        submission.submit_with_birls_id_that_hasnt_been_tried_yet!(
           silence_errors_and_log_to_sentry: true,
           extra_content_for_sentry: { job_class: self.class.to_s.demodulize, job_id: jid }
         )

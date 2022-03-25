@@ -13,6 +13,7 @@ class HealthCareApplication < ApplicationRecord
 
   FORM_ID = '10-10EZ'
   ACTIVEDUTY_ELIGIBILITY = 'TRICARE'
+  DISABILITY_THRESHOLD = 50
 
   attr_accessor :user, :async_compatible, :google_analytics_client_id
 
@@ -21,6 +22,10 @@ class HealthCareApplication < ApplicationRecord
 
   after_save(:send_failure_mail, if: proc do |hca|
     hca.saved_change_to_attribute?(:state) && hca.failed? && hca.form.present? && hca.parsed_form['email']
+  end)
+
+  after_save(:log_submission_failure, if: proc do |hca|
+    hca.saved_change_to_attribute?(:state) && hca.failed?
   end)
 
   # @param [Account] user
@@ -56,10 +61,19 @@ class HealthCareApplication < ApplicationRecord
     Rails.logger.info "SubmissionID=#{result[:formSubmissionId]}"
 
     result
+  rescue
+    log_submission_failure
+
+    raise
   end
 
   def process!
-    raise(Common::Exceptions::ValidationErrors, self) unless valid?
+    prefill_fields
+
+    unless valid?
+      StatsD.increment("#{HCA::Service::STATSD_KEY_PREFIX}.validation_error")
+      raise(Common::Exceptions::ValidationErrors, self)
+    end
 
     has_email = parsed_form['email'].present?
 
@@ -153,6 +167,26 @@ class HealthCareApplication < ApplicationRecord
 
   private
 
+  def prefill_compensation_type
+    auth_headers = EVSS::DisabilityCompensationAuthHeaders.new(user).add_headers(EVSS::AuthHeaders.new(user).to_h)
+    rating_info_service = EVSS::CommonService.new(auth_headers)
+    response = rating_info_service.get_rating_info
+
+    parsed_form['vaCompensationType'] = 'highDisability' if response.user_percent_of_disability >= DISABILITY_THRESHOLD
+  rescue => e
+    log_exception_to_sentry(e)
+  end
+
+  def prefill_fields
+    return if user.blank? || !user.loa3?
+
+    parsed_form['veteranFullName'] = user.full_name_normalized.compact.stringify_keys
+    parsed_form['veteranDateOfBirth'] = user.birth_date
+    parsed_form['veteranSocialSecurityNumber'] = user.ssn_normalized
+
+    prefill_compensation_type
+  end
+
   def submit_async(has_email)
     submission_job = 'SubmissionJob'
     submission_job = "Anon#{submission_job}" unless has_email
@@ -165,6 +199,10 @@ class HealthCareApplication < ApplicationRecord
     )
 
     self
+  end
+
+  def log_submission_failure
+    StatsD.increment("#{HCA::Service::STATSD_KEY_PREFIX}.failed_wont_retry")
   end
 
   def send_failure_mail

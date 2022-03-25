@@ -6,8 +6,8 @@ require AppealsApi::Engine.root.join('spec', 'spec_helper.rb')
 describe AppealsApi::Appellant, type: :model do
   include FixtureHelpers
 
-  let(:auth_headers) { fixture_as_json 'valid_200996_headers_extra_v2.json' }
-  let(:form_data) { (fixture_as_json 'valid_200996_extra_v2.json') }
+  let(:auth_headers) { fixture_as_json 'valid_200996_headers_extra.json', version: 'v2' }
+  let(:form_data) { (fixture_as_json 'valid_200996_extra.json', version: 'v2') }
   let(:veteran_form_data) { form_data.dig('data', 'attributes', 'veteran') }
   let(:claimant_form_data) { form_data.dig('data', 'attributes', 'claimant') }
 
@@ -90,6 +90,11 @@ describe AppealsApi::Appellant, type: :model do
     it { expect(claimant_appellant.zip_code_5).to eq '48070' }
   end
 
+  describe '#homeless?' do
+    it { expect(veteran_appellant.homeless?).to eq true }
+    #  TODO: determine how to handle for non-veteran claimant in future
+  end
+
   context 'when no address for claimant' do
     let(:no_address_data) { claimant_form_data.delete('address') }
     let(:claimant_appellant) do
@@ -119,17 +124,11 @@ describe AppealsApi::Appellant, type: :model do
 
   describe '#email' do
     it do
-      expect(veteran_appellant.email).to eq '1234567890123456789012345678901234567890123456789012345678901234567890'\
-                                            '12345678901234567890123456789_1234567890123456789012345678901234567890'\
-                                            '12345678901234567890123456789012345678901234567890123456789_1234567890'\
-                                            '1234567890@bobbytablesemail.com'
+      expect(veteran_appellant.email).to eq 'bob@bobbytablesemail.com'
     end
 
     it do
-      expect(claimant_appellant.email).to eq '09845812017584936834751947843y6083475-924709348156802374y698134y598'\
-                                             '4389347y8914hekjdnfjkdh84456789012345678901234567890123456789012345'\
-                                             '1234567890123456789012345678901234567890123456789012345678901234567'\
-                                             '890123456789_claimant@email.com'
+      expect(claimant_appellant.email).to eq 'claimant@email.com'
     end
   end
 
@@ -138,53 +137,9 @@ describe AppealsApi::Appellant, type: :model do
     it { expect(claimant_appellant.phone_data).to include 'countryCode', 'areaCode', 'phoneNumber', 'phoneNumberExt' }
   end
 
-  describe '#phone_string' do
-    it { expect(veteran_appellant.phone_string).to eq '+34-555-800-1111 ex2' }
-    it { expect(claimant_appellant.phone_string).to eq '555-811-1100 ext 4' }
-  end
-
-  describe '#area_code' do
-    it { expect(veteran_appellant.area_code).to eq '555' }
-    it { expect(claimant_appellant.area_code).to eq '555' }
-  end
-
-  describe '#phone_prefix' do
-    it { expect(veteran_appellant.phone_prefix).to eq '800' }
-    it { expect(claimant_appellant.phone_prefix).to eq '811' }
-  end
-
-  describe '#phone_line_number' do
-    it { expect(veteran_appellant.phone_line_number).to eq '1111' }
-    it { expect(claimant_appellant.phone_line_number).to eq '1100' }
-  end
-
-  describe '#phone_ext' do
-    it { expect(veteran_appellant.phone_ext).to eq 'x2' }
-    it { expect(claimant_appellant.phone_ext).to eq 'x4' }
-  end
-
-  describe '#international_number' do
-    it { expect(veteran_appellant.international_number).to eq '+34-555-800-1111 ex2' }
-  end
-
   describe '#phone_country_code' do
     it { expect(veteran_appellant.phone_country_code).to eq '34' }
     it { expect(claimant_appellant.phone_country_code).to eq '1' }
-  end
-
-  describe '#ssn_first_three' do
-    it { expect(veteran_appellant.ssn_first_three).to eq '123' }
-    it { expect(claimant_appellant.ssn_first_three).to eq '829' }
-  end
-
-  describe '#ssn_second_two' do
-    it { expect(veteran_appellant.ssn_second_two).to eq '45' }
-    it { expect(claimant_appellant.ssn_second_two).to eq '34' }
-  end
-
-  describe '#ssn_last_four' do
-    it { expect(veteran_appellant.ssn_last_four).to eq '6789' }
-    it { expect(claimant_appellant.ssn_last_four).to eq '7561' }
   end
 
   describe '#timezone' do

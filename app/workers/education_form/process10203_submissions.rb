@@ -13,8 +13,7 @@ module EducationForm
   class Process10203Submissions
     include Sidekiq::Worker
     include SentryLogging
-    sidekiq_options queue: 'default',
-                    backtrace: true
+    sidekiq_options queue: 'default', backtrace: true, unique_for: 24.hours
 
     # Get all 10203 submissions that have a row in education_stem_automated_decisions
     def perform(
@@ -58,7 +57,7 @@ module EducationForm
     def process_user_submissions(user_submissions)
       user_submissions.each do |user_uuid, submissions|
         auth_headers = submissions.last.education_stem_automated_decision.auth_headers
-        account = Account.where(idme_uuid: user_uuid).or(Account.where(logingov_uuid: user_uuid)).first
+        account = Account.lookup_by_user_uuid(user_uuid)
 
         claim_ids = submissions.map(&:id).join(', ')
         log_info "EDIPI available for process STEM claim ids=#{claim_ids}: #{auth_headers&.key?('va_eauth_dodedipnid')}"

@@ -28,7 +28,8 @@ unless Rails.env.test?
     end
 
     V2::Chip::Client.extend(StatsD::Instrument)
-    %i[check_in_appointment refresh_appointments pre_check_in token].each do |method|
+    %i[check_in_appointment refresh_appointments pre_check_in token set_precheckin_started confirm_demographics
+       refresh_precheckin].each do |method|
       V2::Chip::Client.statsd_count_success method, "api.check_in.v2.chip.#{method}.count"
       V2::Chip::Client.statsd_measure method, "api.check_in.v2.chip.#{method}.measure"
     end
@@ -38,7 +39,7 @@ unless Rails.env.test?
 
   def check_in_type(params)
     check_in_param = params[:checkInType]
-    check_in_param = params[:session][:check_in_type] if check_in_param.nil?
+    check_in_param = params.dig(:session, :check_in_type) if check_in_param.nil?
     check_in_param == 'preCheckIn' ? 'pre_check_in' : 'check_in'
   end
 end

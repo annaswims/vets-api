@@ -101,6 +101,64 @@ module V2
         response.build(response: resp).handle
       end
 
+      # Call the CHIP API to set pre check-in started status. This status is set to indicate
+      # that the pre check-in process was started.
+      #
+      # A CHIP token is required and if it is either not present in Redis or cannot
+      # be retrieved from CHIP, an unauthorized message is returned.
+      #
+      # @see https://github.com/department-of-veterans-affairs/chip CHIP API details
+      #
+      # @return [Faraday::Response] response from CHIP
+      # @return [Faraday::Response] unauthorized message if token is not present
+      def set_precheckin_started
+        if token.present?
+          chip_client.set_precheckin_started(token: token)
+        else
+          Faraday::Response.new(body: check_in.unauthorized_message.to_json, status: 401)
+        end
+      end
+
+      # Call the CHIP API to confirm demographics. A CHIP token is required
+      # and if it is either not present in Redis or cannot be retrieved from CHIP, an unauthorized
+      # message is returned.
+      #
+      # @see https://github.com/department-of-veterans-affairs/chip CHIP API details
+      #
+      # @return [Hash] success message if successful
+      # @return [Hash] unauthorized message if token is not present
+      # @return [Hash] invalid request message if demographic_confirmations is not present
+      def confirm_demographics
+        resp = if check_in_body.nil?
+                 Faraday::Response.new(body: check_in.invalid_request.to_json, status: 400)
+               elsif token.present?
+                 chip_client.confirm_demographics(token: token, demographic_confirmations:
+                   demographic_confirmations.merge(confirm_demographics_id_params))
+               else
+                 Faraday::Response.new(body: check_in.unauthorized_message.to_json, status: 401)
+               end
+
+        response.build(response: resp).handle
+      end
+
+      # Call the CHIP API to refresh pre check-in data.
+      #
+      # A CHIP token is required and if it is either not present in Redis or cannot
+      # be retrieved from CHIP, an unauthorized message is returned.
+      #
+      # @see https://github.com/department-of-veterans-affairs/chip CHIP API details
+      #
+      # @return [Faraday::Response] response from CHIP
+      # @return [Faraday::Response] unauthorized message if token is not present
+      def refresh_precheckin
+        resp = if token.present?
+                 chip_client.refresh_precheckin(token: token)
+               else
+                 Faraday::Response.new(body: check_in.unauthorized_message.to_json, status: 401)
+               end
+        response.build(response: resp).handle
+      end
+
       # Get the CHIP token. If the token does not already exist in Redis, a call is made to CHIP token
       # endpoint to retrieve it.
       #
@@ -131,28 +189,55 @@ module V2
         }
       end
 
+      def confirm_demographics_id_params
+        hashed_identifiers =
+          Oj.load(appointment_identifiers).with_indifferent_access.dig(:data, :attributes)
+
+        {
+          patientDfn: hashed_identifiers[:patientDFN],
+          stationNo: hashed_identifiers[:stationNo].to_s
+        }
+      end
+
+      # rubocop:disable Metrics/MethodLength
       def demographic_confirmations
         confirmed_at = Time.zone.now.iso8601
 
-        result =
+        if Flipper.enabled?(:check_in_experience_no_demographics_confirmation_for_unverified_enabled)
+          hsh = {}
+
+          unless check_in_body[:demographics_up_to_date].nil?
+            hsh[:demographicsNeedsUpdate] = check_in_body[:demographics_up_to_date] ? false : true
+            hsh[:demographicsConfirmedAt] = confirmed_at
+          end
+
+          unless check_in_body[:next_of_kin_up_to_date].nil?
+            hsh[:nextOfKinNeedsUpdate] = check_in_body[:next_of_kin_up_to_date] ? false : true
+            hsh[:nextOfKinConfirmedAt] = confirmed_at
+          end
+
+          unless check_in_body[:emergency_contact_up_to_date].nil?
+            hsh[:emergencyContactNeedsUpdate] = check_in_body[:emergency_contact_up_to_date] ? false : true
+            hsh[:emergencyContactConfirmedAt] = confirmed_at
+          end
+
+          {
+            demographicConfirmations: hsh
+          }
+        else
           {
             demographicConfirmations: {
               demographicsNeedsUpdate: check_in_body[:demographics_up_to_date] ? false : true,
               demographicsConfirmedAt: confirmed_at,
               nextOfKinNeedsUpdate: check_in_body[:next_of_kin_up_to_date] ? false : true,
-              nextOfConfirmedAt: confirmed_at,
+              nextOfKinConfirmedAt: confirmed_at,
               emergencyContactNeedsUpdate: check_in_body[:emergency_contact_up_to_date] ? false : true,
               emergencyContactConfirmedAt: confirmed_at
             }
           }
-
-        result.tap do |hash|
-          if Flipper.enabled?(:check_in_experience_chip_service_nok_confirmation_update_enabled)
-            hash[:demographicConfirmations].delete(:nextOfConfirmedAt)
-            hash[:demographicConfirmations].store(:nextOfKinConfirmedAt, confirmed_at)
-          end
         end
       end
+      # rubocop:enable Metrics/MethodLength
 
       def appointment_identifiers
         Rails.cache.read(

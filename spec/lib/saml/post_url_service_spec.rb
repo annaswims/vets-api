@@ -40,14 +40,38 @@ RSpec.describe SAML::PostURLService do
             )
           expect_any_instance_of(OneLogin::RubySaml::Settings)
             .to receive(:authn_context_comparison=).with('minimum')
-          url, params = subject.logingov_url
+          url, params = subject.login_url('logingov', [IAL::LOGIN_GOV_IAL1, AAL::LOGIN_GOV_AAL2],
+                                          AuthnContext::LOGIN_GOV, AuthnContext::MINIMUM)
+          expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
+          expect_saml_form_parameters(params,
+                                      'originating_request_id' => '123', 'type' => 'logingov')
+        end
+
+        it 'has sign in url: logingov_verified' do
+          expect_any_instance_of(OneLogin::RubySaml::Settings)
+            .to receive(:authn_context=).with(
+              [IAL::LOGIN_GOV_IAL2,
+               AAL::LOGIN_GOV_AAL2,
+               AuthnContext::LOGIN_GOV]
+            )
+          expect_any_instance_of(OneLogin::RubySaml::Settings)
+            .to receive(:authn_context_comparison=).with('minimum')
+          url, params = subject.login_url('logingov', [IAL::LOGIN_GOV_IAL2, AAL::LOGIN_GOV_AAL2],
+                                          AuthnContext::LOGIN_GOV, AuthnContext::MINIMUM)
           expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
           expect_saml_form_parameters(params,
                                       'originating_request_id' => '123', 'type' => 'logingov')
         end
 
         it 'has sign up url: logingov_signup_url' do
-          url, params = subject.logingov_signup_url
+          url, params = subject.logingov_signup_url([IAL::LOGIN_GOV_IAL1, AAL::LOGIN_GOV_AAL2])
+          expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
+          expect_saml_form_parameters(params,
+                                      'originating_request_id' => '123', 'type' => 'signup')
+        end
+
+        it 'has sign up url: logingov_verified_signup' do
+          url, params = subject.logingov_signup_url([IAL::LOGIN_GOV_IAL2, AAL::LOGIN_GOV_AAL2])
           expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
           expect_saml_form_parameters(params,
                                       'originating_request_id' => '123', 'type' => 'signup')
@@ -143,14 +167,28 @@ RSpec.describe SAML::PostURLService do
         let(:params) { { action: 'new' } }
 
         it 'has sign in url: mhv_url' do
-          url, params = subject.mhv_url
+          url, params = subject.login_url('mhv', 'myhealthevet', AuthnContext::MHV)
+          expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
+          expect_saml_form_parameters(params,
+                                      'originating_request_id' => '123', 'type' => 'mhv')
+        end
+
+        it 'has sign in url: mhv_verified' do
+          url, params = subject.login_url('mhv', 'myhealthevet_loa3', AuthnContext::MHV)
           expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
           expect_saml_form_parameters(params,
                                       'originating_request_id' => '123', 'type' => 'mhv')
         end
 
         it 'has sign in url: dslogon_url' do
-          url, params = subject.dslogon_url
+          url, params = subject.login_url('dslogon', 'dslogon', AuthnContext::DSLOGON)
+          expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
+          expect_saml_form_parameters(params,
+                                      'originating_request_id' => '123', 'type' => 'dslogon')
+        end
+
+        it 'has sign in url: dslogon_verified' do
+          url, params = subject.login_url('dslogon', 'dslogon_loa3', AuthnContext::DSLOGON)
           expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
           expect_saml_form_parameters(params,
                                       'originating_request_id' => '123', 'type' => 'dslogon')
@@ -159,14 +197,30 @@ RSpec.describe SAML::PostURLService do
         it 'has sign in url: idme_url' do
           expect_any_instance_of(OneLogin::RubySaml::Settings)
             .to receive(:authn_context_comparison=).with('minimum')
-          url, params = subject.idme_url
+          url, params = subject.login_url('idme', LOA::IDME_LOA1_VETS, AuthnContext::ID_ME, AuthnContext::MINIMUM)
+          expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
+          expect_saml_form_parameters(params,
+                                      'originating_request_id' => '123', 'type' => 'idme')
+        end
+
+        it 'has sign in url: idme_verified' do
+          expect_any_instance_of(OneLogin::RubySaml::Settings)
+            .to receive(:authn_context_comparison=).with('minimum')
+          url, params = subject.login_url('idme', LOA::IDME_LOA3, AuthnContext::ID_ME, AuthnContext::MINIMUM)
           expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
           expect_saml_form_parameters(params,
                                       'originating_request_id' => '123', 'type' => 'idme')
         end
 
         it 'has sign up url: idme_signup_url' do
-          url, params = subject.idme_signup_url
+          url, params = subject.idme_signup_url(LOA::IDME_LOA1_VETS)
+          expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
+          expect_saml_form_parameters(params,
+                                      'originating_request_id' => '123', 'type' => 'signup')
+        end
+
+        it 'has sign up url: idme_verified_signup' do
+          url, params = subject.idme_signup_url(LOA::IDME_LOA3)
           expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
           expect_saml_form_parameters(params,
                                       'originating_request_id' => '123', 'type' => 'signup')
@@ -196,7 +250,7 @@ RSpec.describe SAML::PostURLService do
           it 'has sign in url: with (myhealthevet authn_context)' do
             allow(user).to receive(:authn_context).and_return('myhealthevet')
             expect_any_instance_of(OneLogin::RubySaml::Settings)
-              .to receive(:authn_context=).with(['myhealthevet_loa3', AuthnContext::ID_ME])
+              .to receive(:authn_context=).with(['myhealthevet_loa3', AuthnContext::MHV])
             url, params = subject.verify_url
             expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
             expect_saml_form_parameters(params,
@@ -206,7 +260,7 @@ RSpec.describe SAML::PostURLService do
           it 'has sign in url: with (myhealthevet_multifactor authn_context)' do
             allow(user).to receive(:authn_context).and_return('myhealthevet_multifactor')
             expect_any_instance_of(OneLogin::RubySaml::Settings)
-              .to receive(:authn_context=).with(['myhealthevet_loa3', AuthnContext::ID_ME])
+              .to receive(:authn_context=).with(['myhealthevet_loa3', AuthnContext::MHV])
             url, params = subject.verify_url
             expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
             expect_saml_form_parameters(params,
@@ -216,7 +270,7 @@ RSpec.describe SAML::PostURLService do
           it 'has sign in url: with (dslogon authn_context)' do
             allow(user).to receive(:authn_context).and_return('dslogon')
             expect_any_instance_of(OneLogin::RubySaml::Settings)
-              .to receive(:authn_context=).with(['dslogon_loa3', AuthnContext::ID_ME])
+              .to receive(:authn_context=).with(['dslogon_loa3', AuthnContext::DSLOGON])
             url, params = subject.verify_url
             expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
             expect_saml_form_parameters(params,
@@ -226,7 +280,7 @@ RSpec.describe SAML::PostURLService do
           it 'has sign in url: with (dslogon_multifactor authn_context)' do
             allow(user).to receive(:authn_context).and_return('dslogon_multifactor')
             expect_any_instance_of(OneLogin::RubySaml::Settings)
-              .to receive(:authn_context=).with(['dslogon_loa3', AuthnContext::ID_ME])
+              .to receive(:authn_context=).with(['dslogon_loa3', AuthnContext::DSLOGON])
             url, params = subject.verify_url
             expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
             expect_saml_form_parameters(params,
@@ -248,7 +302,7 @@ RSpec.describe SAML::PostURLService do
           it 'has mfa url: with (myhealthevet authn_context)' do
             allow(user).to receive(:authn_context).and_return('myhealthevet')
             expect_any_instance_of(OneLogin::RubySaml::Settings)
-              .to receive(:authn_context=).with(['myhealthevet_multifactor', AuthnContext::ID_ME])
+              .to receive(:authn_context=).with(['myhealthevet_multifactor', AuthnContext::MHV])
             url, params = subject.mfa_url
             expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
             expect_saml_form_parameters(params,
@@ -258,7 +312,7 @@ RSpec.describe SAML::PostURLService do
           it 'has mfa url: with (myhealthevet_loa3 authn_context)' do
             allow(user).to receive(:authn_context).and_return('myhealthevet_loa3')
             expect_any_instance_of(OneLogin::RubySaml::Settings)
-              .to receive(:authn_context=).with(['myhealthevet_multifactor', AuthnContext::ID_ME])
+              .to receive(:authn_context=).with(['myhealthevet_multifactor', AuthnContext::MHV])
             url, params = subject.mfa_url
             expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
             expect_saml_form_parameters(params,
@@ -268,7 +322,7 @@ RSpec.describe SAML::PostURLService do
           it 'has mfa url: with (dslogon authn_context)' do
             allow(user).to receive(:authn_context).and_return('dslogon')
             expect_any_instance_of(OneLogin::RubySaml::Settings)
-              .to receive(:authn_context=).with(['dslogon_multifactor', AuthnContext::ID_ME])
+              .to receive(:authn_context=).with(['dslogon_multifactor', AuthnContext::DSLOGON])
             url, params = subject.mfa_url
             expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
             expect_saml_form_parameters(params,
@@ -278,7 +332,7 @@ RSpec.describe SAML::PostURLService do
           it 'has mfa url: with (dslogon_loa3 authn_context)' do
             allow(user).to receive(:authn_context).and_return('dslogon_loa3')
             expect_any_instance_of(OneLogin::RubySaml::Settings)
-              .to receive(:authn_context=).with(['dslogon_multifactor', AuthnContext::ID_ME])
+              .to receive(:authn_context=).with(['dslogon_multifactor', AuthnContext::DSLOGON])
             url, params = subject.mfa_url
             expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
             expect_saml_form_parameters(params,
@@ -395,14 +449,14 @@ RSpec.describe SAML::PostURLService do
         let(:params) { { action: 'new' } }
 
         it 'has sign in url: mhv_url' do
-          url, params = subject.mhv_url
+          url, params = subject.login_url('mhv', 'myhealthevet', AuthnContext::MHV)
           expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
           expect_saml_form_parameters(params,
                                       'originating_request_id' => '123', 'type' => 'mhv')
         end
 
         it 'has sign in url: dslogon_url' do
-          url, params = subject.dslogon_url
+          url, params = subject.login_url('dslogon', 'dslogon', AuthnContext::DSLOGON)
           expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
           expect_saml_form_parameters(params,
                                       'originating_request_id' => '123', 'type' => 'dslogon')
@@ -411,7 +465,7 @@ RSpec.describe SAML::PostURLService do
         it 'has sign in url: idme_url' do
           expect_any_instance_of(OneLogin::RubySaml::Settings)
             .to receive(:authn_context_comparison=).with('minimum')
-          url, params = subject.idme_url
+          url, params = subject.login_url('idme', LOA::IDME_LOA1_VETS, AuthnContext::ID_ME, AuthnContext::MINIMUM)
           expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
           expect_saml_form_parameters(params,
                                       'originating_request_id' => '123', 'type' => 'idme')
@@ -428,7 +482,7 @@ RSpec.describe SAML::PostURLService do
         end
 
         it 'has sign up url: idme_signup_url' do
-          url, params = subject.idme_signup_url
+          url, params = subject.idme_signup_url(LOA::IDME_LOA1_VETS)
           expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
           expect_saml_form_parameters(params,
                                       'originating_request_id' => '123', 'type' => 'signup')
@@ -458,7 +512,7 @@ RSpec.describe SAML::PostURLService do
           it 'has sign in url: with (myhealthevet authn_context)' do
             allow(user).to receive(:authn_context).and_return('myhealthevet')
             expect_any_instance_of(OneLogin::RubySaml::Settings)
-              .to receive(:authn_context=).with(['myhealthevet_loa3', AuthnContext::ID_ME])
+              .to receive(:authn_context=).with(['myhealthevet_loa3', AuthnContext::MHV])
             url, params = subject.verify_url
             expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
             expect_saml_form_parameters(params,
@@ -468,7 +522,7 @@ RSpec.describe SAML::PostURLService do
           it 'has sign in url: with (myhealthevet_multifactor authn_context)' do
             allow(user).to receive(:authn_context).and_return('myhealthevet_multifactor')
             expect_any_instance_of(OneLogin::RubySaml::Settings)
-              .to receive(:authn_context=).with(['myhealthevet_loa3', AuthnContext::ID_ME])
+              .to receive(:authn_context=).with(['myhealthevet_loa3', AuthnContext::MHV])
             url, params = subject.verify_url
             expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
             expect_saml_form_parameters(params,
@@ -478,7 +532,7 @@ RSpec.describe SAML::PostURLService do
           it 'has sign in url: with (dslogon authn_context)' do
             allow(user).to receive(:authn_context).and_return('dslogon')
             expect_any_instance_of(OneLogin::RubySaml::Settings)
-              .to receive(:authn_context=).with(['dslogon_loa3', AuthnContext::ID_ME])
+              .to receive(:authn_context=).with(['dslogon_loa3', AuthnContext::DSLOGON])
             url, params = subject.verify_url
             expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
             expect_saml_form_parameters(params,
@@ -488,7 +542,7 @@ RSpec.describe SAML::PostURLService do
           it 'has sign in url: with (dslogon_multifactor authn_context)' do
             allow(user).to receive(:authn_context).and_return('dslogon_multifactor')
             expect_any_instance_of(OneLogin::RubySaml::Settings)
-              .to receive(:authn_context=).with(['dslogon_loa3', AuthnContext::ID_ME])
+              .to receive(:authn_context=).with(['dslogon_loa3', AuthnContext::DSLOGON])
             url, params = subject.verify_url
             expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
             expect_saml_form_parameters(params,
@@ -521,7 +575,7 @@ RSpec.describe SAML::PostURLService do
           it 'has mfa url: with (myhealthevet authn_context)' do
             allow(user).to receive(:authn_context).and_return('myhealthevet')
             expect_any_instance_of(OneLogin::RubySaml::Settings)
-              .to receive(:authn_context=).with(['myhealthevet_multifactor', AuthnContext::ID_ME])
+              .to receive(:authn_context=).with(['myhealthevet_multifactor', AuthnContext::MHV])
             url, params = subject.mfa_url
             expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
             expect_saml_form_parameters(params,
@@ -531,7 +585,7 @@ RSpec.describe SAML::PostURLService do
           it 'has mfa url: with (myhealthevet_loa3 authn_context)' do
             allow(user).to receive(:authn_context).and_return('myhealthevet_loa3')
             expect_any_instance_of(OneLogin::RubySaml::Settings)
-              .to receive(:authn_context=).with(['myhealthevet_multifactor', AuthnContext::ID_ME])
+              .to receive(:authn_context=).with(['myhealthevet_multifactor', AuthnContext::MHV])
             url, params = subject.mfa_url
             expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
             expect_saml_form_parameters(params,
@@ -541,7 +595,7 @@ RSpec.describe SAML::PostURLService do
           it 'has mfa url: with (dslogon authn_context)' do
             allow(user).to receive(:authn_context).and_return('dslogon')
             expect_any_instance_of(OneLogin::RubySaml::Settings)
-              .to receive(:authn_context=).with(['dslogon_multifactor', AuthnContext::ID_ME])
+              .to receive(:authn_context=).with(['dslogon_multifactor', AuthnContext::DSLOGON])
             url, params = subject.mfa_url
             expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
             expect_saml_form_parameters(params,
@@ -551,7 +605,7 @@ RSpec.describe SAML::PostURLService do
           it 'has mfa url: with (dslogon_loa3 authn_context)' do
             allow(user).to receive(:authn_context).and_return('dslogon_loa3')
             expect_any_instance_of(OneLogin::RubySaml::Settings)
-              .to receive(:authn_context=).with(['dslogon_multifactor', AuthnContext::ID_ME])
+              .to receive(:authn_context=).with(['dslogon_multifactor', AuthnContext::DSLOGON])
             url, params = subject.mfa_url
             expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
             expect_saml_form_parameters(params,
@@ -639,7 +693,7 @@ RSpec.describe SAML::PostURLService do
       let(:params) { { action: 'new' } }
 
       it 'has sign in url: mhv_url' do
-        url, params = subject.mhv_url
+        url, params = subject.login_url('mhv', 'myhealthevet', AuthnContext::MHV)
         expect(url).to eq('https://pint.eauth.va.gov/isam/sps/saml20idp/saml20/login')
         expect_saml_form_parameters(params,
                                     'originating_request_id' => '123', 'type' => 'mhv',

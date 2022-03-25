@@ -15,13 +15,13 @@ RSpec.describe AppealsApi::PdfSubmitJob, type: :job do
 
   before { Sidekiq::Worker.clear_all }
 
-  let(:auth_headers) { fixture_to_s 'valid_200996_headers.json' }
+  let(:auth_headers) { fixture_to_s 'valid_200996_headers.json', version: 'v1' }
   let(:higher_level_review) { create(:higher_level_review) }
   let(:notice_of_disagreement) { create(:notice_of_disagreement) }
   let(:supplemental_claim) { create(:supplemental_claim) }
   let(:client_stub) { instance_double('CentralMail::Service') }
   let(:faraday_response) { instance_double('Faraday::Response') }
-  let(:valid_doc) { fixture_to_s 'valid_200996.json' }
+  let(:valid_doc) { fixture_to_s 'valid_200996.json', version: 'v1' }
 
   it_behaves_like 'a monitored worker'
 
@@ -57,7 +57,7 @@ RSpec.describe AppealsApi::PdfSubmitJob, type: :job do
                                  'numberAttachments' => 0,
                                  'receiveDt' => '2019-12-31 18:00:00',
                                  'numberPages' => 2,
-                                 'lob' => 'CMP',
+                                 'businessLine' => 'CMP',
                                  'docType' => '20-0996'
                                })
         expect(capture_body).to have_key('document')
@@ -101,10 +101,10 @@ RSpec.describe AppealsApi::PdfSubmitJob, type: :job do
                                  'receiveDt' => '2019-12-31 18:00:00',
                                  'numberPages' => 4,
                                  'docType' => '10182',
-                                 'lob' => 'BVA'
+                                 'businessLine' => 'BVA'
                                })
         expect(metadata['uuid']).to eq(notice_of_disagreement.id)
-        expect(metadata['lob']).to eq(notice_of_disagreement.lob)
+        expect(metadata['businessLine']).to eq(notice_of_disagreement.lob)
 
         expect(capture_body['document'].original_filename).to eq('10182-document.pdf')
         expect(capture_body['document'].content_type).to eq('application/pdf')
@@ -145,7 +145,7 @@ RSpec.describe AppealsApi::PdfSubmitJob, type: :job do
                                  'numberAttachments' => 0,
                                  'receiveDt' => '2019-12-31 18:00:00',
                                  'numberPages' => 2,
-                                 'lob' => 'FID',
+                                 'businessLine' => 'FID',
                                  'docType' => '20-0995'
                                })
         expect(capture_body).to have_key('document')

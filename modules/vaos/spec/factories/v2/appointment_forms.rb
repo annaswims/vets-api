@@ -14,6 +14,29 @@ FactoryBot.define do
       location_id { '983' }
       service_type { 'podiatry' } # transforms on the front-end need to change
       comment { 'test' }
+      practitioners do
+        [
+          {
+            identifier: [
+              {
+                'system': 'http://hl7.org/fhir/sid/us-npi',
+                'value': '1407938061'
+              }
+            ],
+            address: {
+              'type': 'postal',
+              'line': [
+                '38143 Martha Ave'
+              ],
+              'city': 'Fremont',
+              'state': 'CA',
+              'postal_code': '94536',
+              'country': 'USA',
+              'text': 'test'
+            }
+          }
+        ]
+      end
       contact do
         {
           'telecom' => [
@@ -36,36 +59,13 @@ FactoryBot.define do
           }
         ]
       end
-      preferred_time_for_phone_call { ['morning'] }
+      preferred_times_for_phone_call { ['Morning'] }
       preferred_language { 'English' }
       preferred_location do
         {
           'city': 'Helena',
           'state': 'MT'
         }
-      end
-      practitioners do
-        [
-          {
-            'identifier' => [
-              {
-                'system': 'test',
-                'value': 'test'
-              },
-              {
-                'system': 'test2',
-                'value': 'test2'
-              }
-            ],
-            'name': {
-              'family': 'test',
-              'given': ['test']
-            },
-            'first_name': 'deprecated',
-            'last_name': 'deprecated',
-            'practice_name': 'deprecated'
-          }
-        ]
       end
     end
 

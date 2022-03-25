@@ -6,6 +6,10 @@ require 'common/exceptions'
 module AppealsApi
   class NoticeOfDisagreement < ApplicationRecord
     include NodStatus
+    include PdfOutputPrep
+
+    attr_readonly :auth_headers
+    attr_readonly :form_data
 
     scope :pii_expunge_policy, lambda {
       where(
@@ -32,6 +36,7 @@ module AppealsApi
     encrypts :auth_headers, :form_data, key: :kms_key, **lockbox_options
 
     validate :validate_hearing_type_selection, if: :pii_present?
+    validate :validate_extension_request, if: :version_2?
 
     has_many :evidence_submissions, as: :supportable, dependent: :destroy
     has_many :status_updates, as: :statusable, dependent: :destroy
@@ -41,6 +46,52 @@ module AppealsApi
         "AppealsApi::PdfConstruction::NoticeOfDisagreement::#{version.upcase}::Structure"
       ).new(self)
     end
+
+    # V2 Specific
+    def veteran
+      @veteran ||= Appellant.new(
+        type: :veteran,
+        auth_headers: auth_headers,
+        form_data: data_attributes&.dig('veteran')
+      )
+    end
+
+    def claimant
+      @claimant ||= Appellant.new(
+        type: :claimant,
+        auth_headers: auth_headers,
+        form_data: data_attributes&.dig('claimant')
+      )
+    end
+
+    def signing_appellant
+      claimant.signing_appellant? ? claimant : veteran
+    end
+
+    def appellant_local_time
+      signing_appellant.timezone ? created_at.in_time_zone(signing_appellant.timezone) : created_at.utc
+    end
+
+    def extension_request?
+      data_attributes['extensionRequest'] && extension_reason.present?
+    end
+
+    def extension_reason
+      data_attributes['extensionReason']
+    end
+
+    def appealing_vha_denial?
+      data_attributes['appealingVhaDenial']
+    end
+
+    def contestable_issues
+      form_data&.dig('included')
+    end
+
+    def representative
+      data_attributes['representative']
+    end
+    # V2 End
 
     def veteran_first_name
       header_field_as_string 'X-VA-First-Name'
@@ -91,14 +142,15 @@ module AppealsApi
     end
 
     def email
-      veteran_contact_info['emailAddressText']
+      # V2 and V1 access the email data via different keys ('email' vs 'emailAddressText')
+      signing_appellant.email.presence || veteran_contact_info['emailAddressText']
     end
 
     def veteran_homeless?
       form_data&.dig('data', 'attributes', 'veteran', 'homeless')
     end
 
-    def veteran_representative
+    def representative_name
       form_data&.dig('data', 'attributes', 'veteran', 'representativesName')
     end
 
@@ -208,6 +260,20 @@ module AppealsApi
       end
     end
 
+    # v2 specific validation
+    def validate_extension_request
+      # json schema will have already validated that if extensionRequest true then extensionReason required
+      return if data_attributes&.dig('extensionRequest') == true
+
+      source = '/data/attributes/extensionRequest'
+      data = I18n.t('common.exceptions.validation_errors')
+
+      if data_attributes&.dig('extensionReason').present?
+        errors.add source,
+                   data.merge(detail: I18n.t('appeals_api.errors.nod_extension_request_must_be_true'))
+      end
+    end
+
     def board_review_hearing_selected?
       board_review_value == 'hearing'
     end
@@ -232,9 +298,17 @@ module AppealsApi
       auth_headers&.dig(key).to_s.strip
     end
 
+    def version_2?
+      pii_present? && api_version == 'v2'
+    end
+
     # After expunging pii, form_data is nil, update will fail unless validation skipped
     def pii_present?
       proc { |a| a.form_data.present? }
+    end
+
+    def clear_memoized_values
+      @veteran = @claimant = nil
     end
   end
 end

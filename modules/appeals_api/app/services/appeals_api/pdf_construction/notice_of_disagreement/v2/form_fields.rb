@@ -28,6 +28,10 @@ module AppealsApi
           'F[0].Page_1[0].PreferredPhoneNumber[0]'
         end
 
+        def preferred_email
+          'F[0].Page_1[0].PreferredEmail[0]'
+        end
+
         def direct_review
           'F[0].Page_1[0].DecisionReviewOfficer_DROReviewProcess[1]'
         end
@@ -74,6 +78,10 @@ module AppealsApi
 
         def issue_table_decision_date(index)
           "F[0].Page_1[0].Percentage2[#{index}]"
+        end
+
+        def additional_issues
+          'F[0].Page_1[0].DecisionReviewOfficer_DROReviewProcess[9]'
         end
       end
     end

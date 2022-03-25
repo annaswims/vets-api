@@ -125,4 +125,127 @@ describe V2::Chip::Client do
       expect(subject.pre_check_in(token: token, demographic_confirmations: demographic_confirmations)).to eq(response)
     end
   end
+
+  describe '#set_precheckin_started' do
+    context 'when downstream returns successfully' do
+      let(:resp) { Faraday::Response.new(body: { 'uuid' => uuid }.to_json, status: 200) }
+      let(:token) { 'abc123' }
+
+      before do
+        allow_any_instance_of(Faraday::Connection).to receive(:post).with(anything).and_return(resp)
+      end
+
+      it 'yields to block' do
+        expect_any_instance_of(Faraday::Connection).to receive(:post)
+          .with("/dev/actions/set-precheckin-started/#{uuid}").and_yield(Faraday::Request.new)
+
+        subject.set_precheckin_started(token: token)
+      end
+
+      it 'returns success response' do
+        expect_any_instance_of(SentryLogging).not_to receive(:log_exception_to_sentry)
+
+        expect(subject.set_precheckin_started(token: token)).to eq(resp)
+      end
+    end
+
+    context 'when CHIP returns an error' do
+      let(:resp) { Faraday::Response.new(body: { 'title' => 'An error was encountered.' }.to_json, status: 500) }
+      let(:exception) { Common::Exceptions::BackendServiceException.new(nil, nil, resp.status, resp.body) }
+      let(:token) { 'abc123' }
+
+      before do
+        allow_any_instance_of(Faraday::Connection).to receive(:post).and_raise(exception)
+      end
+
+      it 'handles the exception and returns original error' do
+        expect_any_instance_of(SentryLogging).to receive(:log_exception_to_sentry)
+
+        response = subject.set_precheckin_started(token: token)
+        expect(response.status).to eq(resp.status)
+        expect(response.body).to eq(resp.body)
+      end
+    end
+  end
+
+  describe '#confirm_demographics' do
+    let(:resp) do
+      {
+        data: {
+          attributes: {
+            id: 5,
+            patientDfn: '418',
+            demographicsNeedsUpdate: false,
+            demographicsConfirmedAt: '2021-11-30T20:45:03.779Z',
+            nextOfKinNeedsUpdate: false,
+            nextOfKinConfirmedAt: '2021-11-30T20:45:03.779Z',
+            emergencyContactNeedsUpdate: true,
+            emergencyContactConfirmedAt: '2021-11-30T20:45:03.779Z',
+            insuranceVerificationNeeded: nil
+          }
+        },
+        id: '418'
+      }
+    end
+
+    let(:faraday_response) { Faraday::Response.new(body: resp, status: 200) }
+
+    let(:token) { 'abc123' }
+    let(:demographic_confirmations) do
+      {
+        demographicConfirmations: {
+          demographicsNeedsUpdate: true,
+          demographicsConfirmedAt: '2021-11-30T20:45:03.779Z',
+          nextOfKinNeedsUpdate: true,
+          nextOfKinConfirmedAt: '2021-11-30T20:45:03.779Z',
+          emergencyContactNeedsUpdate: true,
+          emergencyContactConfirmedAt: '2021-11-30T20:45:03.779Z'
+        }
+      }
+    end
+
+    before do
+      allow_any_instance_of(Faraday::Connection).to receive(:post).with('/dev/actions/confirm-demographics')
+                                                                  .and_return(resp)
+    end
+
+    it 'yields to block' do
+      expect_any_instance_of(Faraday::Connection).to receive(:post).with('/dev/actions/confirm-demographics')
+                                                                   .and_yield(Faraday::Request.new)
+
+      subject.confirm_demographics(token: token, demographic_confirmations: demographic_confirmations)
+    end
+
+    it 'returns success response' do
+      expect(subject.confirm_demographics(token: token, demographic_confirmations: demographic_confirmations))
+        .to eq(resp)
+    end
+  end
+
+  describe '#refresh_precheckin' do
+    let(:resp) do
+      {
+        uuid: uuid
+      }
+    end
+    let(:faraday_response) { Faraday::Response.new(body: resp, status: 200) }
+    let(:token) { 'abc123' }
+
+    before do
+      allow_any_instance_of(Faraday::Connection).to receive(:post).with("/dev/actions/refresh-precheckin/#{uuid}")
+                                                                  .and_return(resp)
+    end
+
+    it 'yields to block' do
+      expect_any_instance_of(Faraday::Connection).to receive(:post).with("/dev/actions/refresh-precheckin/#{uuid}")
+                                                                   .and_yield(Faraday::Request.new)
+
+      subject.refresh_precheckin(token: token)
+    end
+
+    it 'returns success response' do
+      expect(subject.refresh_precheckin(token: token))
+        .to eq(resp)
+    end
+  end
 end

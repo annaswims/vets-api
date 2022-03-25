@@ -27,6 +27,7 @@ module V2
     #   @return (see Config::Options#service_name)
     class Client
       extend Forwardable
+      include SentryLogging
 
       attr_reader :settings, :claims_token, :check_in_session
 
@@ -95,6 +96,64 @@ module V2
           req.headers = default_headers.merge('Authorization' => "Bearer #{token}")
           req.body = demographic_confirmations.to_json
         end
+      end
+
+      ##
+      # HTTP POST call to the CHIP API to set pre check-in started status. Any downstream error (non HTTP 200 response)
+      # is handled by logging to Sentry and returning the original status and body.
+      #
+      # @return [Faraday::Response]
+      #
+      def set_precheckin_started(token:)
+        connection.post("/#{base_path}/actions/set-precheckin-started/#{check_in_session.uuid}") do |req|
+          req.headers = default_headers.merge('Authorization' => "Bearer #{token}")
+        end
+      rescue => e
+        log_exception_to_sentry(e,
+                                {
+                                  original_body: e.original_body,
+                                  original_status: e.original_status,
+                                  uuid: check_in_session.uuid
+                                },
+                                { external_service: service_name, team: 'check-in' })
+        Faraday::Response.new(body: e.original_body, status: e.original_status)
+      end
+
+      ##
+      # HTTP POST call to the CHIP API to confirm demographics update
+      #
+      # @param token [String] CHIP token to call the endpoint
+      # @param demographic_confirmations [Hash] demographic confirmations with patientDFN & stationNo
+      #
+      # @return [Faraday::Response]
+      #
+      def confirm_demographics(token:, demographic_confirmations:)
+        connection.post("/#{base_path}/actions/confirm-demographics") do |req|
+          req.headers = default_headers.merge('Authorization' => "Bearer #{token}")
+          req.body = demographic_confirmations.to_json
+        end
+      end
+
+      ##
+      # HTTP POST call to the CHIP API to refresh pre check-in data
+      #
+      # @param token [String] CHIP token to call the endpoint
+      #
+      # @return [Faraday::Response]
+      #
+      def refresh_precheckin(token:)
+        connection.post("/#{base_path}/actions/refresh-precheckin/#{check_in_session.uuid}") do |req|
+          req.headers = default_headers.merge('Authorization' => "Bearer #{token}")
+        end
+      rescue => e
+        log_exception_to_sentry(e,
+                                {
+                                  original_body: e.original_body,
+                                  original_status: e.original_status,
+                                  uuid: check_in_session.uuid
+                                },
+                                { external_service: service_name, team: 'check-in' })
+        Faraday::Response.new(body: e.original_body, status: e.original_status)
       end
 
       private

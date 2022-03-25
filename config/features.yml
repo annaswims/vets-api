@@ -69,10 +69,6 @@ features:
     actor_type: user
     description: Enables the health care check-in experiences to show the pre-check-in experience.
     enable_in_development: true
-  check_in_experience_chip_service_nok_confirmation_update_enabled:
-    actor_type: user
-    description: This updates a key name in the demographics confirmation hash in the CHIP service.
-    enable_in_development: true
   check_in_experience_demographics_confirmation_enabled:
     actor_type: user
     description: Enables the health care pre-check-in experiences to send demographics confirmation.
@@ -89,9 +85,37 @@ features:
     actor_type: user
     description: Enables the Update Information question in the health care check-in experience application
     enable_in_development: false
+  check_in_experience_no_demographics_confirmation_for_unverified_enabled:
+    actor_type: user
+    description: Enables the health care pre-check-in experiences to send demographics confirmation.
+    enable_in_development: true
   check_in_experience_logging_enabled:
     actor_type: user
     description: Enables additional logging before and after an action.
+    enable_in_development: true
+  check_in_experience_set_pre_checkin_status:
+    actor_type: user
+    description: Enables setting pre check-in started status by calling CHIP
+    enable_in_development: true
+  check_in_experience_refresh_pre_checkin:
+    actor_type: user
+    description: Enables pre check-in refresh by calling CHIP
+    enable_in_development: true
+  check_in_experience_lorota_401_mapping_enabled:
+    actor_type: user
+    description: Enables mapping of LoROTA 401 error to 401 response
+    enable_in_development: true
+  check_in_experience_day_of_demographics_flags_enabled:
+    actor_type: user
+    description: Enables the capture of user responses to demographics up-to-date questions
+    enable_in_development: true
+  check_in_experience_translation_day_of_enabled:
+    actor_type: user
+    description: Enables language translation for the day of check-in experience
+    enable_in_development: true
+  check_in_experience_translation_pre_check_in_enabled:
+    actor_type: user
+    description: Enables language translation for the pre-check-in experience
     enable_in_development: true
   coe_access:
     actor_type: user
@@ -162,6 +186,10 @@ features:
     actor_type: user
     description: Manage whether or not Pension check is enabled for the 686/674
     enable_in_development: true
+  dependents_removal_check:
+    actor_type: user
+    description: Manage whether or not dependent removal claim codes are enabled for the 686
+    enable_in_development: true
   dependents_management:
     actor_type: user
     description: Manage dependent removal from view dependent page
@@ -177,7 +205,7 @@ features:
     description: Send direct deposit emails using VaNotify service
   disability_hypertension_compensation_fast_track:
     actor_type: user
-    description: Fast tracks 526 disability compensation claims by submitting additional health data
+    description: Fast tracks 526 disability compensation hypertension claims by submitting additional health data
     enable_in_development: true
   disability_hypertension_compensation_fast_track_add_rrd:
     actor_type: user
@@ -190,6 +218,10 @@ features:
   education_reports_cleanup:
     actor_type: user
     description: Updates to the daily education reports to remove old data that isn't needed in the new fiscal year
+    enable_in_development: true
+  enrollment_verification:
+    actor_type: user
+    description: Enables access to the Enrollment Verification app
     enable_in_development: true
   evss_upload_limit_150mb:
     actor_type: user
@@ -301,9 +333,17 @@ features:
     actor_type: user
     description: Enable/disable custom expiration dates for forms
     enable_in_development: true
+  in_progress_form_reminder:
+    actor_type: user
+    description: Enable/disable in progress form reminders (sent via VaNotify)
+    enable_in_development: true
   login_gov:
     actor_type: cookie_id
     description: Enables/disables the usage of the new service provider Login.gov (VSP Identity)
+    enable_in_development: true
+  login_gov_disable:
+    actor_type: cookie_id
+    description: Disables the usage of the new service provider Login.gov (VSP Identity)
     enable_in_development: true
   login_gov_create_account:
     actor_type: cookie_id
@@ -325,6 +365,10 @@ features:
     actor_type: user
     description: This will filter to only show medical copays within the last 6 months
     enable_in_development: true
+  medical_copays_html_medical_statements_view_enabled:
+    actor_type: user
+    description: This will show new 508 compliant medical statement views
+    enable_in_development: true
   mega_menu_mobile_v2:
     actor_type: user
     description: Separates mobile mega menu from desktop mega menu
@@ -336,6 +380,10 @@ features:
   mobile_api:
     actor_type: user
     description: API endpoints consumed by the VA Mobile App (iOS/Android)
+  mobile_appointment_requests:
+    actor_type: user
+    description: enables a user to include pending appointment requests in the mobile/v0/appointments endpoint
+    enable_in_development: true
   multiple_address_10_10ez:
     actor_type: cookie_id
     description: >
@@ -383,6 +431,18 @@ features:
     actor_type: user
     description: Ask for a password when an encrypted PDF is detected before uploading
     enable_in_development: true
+  rrd_asthma_compensation:
+    actor_type: user
+    description: Fast tracks 526 disability compensation asthma claims by submitting additional health data
+    enable_in_development: true
+  rrd_hypertension_compensation:
+    actor_type: user
+    description: Fast tracks 526 disability compensation hypertension claims by submitting additional health data
+    enable_in_development: true
+  rrd_add_special_issue:
+    actor_type: user
+    description: Fast tracks 526 disability compensation claims by adding the RRD special issue to the claim.
+    enable_in_development: true
   search_representative:
     actor_type: user
     description: Enable frontend application and cta for Search Representative application
@@ -391,14 +451,13 @@ features:
     actor_type: user
     description: Enables typeahead 2.0 functionality
     enable_in_development: true
-  search_typeahead_enabled:
-    actor_type: user
-    description: Enables type ahead search functionality
-    enable_in_development: true
   sharable_link:
     actor_type: user
     description: Toggles the availability of sharable links to deep link to content
     enable_in_development: true
+  shift_vets_banner:
+    actor_type: user
+    description: Shift veteran banner position on the home page
   show526_wizard:
     actor_type: user
     description: This determines when the wizard should show up on the form 526 intro page
@@ -581,9 +640,15 @@ features:
     actor_type: user
     description: Navigates user to 1990EZ or 1990 depending on form questions.
     enable_in_development: true
+  rated_disabilities_sort_ab_test:
+    actor_type: user
+    description: Allows us to set up AB test of sorting on rated disabilities app
   show_payment_and_debt_section:
     actor_type: user
     description: Enables payment and debt section
   show_dashboard_notifications:
     actor_type: user
     description: Enables on-site notifications
+  check_va_inbox_enabled:
+    actor_type: user
+    description: Enables check inbox link

@@ -23,7 +23,7 @@ class Form526Submission < ApplicationRecord
   #     workflow complete.
   # @!attribute created_at
   #   @return [Timestamp] created at date.
-  # @!attribute workflow_complete
+  # @!attribute updated_at
   #   @return [Timestamp] updated at date.
   #
   has_kms_key
@@ -47,24 +47,62 @@ class Form526Submission < ApplicationRecord
   SUBMIT_FORM_526_JOB_CLASSES = %w[SubmitForm526AllClaim SubmitForm526].freeze
 
   def start
-    if single_issue_hypertension_claim? && Flipper.enabled?(:disability_hypertension_compensation_fast_track)
-      workflow_batch = Sidekiq::Batch.new
-      workflow_batch.on(
-        :success,
-        'Form526Submission#start_evss_submission',
-        'submission_id' => id
-      )
-      jids = workflow_batch.jobs do
-        RapidReadyForDecision::DisabilityCompensationJob.perform_async(id, full_name)
-      end
-      jids.first
+    rrd_processor_class = rrd_process_selector.processor_class
+    if rrd_processor_class
+      start_rrd_job(rrd_processor_class, use_backup_processor: true)
     else
-      start_evss_submission(nil, { 'submission_id' => id })
+      start_evss_submission_job
     end
   rescue => e
     Rails.logger.error 'The fast track was skipped due to the following error ' \
-                       " and start_evss_submission wass called: #{e}"
-    start_evss_submission(nil, { 'submission_id' => id })
+                       " and start_evss_submission_job is being called: #{e}"
+    start_evss_submission_job
+  end
+
+  def start_rrd_job(rrd_processor_class, use_backup_processor: false)
+    workflow_batch = Sidekiq::Batch.new
+    workflow_batch.on(
+      :success,
+      'Form526Submission#rrd_complete_handler',
+      'submission_id' => id
+    )
+    workflow_batch.on(
+      :death,
+      'Form526Submission#rrd_processor_failed_handler',
+      'submission_id' => id,
+      'use_backup_processor' => use_backup_processor
+    )
+    job_ids = workflow_batch.jobs do
+      rrd_processor_class.perform_async(id)
+    end
+    job_ids.first
+  end
+
+  # Called by Sidekiq::Batch as part of the Form 526 submission workflow
+  # When the refactored job fails, this _handler is called to run a backup_processor_class as a job.
+  def rrd_processor_failed_handler(_status, options)
+    submission = Form526Submission.find(options['submission_id'])
+    if options['use_backup_processor']
+      backup_processor_class = submission.rrd_process_selector.processor_class(backup: true)
+    end
+    if backup_processor_class
+      message = "Restarting with backup #{backup_processor_class} for submission #{submission.id}."
+      submission.rrd_process_selector.send_rrd_alert(message)
+      return submission.start_rrd_job(backup_processor_class)
+    end
+
+    submission.start_evss_submission_job
+  end
+
+  def rrd_process_selector
+    @rrd_process_selector ||= RapidReadyForDecision::ProcessorSelector.new(self)
+  end
+
+  # Afer RapidReadyForDecision is complete, this method is
+  # called by Sidekiq::Batch as part of the Form 526 submission workflow
+  def rrd_complete_handler(_status, options)
+    submission = Form526Submission.find(options['submission_id'])
+    submission.start_evss_submission_job
   end
 
   # Kicks off a 526 submit workflow batch. The first step in a submission workflow is to submit
@@ -73,25 +111,23 @@ class Form526Submission < ApplicationRecord
   #
   # @return [String] the job id of the first job in the batch, i.e the 526 submit job
   #
-
-  def start_evss_submission(_status, options)
-    submission = Form526Submission.find(options['submission_id'])
-    id = submission.id
+  def start_evss_submission_job
     workflow_batch = Sidekiq::Batch.new
     workflow_batch.on(
       :success,
       'Form526Submission#perform_ancillary_jobs_handler',
       'submission_id' => id,
+      # Call get_first_name while the temporary User record still exists
       'first_name' => get_first_name
     )
-    jids = workflow_batch.jobs do
+    job_ids = workflow_batch.jobs do
       EVSS::DisabilityCompensationForm::SubmitForm526AllClaim.perform_async(id)
     end
 
-    jids.first
+    job_ids.first
   end
 
-  # Runs the start method above but first looks to see if the veteran has BIRLS IDs that previous start
+  # Runs start_evss_submission_job but first looks to see if the veteran has BIRLS IDs that previous start
   # attempts haven't used before (if so, swaps one of those into auth_headers).
   # If all BIRLS IDs for a veteran have been tried, does nothing and returns nil.
   # Note: this assumes that the current BIRLS ID has been used (that `start` has been attempted once).
@@ -99,7 +135,7 @@ class Form526Submission < ApplicationRecord
   # @return [String] the job id of the first job in the batch, i.e the 526 submit job
   # @return [NilClass] all BIRLS IDs for the veteran have been tried
   #
-  def start_but_use_a_birls_id_that_hasnt_been_tried_yet!(
+  def submit_with_birls_id_that_hasnt_been_tried_yet!(
     extra_content_for_sentry: {},
     silence_errors_and_log_to_sentry: false
   )
@@ -108,7 +144,7 @@ class Form526Submission < ApplicationRecord
 
     self.birls_id = untried_birls_id
     save!
-    start
+    start_evss_submission_job
   rescue => e
     # 1) why have the 'silence_errors_and_log_to_sentry' option? (why not rethrow the error?)
     # This method is primarily intended to be triggered by a running Sidekiq job that has hit a dead end
@@ -121,9 +157,11 @@ class Form526Submission < ApplicationRecord
     log_exception_to_sentry e, extra_content_for_sentry
   end
 
+  # Note that the User record is cached in Redis -- `User.redis_namespace_ttl`
   def get_first_name
     user = User.find(user_uuid)
-    user&.first_name&.upcase
+    user&.first_name&.upcase.presence ||
+      auth_headers&.dig('va_eauth_firstName')&.upcase
   end
 
   # Checks against the User record first, and then resorts to checking the auth_headers
@@ -143,10 +181,18 @@ class Form526Submission < ApplicationRecord
     }
   end
 
+  # form_json is memoized here so call invalidate_form_hash after updating form_json
   # @return [Hash] parsed version of the form json
   #
   def form
     @form_hash ||= JSON.parse(form_json)
+  end
+
+  # Call this method to invalidate the memoized @form_hash variable after updating form_json.
+  # A hook that calls this method could be added so that we don't have to call this manually,
+  # see https://stackoverflow.com/questions/24314584/run-a-callback-only-if-an-attribute-has-changed-in-rails
+  def invalidate_form_hash
+    remove_instance_variable(:@form_hash) if instance_variable_defined?(:@form_hash)
   end
 
   # A 526 submission can include the 526 form submission, uploads, and ancillary items.
@@ -238,6 +284,7 @@ class Form526Submission < ApplicationRecord
     @auth_headers_hash = nil # reset cache
   end
 
+  # Called by Sidekiq::Batch as part of the Form 526 submission workflow
   # The workflow batch success handler
   #
   # @param _status [Sidekiq::Batch::Status] the status of the batch
@@ -252,8 +299,6 @@ class Form526Submission < ApplicationRecord
   def jobs_succeeded?
     a_submit_form_526_job_succeeded? && all_other_jobs_succeeded_if_any?
   end
-
-  class SubmitForm526JobStatusesError < StandardError; end
 
   def a_submit_form_526_job_succeeded?
     submit_form_526_job_statuses = form526_job_statuses.where(job_class: SUBMIT_FORM_526_JOB_CLASSES).order(:updated_at)
@@ -295,6 +340,7 @@ class Form526Submission < ApplicationRecord
     end
   end
 
+  # Called by Sidekiq::Batch as part of the Form 526 submission workflow
   # Checks if all workflow steps were successful and if so marks it as complete.
   #
   # @param _status [Sidekiq::Batch::Status] the status of the batch
@@ -302,33 +348,27 @@ class Form526Submission < ApplicationRecord
   #
   def workflow_complete_handler(_status, options)
     submission = Form526Submission.find(options['submission_id'])
+    params = submission.personalization_parameters(options['first_name'])
     if submission.jobs_succeeded?
-      submission.send_form526_confirmation_email(options['first_name'])
+      Form526ConfirmationEmailJob.perform_async(params)
       submission.workflow_complete = true
       submission.save
+    else
+      Form526SubmissionFailedEmailJob.perform_async(params)
     end
-  end
-
-  def send_form526_confirmation_email(first_name)
-    email_address = form['form526']['form526']['veteran']['emailAddress']
-    personalization_parameters = {
-      'email' => email_address,
-      'submitted_claim_id' => submitted_claim_id,
-      'date_submitted' => created_at.strftime('%B %-d, %Y %-l:%M %P %Z').sub(/([ap])m/, '\1.m.'),
-      'first_name' => first_name
-    }
-    Form526ConfirmationEmailJob.perform_async(personalization_parameters)
   end
 
   def bdd?
     form.dig('form526', 'form526', 'bddQualified') || false
   end
 
-  def single_issue_hypertension_claim?
-    disabilities = form.dig('form526', 'form526', 'disabilities')
-    disabilities.count == 1 &&
-      disabilities.first['disabilityActionType'] == 'INCREASE' &&
-      disabilities.first['diagnosticCode'] == 7101
+  def personalization_parameters(first_name)
+    {
+      'email' => form['form526']['form526']['veteran']['emailAddress'],
+      'submitted_claim_id' => submitted_claim_id,
+      'date_submitted' => created_at.strftime('%B %-d, %Y %-l:%M %P %Z').sub(/([ap])m/, '\1.m.'),
+      'first_name' => first_name
+    }
   end
 
   private
@@ -362,6 +402,8 @@ class Form526Submission < ApplicationRecord
 
   def submit_flashes
     user = User.find(user_uuid)
+    # Note that the User record is cached in Redis -- `User.redis_namespace_ttl`
+    # If this method runs after the TTL, then the flashes will not be applied -- a possible bug.
     BGS::FlashUpdater.perform_async(id) if user && Flipper.enabled?(:disability_compensation_flashes, user)
   end
 

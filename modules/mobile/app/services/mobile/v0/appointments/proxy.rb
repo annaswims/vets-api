@@ -16,26 +16,12 @@ module Mobile
         end
 
         def get_appointments(start_date:, end_date:)
-          responses, errors = parallel_appointments_service.get_appointments(start_date, end_date)
-
-          va_appointments = []
-          cc_appointments = []
-
-          va_appointments = va_appointments_with_facilities(responses[:va].body) unless errors[:va]
-          cc_appointments = cc_appointments_adapter.parse(responses[:cc].body) unless errors[:cc]
-
-          # There's currently a bug in the underlying Community Care service
-          # where date ranges are not being respected
-          cc_appointments.select! do |appointment|
-            appointment.start_date_utc.between?(start_date, end_date)
+          if Flipper.enabled?(:mobile_appointment_requests)
+            responses = fetch_appointments(start_date, end_date)
+            normalize_appointments(responses, start_date, end_date)
+          else
+            legacy_fetch_appointments(start_date, end_date)
           end
-
-          appointments = (va_appointments + cc_appointments).sort_by(&:start_date_utc)
-
-          errors = errors.values.compact
-          raise Common::Exceptions::BackendServiceException, 'MOBL_502_upstream_error' if errors.size.positive?
-
-          appointments
         end
 
         def put_cancel_appointment(params)
@@ -61,17 +47,98 @@ module Mobile
           handle_cancel_error(e, params)
         end
 
-        private
-
-        def va_appointments_with_facilities(appointments_from_response)
-          appointments, facility_ids = va_appointments_adapter.parse(appointments_from_response)
-          return [] if appointments.nil?
-
-          get_appointment_facilities(appointments, facility_ids) if appointments.size.positive?
+        def get_appointment_request(id)
+          vaos_appointment_requests_service.get_request(id)[:data]
         end
 
-        def get_appointment_facilities(appointments, facility_ids)
-          facilities = Mobile::FacilitiesHelper.get_facilities(facility_ids)
+        def put_cancel_appointment_request(id, request)
+          parsed_request = request.as_json['table']
+          parsed_request['status'] = 'Cancelled'
+          parsed_request['appointment_request_detail_code'] = ['DETCODE8']
+
+          vaos_appointment_requests_service.put_request(id, parsed_request)
+        rescue Common::Exceptions::BackendServiceException => e
+          handle_cancel_error(e, parsed_request)
+        end
+
+        private
+
+        def normalize_appointments(responses, start_date, end_date)
+          va_appointments = va_appointments_adapter.parse(responses[:va][:response].body)
+          cc_appointments = cc_appointments_adapter.parse(responses[:cc][:response].body)
+          va_appointment_requests, cc_appointment_requests = requests_adapter.parse(responses[:requests])
+
+          # There's currently a bug in the underlying Community Care service
+          # where date ranges are not being respected
+          cc_appointments.select! do |appointment|
+            appointment.start_date_utc.between?(start_date, end_date)
+          end
+
+          facilities = fetch_facilities(va_appointments + va_appointment_requests)
+          va_appointments = backfill_appointments_with_facilities(va_appointments, facilities)
+          va_appointment_requests = backfill_appointments_with_facilities(va_appointment_requests, facilities)
+
+          (va_appointments + cc_appointments + va_appointment_requests + cc_appointment_requests)
+            .sort_by(&:start_date_utc)
+        end
+
+        def legacy_fetch_appointments(start_date, end_date)
+          va_response, cc_response = Parallel.map(
+            [
+              fetch_va_appointments(start_date, end_date),
+              fetch_cc_appointments(start_date, end_date)
+            ], in_threads: 2, &:call
+          )
+
+          errors = [va_response[:error], cc_response[:error]].compact
+
+          raise Common::Exceptions::BackendServiceException, 'MOBL_502_upstream_error' if errors.size.positive?
+
+          va_appointments = va_appointments_adapter.parse(va_response[:response].body)
+          cc_appointments = cc_appointments_adapter.parse(cc_response[:response].body)
+
+          if va_appointments.any?
+            facilities = fetch_facilities(va_appointments)
+            va_appointments = backfill_appointments_with_facilities(va_appointments, facilities)
+          end
+
+          # There's currently a bug in the underlying Community Care service
+          # where date ranges are not being respected
+          cc_appointments.select! do |appointment|
+            appointment.start_date_utc.between?(start_date, end_date)
+          end
+
+          (va_appointments + cc_appointments).sort_by(&:start_date_utc)
+        end
+
+        def fetch_appointments(start_date, end_date)
+          va_response, cc_response, requests_response = Parallel.map(
+            [
+              fetch_va_appointments(start_date, end_date),
+              fetch_cc_appointments(start_date, end_date),
+              fetch_appointment_requests
+            ], in_threads: 3, &:call
+          )
+
+          # appointment requests are fetched by a service that raises on error
+          errors = [va_response[:error], cc_response[:error]].compact
+          raise Common::Exceptions::BackendServiceException, 'MOBL_502_upstream_error' if errors.size.positive?
+
+          { va: va_response, cc: cc_response, requests: requests_response }
+        end
+
+        def fetch_facilities(appointments)
+          facility_ids = appointments.map(&:id_for_address).uniq
+
+          return nil unless facility_ids.any?
+
+          facility_ids.each do |facility_id|
+            Rails.logger.info('metric.mobile.appointment.facility', facility_id: facility_id)
+          end
+          Mobile::FacilitiesHelper.get_facilities(facility_ids)
+        end
+
+        def backfill_appointments_with_facilities(appointments, facilities)
           va_facilities_adapter.map_appointments_to_facilities(appointments, facilities)
         end
 
@@ -96,20 +163,47 @@ module Mobile
             Rails.logger.info(
               'mobile cancel appointment facility not supported',
               clinic_id: params[:clinicId],
-              facility_id: params[:facilityId]
+              facility_id: params[:facilityId] || params.dig(:facility, :facility_code)
             )
             raise Common::Exceptions::BackendServiceException, 'MOBL_409_facility_not_supported'
           end
-
           raise e
         end
 
-        def parallel_appointments_service
+        def appointments_service
           Mobile::V0::Appointments::Service.new(@user)
+        end
+
+        def fetch_va_appointments(start_date, end_date)
+          lambda {
+            appointments_service.fetch_va_appointments(start_date, end_date)
+          }
+        end
+
+        def fetch_cc_appointments(start_date, end_date)
+          lambda {
+            appointments_service.fetch_cc_appointments(start_date, end_date)
+          }
+        end
+
+        # fetches all appointment requests created in the past 90 days
+        # this mimics the behavior of the web app
+        def fetch_appointment_requests
+          lambda {
+            end_date = Time.zone.today
+            start_date = end_date - 90.days
+            service = VAOS::AppointmentRequestsService.new(@user)
+            response = service.get_requests(start_date, end_date)
+            response[:data]
+          }
         end
 
         def vaos_appointments_service
           VAOS::AppointmentService.new(@user)
+        end
+
+        def vaos_appointment_requests_service
+          VAOS::AppointmentRequestsService.new(@user)
         end
 
         def vaos_systems_service
@@ -126,6 +220,10 @@ module Mobile
 
         def cc_appointments_adapter
           Mobile::V0::Adapters::CommunityCareAppointments.new
+        end
+
+        def requests_adapter
+          Mobile::V0::Adapters::AppointmentRequests.new
         end
       end
     end

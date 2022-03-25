@@ -6,10 +6,8 @@ class AppealsApi::V2::DecisionReviews::SupplementalClaimsController < AppealsApi
   include AppealsApi::JsonFormatValidation
   include AppealsApi::StatusSimulation
   include AppealsApi::CharacterUtilities
-  include AppealsApi::CharacterValidation
 
   skip_before_action :authenticate
-  before_action :validate_characters, only: %i[create]
   before_action :validate_json_format, if: -> { request.post? }
   before_action :validate_json_schema, only: %i[create]
 
@@ -19,7 +17,7 @@ class AppealsApi::V2::DecisionReviews::SupplementalClaimsController < AppealsApi
     File.read(
       AppealsApi::Engine.root.join('config/schemas/v2/200995_headers.json')
     )
-  )['definitions']['supplementalClaimParams']['properties'].keys
+  )['definitions']['scCreateParameters']['properties'].keys
   SCHEMA_ERROR_TYPE = Common::Exceptions::DetailedSchemaErrors
 
   def create

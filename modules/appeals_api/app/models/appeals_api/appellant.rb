@@ -40,6 +40,12 @@ module AppealsApi
       auth_headers['X-VA-Insurance-Policy-Number']
     end
 
+    def birth_date
+      return if birth_date_string.blank?
+
+      @birth_date ||= Date.parse(birth_date_string)
+    end
+
     def birth_month
       birth_date&.strftime('%m')
     end
@@ -84,6 +90,10 @@ module AppealsApi
       international_postal_code || zip_code_5
     end
 
+    def homeless?
+      form_data['homeless']
+    end
+
     def email
       form_data['email'].to_s.strip
     end
@@ -96,68 +106,19 @@ module AppealsApi
       AppealsApi::HigherLevelReview::Phone.new phone_data
     end
 
-    def phone_string
-      phone_formatted.to_s
-    end
-
-    def area_code
-      phone_data&.dig('areaCode')
-    end
-
-    def phone_prefix
-      phone_data&.dig('phoneNumber')&.first(3)
-    end
-
-    def phone_line_number
-      phone_data&.dig('phoneNumber')&.last(4)
-    end
-
-    def phone_ext
-      ext = phone_data&.dig('phoneNumberExt')
-
-      "x#{ext}" if ext.present?
-    end
-
-    def international_number
-      return if domestic_phone?
-
-      phone_string
-    end
-
     def phone_country_code
       phone_data&.dig('countryCode')
-    end
-
-    def ssn_first_three
-      ssn&.first(3)
-    end
-
-    def ssn_second_two
-      ssn&.slice(3..4)
-    end
-
-    def ssn_last_four
-      ssn&.last(4)
     end
 
     def timezone
       form_data&.dig('timezone').presence&.strip
     end
 
-    def submission_email_identifier
-      return if claimant?
-
-      return { id_type: 'email', id_value: email } if email.present?
-
-      icn = mpi_veteran.mpi_icn
-
-      return { id_type: 'ICN', id_value: icn } if icn.present?
-    end
-
     def signing_appellant?
-      return true if claimant? && form_data.present?
+      # claimant is signer if present
+      return true if claimant? && claimant_headers_present?
 
-      veteran? && auth_headers.exclude?('X-VA-Claimant-Last-Name')
+      veteran? && !claimant_headers_present?
     end
 
     def veteran?
@@ -168,18 +129,16 @@ module AppealsApi
       type == :claimant
     end
 
+    def domestic_phone?
+      phone_country_code == '1'
+    end
+
     private
 
     attr_accessor :auth_headers, :form_data, :type
 
     def header_prefix
       @header_prefix ||= veteran? ? '' : '-Claimant'
-    end
-
-    def birth_date
-      return if birth_date_string.blank?
-
-      @birth_date ||= Date.parse(birth_date_string)
     end
 
     def address_combined
@@ -191,14 +150,13 @@ module AppealsApi
          address['addressLine3']].compact.map(&:strip).join(' ')
     end
 
-    def domestic_phone?
-      # TODO: revisit - in what ways are we differentiating between our handling of international vs domestic
-      phone_country_code == '1'
-    end
-
     def address
       # empty hash when claimant appellant but no address provided
       form_data['address'] || {}
+    end
+
+    def claimant_headers_present?
+      auth_headers.include?('X-VA-Claimant-Last-Name')
     end
 
     def mpi_veteran

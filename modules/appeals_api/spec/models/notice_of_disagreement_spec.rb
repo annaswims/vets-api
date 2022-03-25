@@ -6,8 +6,8 @@ require AppealsApi::Engine.root.join('spec', 'spec_helper.rb')
 describe AppealsApi::NoticeOfDisagreement, type: :model do
   include FixtureHelpers
 
-  let(:auth_headers) { fixture_as_json 'valid_10182_headers.json' }
-  let(:form_data) { fixture_as_json 'valid_10182.json' }
+  let(:auth_headers) { fixture_as_json 'valid_10182_headers.json', version: 'v1' }
+  let(:form_data) { fixture_as_json 'valid_10182.json', version: 'v1' }
   let(:notice_of_disagreement) do
     review_option = form_data['data']['attributes']['boardReviewOption']
     build(:notice_of_disagreement, form_data: form_data, auth_headers: auth_headers, board_review_option: review_option)
@@ -51,7 +51,7 @@ describe AppealsApi::NoticeOfDisagreement, type: :model do
     end
 
     context "when board review option 'direct_review' or 'evidence_submission' is selected" do
-      let(:form_data) { fixture_as_json 'valid_10182_minimum.json' }
+      let(:form_data) { fixture_as_json 'valid_10182_minimum.json', version: 'v1' }
 
       context 'when hearing type provided' do
         before do
@@ -248,6 +248,73 @@ describe AppealsApi::NoticeOfDisagreement, type: :model do
       notice_of_disagreement.update_status!(status: 'submitted')
 
       expect(AppealsApi::Events::Handler).to have_received(:new).exactly(2).times
+    end
+  end
+
+  describe 'V2 methods' do
+    let(:extra_notice_of_disagreement_v2) { create(:extra_notice_of_disagreement_v2, :board_review_hearing) }
+
+    describe '#veteran' do
+      subject { extra_notice_of_disagreement_v2.veteran }
+
+      it { expect(subject.class).to eq AppealsApi::Appellant }
+    end
+
+    describe '#claimant' do
+      subject { extra_notice_of_disagreement_v2.claimant }
+
+      it { expect(subject.class).to eq AppealsApi::Appellant }
+    end
+
+    describe '#signing_appellant' do
+      let(:appellant_type) { extra_notice_of_disagreement_v2.signing_appellant.send(:type) }
+
+      it { expect(appellant_type).to eq :claimant }
+    end
+
+    describe '#appellant_local_time' do
+      it do
+        appellant_local_time = extra_notice_of_disagreement_v2.appellant_local_time
+        created_at = extra_notice_of_disagreement_v2.created_at
+
+        expect(appellant_local_time).to eq created_at.in_time_zone('America/Chicago')
+      end
+    end
+
+    describe '#extension_request?' do
+      it { expect(extra_notice_of_disagreement_v2.extension_request?).to eq true }
+    end
+
+    describe '#extension_reason' do
+      it { expect(extra_notice_of_disagreement_v2.extension_reason).to eq 'good cause substantive reason' }
+    end
+
+    describe '#appealing_vha_denial?' do
+      it { expect(extra_notice_of_disagreement_v2.appealing_vha_denial?).to eq true }
+    end
+
+    describe '#validate_extension_request' do
+      let(:auth_headers) { fixture_as_json 'valid_10182_headers.json', version: 'v2' }
+      let(:form_data) { fixture_as_json 'valid_10182_minimum.json', version: 'v2' }
+      let(:invalid_notice_of_disagreement) do
+        build(:minimal_notice_of_disagreement_v2, form_data: form_data, auth_headers: auth_headers, api_version: 'v2')
+      end
+
+      context 'when extension reason provided, but extension request is false' do
+        before do
+          form_data['data']['attributes']['extensionReason'] = 'I need an extension please'
+
+          invalid_notice_of_disagreement.valid?
+        end
+
+        it 'throws an error' do
+          expect(invalid_notice_of_disagreement.errors.count).to be 1
+          expect(invalid_notice_of_disagreement.errors.first.attribute).to eq(:'/data/attributes/extensionRequest')
+          expect(invalid_notice_of_disagreement.errors.first.options[:detail]).to eq(
+            "If '/data/attributes/extensionReason' present, then '/data/attributes/extensionRequest' must equal true"
+          )
+        end
+      end
     end
   end
 end

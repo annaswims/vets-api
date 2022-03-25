@@ -6,6 +6,10 @@ require 'json_marshal/marshaller'
 module AppealsApi
   class SupplementalClaim < ApplicationRecord
     include ScStatus
+    include PdfOutputPrep
+
+    attr_readonly :auth_headers
+    attr_readonly :form_data
 
     def self.past?(date)
       date < Time.zone.today
@@ -211,11 +215,11 @@ module AppealsApi
         'pensionSurvivorsBenefits' => 'PMC',
         'fiduciary' => 'FID',
         'lifeInsurance' => 'INS',
-        'veteransHealthAdministration' => 'OTH',
+        'veteransHealthAdministration' => 'CMP',
         'veteranReadinessAndEmployment' => 'VRE',
-        'loanGuaranty' => 'OTH',
+        'loanGuaranty' => 'CMP',
         'education' => 'EDU',
-        'nationalCemeteryAdministration' => 'OTH'
+        'nationalCemeteryAdministration' => 'NCA'
       }[benefit_type]
     end
 
@@ -318,6 +322,10 @@ module AppealsApi
         [veteran.dig('address', 'addressLine1'),
          veteran.dig('address', 'addressLine2'),
          veteran.dig('address', 'addressLine3')].compact.map(&:strip).join(' ')
+    end
+
+    def clear_memoized_values
+      @contestable_issues = @address_combined = nil
     end
   end
 end
