@@ -2,6 +2,7 @@
 
 Mobile::Engine.routes.draw do
   get '/', to: 'discovery#welcome'
+  get '/maintenance-windows', to: 'maintenance_windows#index'
 
   namespace :v0 do
     get '/appeal/:id', to: 'claims_and_appeals#get_appeal'
@@ -19,7 +20,6 @@ Mobile::Engine.routes.draw do
     post '/claim/:id/request-decision', to: 'claims_and_appeals#request_decision'
     get '/community-care-providers', to: 'community_care_providers#index'
     get '/disability-rating', to: 'disability_rating#index'
-    get '/facilities-info/:sort', to: 'facilities_info#index'
     get '/health/immunizations', to: 'immunizations#index'
     get '/health/locations/:id', to: 'locations#show'
     get '/letters', to: 'letters#index'
@@ -73,7 +73,73 @@ Mobile::Engine.routes.draw do
   end
 
   namespace :v1 do
-    get '/health/immunizations', to: 'immunizations#index'
+    namespace :health do
+      namespace :appointments do
+        get '/', to: 'appointments#index'
+        post '/', to: 'appointments#create'
+        get '/requests/:appointment_request_id/messages', to: 'appointment_request_messages#index'
+        put '/:id/cancel', to: 'appointments#cancel'
+        get '/community-care-providers', to: 'community_care_providers#index'
+        get '/facilities-info/:sort', to: 'facilities_info#index'
+
+        scope :eligibility do
+          get '/community-care/:service_type', to: 'community_care_eligibility#show'
+          get '/va', to: 'veterans_affairs_eligibility#show'
+          get '/facility', to: 'facility_eligibility#index'
+        end
+      end
+
+      scope :messaging do
+        resources :triage_teams, only: [:index], defaults: { format: :json }, path: 'recipients'
+
+        resources :folders, only: %i[index show create destroy], defaults: { format: :json } do
+          resources :messages, only: [:index], defaults: { format: :json }
+        end
+
+        resources :messages, only: %i[show create destroy], defaults: { format: :json } do
+          get :thread, on: :member
+          get :categories, on: :collection
+          patch :move, on: :member
+          post :reply, on: :member
+          resources :attachments, only: [:show], defaults: { format: :json }
+        end
+
+        resources :message_drafts, path: 'message-drafts', only: %i[create update], defaults: { format: :json } do
+          post ':reply_id/reply-draft', on: :collection, action: :create_reply_draft, as: :create_reply
+          put ':reply_id/reply-draft/:draft_id', on: :collection, action: :update_reply_draft, as: :update_reply
+        end
+      end
+      get '/immunizations', to: 'immunizations#index'
+    end
+
+    namespace :benefits do
+      get '/appeals/:id', to: 'claims_and_appeals#get_appeal'
+      get '/claims-and-appeals-overview', to: 'claims_and_appeals#index'
+      get '/disability-rating', to: 'disability_rating#index'
+
+      scope :claims do
+        get '/:id', to: 'claims_and_appeals#get_claim'
+        post '/:id/documents', to: 'claims_and_appeals#upload_document'
+        post '/:id/documents/multi-image', to: 'claims_and_appeals#upload_multi_image_document'
+        post '/:id/request-decision', to: 'claims_and_appeals#request_decision'
+      end
+
+      scope :letters do
+        get '/', to: 'letters#index'
+        get '/beneficiary', to: 'letters#beneficiary'
+        post '/:type/download', to: 'letters#download'
+      end
+
+      scope :payments do
+        get '/history', to: 'payment_history#index'
+        get '/information', to: 'payment_information#index'
+        put '/information', to: 'payment_information#update'
+      end
+    end
+
+    get '/push/:endpoint_sid/prefs', to: 'push_notifications#get_prefs'
+    put '/push/:endpoint_sid/prefs', to: 'push_notifications#set_pref'
     get '/user', to: 'users#show'
+    get '/user/military-service-history', to: 'military_information#get_service_history'
   end
 end
