@@ -82,9 +82,9 @@ module Swagger
             property :cerner_id, type: :string, example: '9923454432'
             property :cerner_facility_ids, type: :array, example: %w[200MHV]
             property :vha_facility_ids, type: :array, example: %w[200ESR 648]
-            property :id_theft_flag, type: :bool, example: false
-            property :verified, type: :bool, example: true
-            property :access_token_ttl, type: :int, example: 300
+            property :id_theft_flag, type: :boolean, example: false
+            property :verified, type: :boolean, example: true
+            property :access_token_ttl, type: :integer, example: 300
           end
         end
       end

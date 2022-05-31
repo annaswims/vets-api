@@ -6,7 +6,7 @@ module Swagger
     class SignIn
       include Swagger::Blocks
 
-      swagger_path '/sign_in/{type}/authorize' do
+      swagger_path '/v0/sign_in/{type}/authorize' do
         operation :get do
           key :description, 'Initializes Sign in Service authorization'
           key :operationId, 'getSignInAuthorize'
@@ -60,7 +60,7 @@ module Swagger
         end
       end
 
-      swagger_path '/sign_in/{type}/callback' do
+      swagger_path '/v0/sign_in/{type}/callback' do
         operation :get do
           key :description, 'Sign in Service authentication callback'
           key :operationId, 'getSignInCallback'
@@ -109,7 +109,7 @@ module Swagger
         end
       end
 
-      swagger_path '/sign_in/token' do
+      swagger_path '/v0/sign_in/token' do
         operation :post do
           key :description, 'Sign in Service session creation & tokens request'
           key :operationId, 'postSignInToken'
@@ -154,7 +154,7 @@ module Swagger
         end
       end
 
-      swagger_path '/sign_in/refresh' do
+      swagger_path '/v0/sign_in/refresh' do
         operation :post do
           key :description, 'Sign in Service session & tokens refresh'
           key :operationId, 'postSignInRefresh'
@@ -190,7 +190,7 @@ module Swagger
         end
       end
 
-      swagger_path '/sign_in/introspect' do
+      swagger_path '/v0/sign_in/introspect' do
         operation :get do
           key :description, 'Sign in Service user introspection'
           key :operationId, 'getSignInIntrospect'
@@ -217,7 +217,7 @@ module Swagger
         end
       end
 
-      swagger_path '/sign_in/revoke' do
+      swagger_path '/v0/sign_in/revoke' do
         operation :post do
           key :description, 'Sign in Service session destruction'
           key :operationId, 'postSignInRevoke'
