@@ -58,6 +58,25 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
       end
     end
 
+    describe 'sign in service' do
+      context 'CSP specific routes' do
+        %w[logingov idme].each do |type|
+          describe "GET v0/sign_in/#{type}/authorize" do
+            let(:code_challenge) { Base64.urlsafe_encode64('some-safe-code-challenge') }
+            let(:code_challenge_method) { 'S256' }
+
+            it 'supports posting contact us form data' do
+              expect(subject).to validate(
+                :get,
+                "/v0/sign_in/#{type}/authorize?code_challenge=#{code_challenge}&code_challenge_method=#{code_challenge_method}",
+                200
+              )
+            end
+          end
+        end
+      end
+    end
+
     it 'supports listing in-progress forms' do
       expect(subject).to validate(:get, '/v0/in_progress_forms', 200, headers)
       expect(subject).to validate(:get, '/v0/in_progress_forms', 401)
