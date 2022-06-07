@@ -68,7 +68,9 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
             it 'supports posting contact us form data' do
               expect(subject).to validate(
                 :get,
-                "/v0/sign_in/#{type}/authorize?code_challenge=#{code_challenge}&code_challenge_method=#{code_challenge_method}",
+                "/v0/sign_in/#{type}/authorize",
+                {code_challenge: code_challenge,
+                  code_challenge_method: code_challenge_method},
                 200
               )
             end

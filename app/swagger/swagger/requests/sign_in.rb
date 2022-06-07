@@ -17,7 +17,7 @@ module Swagger
             key :consumes, ['application/json']
 
             parameter do
-              key :name, :type
+              key :name, 'type'
               key :in, :path
               key :description, 'Credential provider selected to authenticate with'
               key :required, true
