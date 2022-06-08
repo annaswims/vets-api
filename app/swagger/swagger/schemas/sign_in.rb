@@ -65,24 +65,24 @@ module Swagger
             key :type, :object
             property :uuid, type: :string, example: 'd9376222-c294-40da-8290-96cf611adfcc'
             property :first_name, type: :string, example: 'ALFREDO'
-            property :middle_name, type: :string, example: 'MATTHEW'
+            property :middle_name, type: %i[null string], example: 'MATTHEW'
             property :last_name, type: :string, example: 'ARMSTRONG'
             property :birth_date, type: :string, example: '1989-11-11'
             property :email, type: :string, example: 'vets.gov.user+4@gmail.com'
             property :gender, type: :string, example: 'M'
             property :ssn, type: :string, example: '111111111'
-            property :birls_id, type: :string, example: '796121200'
+            property :birls_id, type: %i[null string], example: '796121200'
             property :authn_context, type: :string, example: 'logingov'
             property :icn, type: :string, example: '1012846043V576341'
-            property :edipi, type: :string, example: '001001999'
+            property :edipi, type: %i[null string], example: '001001999'
             property :active_mhv_ids, type: :array, example: %w[12345 67890]
-            property :sec_id, type: :string, example: '1013173963'
-            property :vet360_id, type: :string, example: '18277'
-            property :participant_id, type: :string, example: '13014883'
-            property :cerner_id, type: :string, example: '9923454432'
+            property :sec_id, type: %i[null string], example: '1013173963'
+            property :vet360_id, type: %i[null string], example: '18277'
+            property :participant_id, type: %i[null string], example: '13014883'
+            property :cerner_id, type: %i[null string], example: '9923454432'
             property :cerner_facility_ids, type: :array, example: %w[200MHV]
             property :vha_facility_ids, type: :array, example: %w[200ESR 648]
-            property :id_theft_flag, type: :boolean, example: false
+            property :id_theft_flag, type: %i[null boolean], example: false
             property :verified, type: :boolean, example: true
             property :access_token_ttl, type: :integer, example: 300
           end

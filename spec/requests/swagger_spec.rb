@@ -62,17 +62,21 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
       context 'CSP specific routes' do
         %w[logingov idme].each do |type|
           describe "GET v0/sign_in/#{type}/authorize" do
-            let(:code_challenge) { Base64.urlsafe_encode64('some-safe-code-challenge') }
-            let(:code_challenge_method) { 'S256' }
+            # let(:code_challenge) { Base64.urlsafe_encode64('some-safe-code-challenge') }
+            # let(:code_challenge_method) { 'S256' }
 
-            it 'supports posting contact us form data' do
-              expect(subject).to validate(
-                :get,
-                "/v0/sign_in/#{type}/authorize",
-                200,
-                '_query_string' => "code_challenge=#{code_challenge}&code_challenge_method=#{code_challenge_method}"
-              )
-            end
+            # it 'supports posting contact us form data' do
+            #   expect(subject).to validate(
+            #     :get,
+            #     "/v0/sign_in/#{type}/authorize",
+            #     200,
+            #     '_query_string' => "code_challenge=#{code_challenge}&code_challenge_method=#{code_challenge_method}"
+            #   )
+            # end
+          end
+
+          describe "GET v0/sign_in/#{type}/callback" do
+            
           end
         end
       end
@@ -111,12 +115,48 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
           end
           let(:refresh_token_param) { { refresh_token: refresh_token } }
 
-          it 'supports posting contact us form data' do
+          it 'refreshes the session and returns new tokens' do
             expect(subject).to validate(
               :post,
               '/v0/sign_in/refresh',
               200,
               '_query_string' => "refresh_token=#{refresh_token}"
+            )
+          end
+        end
+
+        describe 'POST v0/sign_in/revoke' do
+          let(:user_verification) { create(:user_verification) }
+          let(:validated_credential) { create(:validated_credential, user_verification: user_verification) }
+          let(:session_container) { SignIn::SessionCreator.new(validated_credential: validated_credential).perform }
+          let(:refresh_token) do
+            SignIn::RefreshTokenEncryptor.new(refresh_token: session_container.refresh_token).perform
+          end
+          let(:refresh_token_param) { { refresh_token: refresh_token } }
+
+          it 'revokes the session' do
+            expect(subject).to validate(
+              :post,
+              '/v0/sign_in/revoke',
+              200,
+              '_query_string' => "refresh_token=#{refresh_token}"
+            )
+          end
+        end
+
+        describe 'GET v0/sign_in/introspect' do
+          let(:access_token_object) { create(:access_token) }
+          let(:access_token) { SignIn::AccessTokenJwtEncoder.new(access_token: access_token_object).perform }
+          let!(:user) { create(:user, :loa3, uuid: access_token_object.user_uuid) }
+
+          it 'returns user attributes' do
+            expect(subject).to validate(
+              :get,
+              '/v0/sign_in/introspect',
+              200,
+              '_headers' => {
+                'Authorization' => "Bearer #{access_token}"
+              }
             )
           end
         end
