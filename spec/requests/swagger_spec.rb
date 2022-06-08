@@ -69,11 +69,55 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
               expect(subject).to validate(
                 :get,
                 "/v0/sign_in/#{type}/authorize",
-                {code_challenge: code_challenge,
-                  code_challenge_method: code_challenge_method},
-                200
+                200,
+                '_query_string' => "code_challenge=#{code_challenge}&code_challenge_method=#{code_challenge_method}"
               )
             end
+          end
+        end
+      end
+
+      context 'CSP non-specific routes' do
+        describe 'POST v0/sign_in/token' do
+          let(:user_verification) { create(:user_verification) }
+          let(:user_verification_id) { user_verification.id }
+          let(:grant_type) { 'authorization_code' }
+          let(:code) { '0c2d21d3-465b-4054-8030-1d042da4f667' }
+          let(:code_verifier) { '5787d673fb784c90f0e309883241803d' }
+          let(:code_challenge) { '1BUpxy37SoIPmKw96wbd6MDcvayOYm3ptT-zbe6L_zM' }
+          let!(:code_container) do
+            create(:code_container,
+                   code: code,
+                   code_challenge: code_challenge,
+                   user_verification_id: user_verification_id)
+          end
+
+          it 'supports posting contact us form data' do
+            expect(subject).to validate(
+              :post,
+              '/v0/sign_in/token',
+              200,
+              '_query_string' => "grant_type=#{grant_type}&code_verifier=#{code_verifier}&code=#{code}"
+            )
+          end
+        end
+
+        describe 'POST v0/sign_in/refresh' do
+          let(:user_verification) { create(:user_verification) }
+          let(:validated_credential) { create(:validated_credential, user_verification: user_verification) }
+          let(:session_container) { SignIn::SessionCreator.new(validated_credential: validated_credential).perform }
+          let(:refresh_token) do
+            SignIn::RefreshTokenEncryptor.new(refresh_token: session_container.refresh_token).perform
+          end
+          let(:refresh_token_param) { { refresh_token: refresh_token } }
+
+          it 'supports posting contact us form data' do
+            expect(subject).to validate(
+              :post,
+              '/v0/sign_in/refresh',
+              200,
+              '_query_string' => "refresh_token=#{refresh_token}"
+            )
           end
         end
       end
