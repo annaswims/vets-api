@@ -62,21 +62,56 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
       context 'CSP specific routes' do
         %w[logingov idme].each do |type|
           describe "GET v0/sign_in/#{type}/authorize" do
-            # let(:code_challenge) { Base64.urlsafe_encode64('some-safe-code-challenge') }
-            # let(:code_challenge_method) { 'S256' }
+            let(:code_challenge) { Base64.urlsafe_encode64('some-safe-code-challenge') }
+            let(:code_challenge_method) { 'S256' }
 
-            # it 'supports posting contact us form data' do
-            #   expect(subject).to validate(
-            #     :get,
-            #     "/v0/sign_in/#{type}/authorize",
-            #     200,
-            #     '_query_string' => "code_challenge=#{code_challenge}&code_challenge_method=#{code_challenge_method}"
-            #   )
-            # end
+            it 'supports posting contact us form data' do
+              expect(subject).to validate(
+                :get,
+                "/v0/sign_in/#{type}/authorize",
+                200,
+                '_query_string' => "code_challenge=#{code_challenge}&code_challenge_method=#{code_challenge_method}"
+              )
+            end
           end
 
           describe "GET v0/sign_in/#{type}/callback" do
-            
+            let(:client_state) { SecureRandom.alphanumeric(SignIn::Constants::Auth::CLIENT_STATE_MINIMUM_LENGTH) }
+            let(:code_challenge_state_map) { create(:code_challenge_state_map, client_state: client_state) }
+            let(:state) { code_challenge_state_map.state }
+            let(:code) { 'some-code' }
+            let(:response) { OpenStruct.new(access_token: 'some-token') }
+            let(:token) { 'some-token' }
+            let(:user_info) do
+              OpenStruct.new(
+                {
+                  verified_at: '1-1-2022',
+                  sub: 'some-sub',
+                  social_security_number: '123456789',
+                  birthdate: '1-1-2022',
+                  given_name: 'some-name',
+                  family_name: 'some-family-name',
+                  email: 'some-email'
+                }
+              )
+            end
+
+            before do
+              allow_any_instance_of(SignIn::Logingov::Service).to receive(:token).with(code).and_return(response)
+              allow_any_instance_of(SignIn::Logingov::Service).to receive(:user_info).with(token).and_return(user_info)
+
+              allow_any_instance_of(SignIn::Idme::Service).to receive(:token).with(code).and_return(response)
+              allow_any_instance_of(SignIn::Idme::Service).to receive(:user_info).with(token).and_return(user_info)
+            end
+
+            it 'creates a session and forwards the user with an authorization_code' do
+              expect(subject).to validate(
+                :get,
+                "/v0/sign_in/#{type}/callback",
+                302,
+                '_query_string' => "code=#{code}&state=#{state}"
+              )
+            end
           end
         end
       end
@@ -96,7 +131,7 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
                    user_verification_id: user_verification_id)
           end
 
-          it 'supports posting contact us form data' do
+          it 'validates the authorization_code & returns tokens' do
             expect(subject).to validate(
               :post,
               '/v0/sign_in/token',
@@ -111,7 +146,7 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
           let(:validated_credential) { create(:validated_credential, user_verification: user_verification) }
           let(:session_container) { SignIn::SessionCreator.new(validated_credential: validated_credential).perform }
           let(:refresh_token) do
-            SignIn::RefreshTokenEncryptor.new(refresh_token: session_container.refresh_token).perform
+            CGI.escape(SignIn::RefreshTokenEncryptor.new(refresh_token: session_container.refresh_token).perform)
           end
           let(:refresh_token_param) { { refresh_token: refresh_token } }
 
@@ -130,9 +165,9 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
           let(:validated_credential) { create(:validated_credential, user_verification: user_verification) }
           let(:session_container) { SignIn::SessionCreator.new(validated_credential: validated_credential).perform }
           let(:refresh_token) do
-            SignIn::RefreshTokenEncryptor.new(refresh_token: session_container.refresh_token).perform
+            CGI.escape(SignIn::RefreshTokenEncryptor.new(refresh_token: session_container.refresh_token).perform)
           end
-          let(:refresh_token_param) { { refresh_token: refresh_token } }
+          let(:refresh_token_param) { { refresh_token: CGI.escape(refresh_token) } }
 
           it 'revokes the session' do
             expect(subject).to validate(
