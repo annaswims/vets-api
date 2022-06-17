@@ -20,7 +20,7 @@ jobs:
         image: docker:22.06-rc-dind
         env:
           DOCKER_TLS_CERTDIR: /certs
-          DOCKER_CERT_PATH: /certs
+          # DOCKER_CERT_PATH: /certs
         options: >-
           --privileged
           --network-alias docker
@@ -31,8 +31,6 @@ jobs:
     steps:
       - name: Hostname
         run: hostname
-      - name: Sleepy
-        run: sleep 180s
       - name: Docker Info
         run: docker info
       - name: Docker Version
