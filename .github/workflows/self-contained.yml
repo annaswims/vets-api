@@ -6,7 +6,6 @@ jobs:
     runs-on: kmatheny
     # Docker Hub image that `container-job` executes in
     container:
-      # image: docker:20.10
       image: 1986/docker-job-runner:latest
       env:
         DOCKER_HOST: tcp://docker:2376
