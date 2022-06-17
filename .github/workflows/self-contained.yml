@@ -10,8 +10,9 @@ jobs:
       env:
         DOCKER_HOST: tcp://dind:2376
         DOCKER_TLS_VERIFY: 1
+        DOCKER_TLS_CERTDI: /certs
       volumes:
-        - docker-certs-client-${{ github.run_id }}:~/.docker:ro
+        - docker-certs-client-${{ github.run_id }}:/certs/client:ro
 
     # Service containers to run with `container-job`
     services:
