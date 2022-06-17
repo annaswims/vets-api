@@ -9,6 +9,7 @@ jobs:
       image: docker:20.10
       env:
         DOCKER_TLS_CERTDIR: /certs
+        DOCKER_HOST: docker
       volumes:
         - docker-certs-client-${{ github.run_id }}:/certs/client:ro
 
