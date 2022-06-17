@@ -14,6 +14,8 @@ jobs:
     # Docker Hub image that `container-job` executes in
     container:
       image: 1986/docker-job-runner:latest
+      options: >-
+        --pull=always
       env:
         DOCKER_HOST: tcp://docker:2376
         DOCKER_TLS_VERIFY: 1
