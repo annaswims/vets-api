@@ -6,7 +6,7 @@ jobs:
     runs-on: kmatheny
     # Docker Hub image that `container-job` executes in
     container:
-      image: docker:20.10
+      image: docker:22.06-rc
       env:
         DOCKER_TLS_CERTDIR: /certs
       volumes:
