@@ -9,7 +9,7 @@ jobs:
       image: docker:20.10
       env:
         DOCKER_TLS_CERTDIR: /certs
-        DOCKER_HOST: docker
+        DOCKER_HOST: dind
       volumes:
         - docker-certs-client-${{ github.run_id }}:/certs/client:ro
 
@@ -21,7 +21,6 @@ jobs:
           DOCKER_TLS_CERTDIR: /certs
         options: >-
           --privileged
-          --network-alias docker
         volumes:
           - docker-certs-ca-${{ github.run_id }}:/certs/ca
           - docker-certs-client-${{ github.run_id }}:/certs/client
