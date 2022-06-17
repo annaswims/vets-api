@@ -15,7 +15,7 @@ jobs:
     # Service containers to run with `container-job`
     services:
       dind:
-        image: docker:20.10-dind
+        image: docker:22.06-rc-dind
         env:
           DOCKER_TLS_CERTDIR: /certs
         options: >-
@@ -28,3 +28,5 @@ jobs:
     steps:
       - name: Docker Info
         run: docker info
+      - name: Docker Version
+        run: docker version
