@@ -21,13 +21,13 @@ jobs:
           DOCKER_TLS_CERTDIR: /certs
         options: >-
           --privileged
-        ports:
-          - 2376
         volumes:
           - docker-certs-ca-${{ github.run_id }}:/certs/ca
           - docker-certs-client-${{ github.run_id }}:/certs/client
 
     steps:
+      - name: Hostname
+        run: hostname
       - name: Docker Info
         run: docker info
       - name: Docker Version
