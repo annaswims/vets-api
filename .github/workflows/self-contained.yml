@@ -10,6 +10,7 @@ jobs:
       env:
         DOCKER_TLS_CERTDIR: /certs
         DOCKER_HOST: tcp://dind:2376
+        DOCKER_TLS_VERIFY: 1
       volumes:
         - docker-certs-client-${{ github.run_id }}:/certs/client:ro
 
