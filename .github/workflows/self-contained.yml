@@ -28,6 +28,8 @@ jobs:
     steps:
       - name: Hostname
         run: hostname
+      - name: Sleepy
+        run: sleep 180s
       - name: Docker Info
         run: docker info
       - name: Docker Version
