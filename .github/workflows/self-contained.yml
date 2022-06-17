@@ -21,8 +21,6 @@ jobs:
         options: >-
           --privileged
           --network-alias docker
-          --name dind
-          --detach
         volumes:
           - docker-certs-ca-${{ github.run_id }}:/certs/ca
           - docker-certs-client-${{ github.run_id }}:/certs/client
