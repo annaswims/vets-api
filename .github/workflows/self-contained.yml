@@ -19,7 +19,7 @@ jobs:
       dind:
         image: docker:22.06-rc-dind
         env:
-          DOCKER_TLS_CERTDIR: /certs
+          # DOCKER_TLS_CERTDIR: /certs
           DOCKER_CERT_PATH: /certs
         options: >-
           --privileged
