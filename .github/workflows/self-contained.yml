@@ -3,7 +3,7 @@ on: push
 
 jobs:
   container-job:
-    runs-on: asg
+    runs-on: kmatheny
     # Docker Hub image that `container-job` executes in
     container:
       image: docker:20.10
