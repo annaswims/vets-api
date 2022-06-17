@@ -1,0 +1,32 @@
+name: Redis container example
+on: push
+
+jobs:
+  container-job:
+    runs-on: asg
+    # Docker Hub image that `container-job` executes in
+    container:
+      image: docker:20.10
+      env:
+        DOCKER_TLS_CERTDIR=/certs
+      volumes:
+        - docker-certs-client-${{ github.run_id }}:/certs/client:ro
+
+    # Service containers to run with `container-job`
+    services:
+      dind:
+        image: docker:20.10-dind
+        env:
+          DOCKER_TLS_CERTDIR=/certs
+        options: >-
+          --privileged
+          --network-alias docker
+          --name dind
+          --detached
+        volumes:
+          - docker-certs-ca-${{ github.run_id }}:/certs/ca
+          - docker-certs-client-${{ github.run_id }}:/certs/client
+
+    steps:
+      - name: Docker Info
+        run: docker info
