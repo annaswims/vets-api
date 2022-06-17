@@ -7,10 +7,8 @@
 ###
 FROM ruby:2.7.6-slim-bullseye AS base
 
-ARG userid=993
 SHELL ["/bin/bash", "-c"]
-RUN groupadd -g $userid -r vets-api && \
-    useradd -u $userid -r -m -d /srv/vets-api -g vets-api vets-api
+RUN useradd -r -m -d /srv/vets-api vets-api
 RUN echo "deb http://ftp.debian.org/debian testing main contrib non-free" >> /etc/apt/sources.list
 RUN apt-get update
 RUN apt-get install -y -t testing poppler-utils
