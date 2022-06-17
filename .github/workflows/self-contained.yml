@@ -32,7 +32,7 @@ jobs:
       - name: Hostname
         run: hostname
       - name: Sleepy
-        run: 180s
+        run: sleep 180s
       - name: Docker Info
         run: docker info
       - name: Docker Version
