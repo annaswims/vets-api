@@ -3,6 +3,13 @@ on: push
 
 jobs:
   container-job:
+    env:
+      BUNDLE_ENTERPRISE__CONTRIBSYS__COM: ${{ secrets.BUNDLE_ENTERPRISE__CONTRIBSYS__COM }}
+      CI: true
+      NODE_EXTRA_CA_CERTS: '/etc/ssl/certs/VA-Internal-S2-RCA1-v1.cer.pem' # Needed for self-hosted runners (cache, upload-artifact)
+      RAILS_ENV: test
+      TERM: xterm-256color
+      DOCKER_IMAGE: ${{ github.sha }}-${{ github.run_id }}${{ github.run_number }}
     runs-on: kmatheny
     # Docker Hub image that `container-job` executes in
     container:
@@ -42,3 +49,40 @@ jobs:
           node-version: 10.15.1
       - name: Node Version
         run: node --version
+
+      - uses: actions/checkout@v2
+
+      - uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Setup Environment
+        run: |
+          echo "VETS_API_USER_ID=$(id -u)" >> $GITHUB_ENV
+      - name: Setup Docker
+        run: |
+          docker volume create --name=test_bundle_v2_7_6
+          cp /etc/ssl/certs/VA-Internal-S2-RCA1-v1.cer.pem config/ca-trust/
+      - name: Build Docker Image
+        uses: docker/build-push-action@v2
+        with:
+          build-args: |
+            sidekiq_license=${{ env.BUNDLE_ENTERPRISE__CONTRIBSYS__COM }}
+            userid=${{ env.VETS_API_USER_ID }}
+          context: .
+          target: development
+          push: false
+          load: true
+          tags: vets-api:${{ env.DOCKER_IMAGE }}
+
+      - name: Setup Database
+        run: |
+             docker-compose -f docker-compose.test.yml -f  docker-compose.gha.yml -p ${{ env.DOCKER_IMAGE}} \
+             run --rm --service-ports --no-TTY vets-api bash \
+             -c "RAILS_ENV=test DISABLE_BOOTSNAP=true parallel_test -n 14 -e 'bundle exec rake db:reset'"
+      - name: Run Specs
+        run: |
+             docker-compose -f docker-compose.test.yml -f docker-compose.gha.yml -p ${{ env.DOCKER_IMAGE}} \
+             run --rm --service-ports --no-TTY vets-api bash \
+             -c "DISABLE_BOOTSNAP=true bundle exec parallel_rspec spec/ modules/ -n 14 -o '--color --tty'"
