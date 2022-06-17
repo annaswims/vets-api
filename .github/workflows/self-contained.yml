@@ -8,7 +8,7 @@ jobs:
     container:
       image: docker:20.10
       env:
-        DOCKER_HOST: tcp://dind:2376
+        DOCKER_HOST: tcp://docker:2376
         DOCKER_TLS_VERIFY: 1
         DOCKER_CERT_PATH: /certs/client
       volumes:
@@ -22,6 +22,7 @@ jobs:
           DOCKER_CERT_PATH: /certs
         options: >-
           --privileged
+          --network-alias docker
         volumes:
           - docker-certs-ca-${{ github.run_id }}:/certs/ca
           - docker-certs-client-${{ github.run_id }}:/certs/client
@@ -29,9 +30,15 @@ jobs:
     steps:
       - name: Hostname
         run: hostname
-      - name: Sleepy
+      - name: Wait for Docker Host
         run: sleep 5s
       - name: Docker Info
         run: docker info
       - name: Docker Version
         run: docker version
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v3.3.0
+        with:
+          node-version: 10.15.1
+      - name: Node Version
+        run: node --version
