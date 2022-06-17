@@ -1,4 +1,4 @@
-name: Redis container example
+name: Docker Workflow Example
 on: push
 
 jobs:
