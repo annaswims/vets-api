@@ -233,7 +233,8 @@ mdot:
 decision_review:
   prefill: true
   url: https://sandbox-api.va.gov/services/appeals/v1/decision_reviews
-  api_key: abcd1234abcd1234abcd1234abcd1234abcd1234
+  api_key: QC2d8jEuN2rhLVA8dvYgcgY3cHAWbR3m
+    #api_key: abcd1234abcd1234abcd1234abcd1234abcd1234
   mock: false
   s3:
     aws_access_key_id: ~
@@ -241,6 +242,7 @@ decision_review:
     region: region
     bucket: bucket
   v1:
+    #url: https://dev-api.va.gov/services/appeals/v2/decision_reviews
     url: https://sandbox-api.va.gov/services/appeals/v2/decision_reviews
 
 # Settings for modules/dhp_connected_devices
