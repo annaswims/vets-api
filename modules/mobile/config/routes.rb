@@ -48,6 +48,16 @@ Mobile::Engine.routes.draw do
     put '/user/phones', to: 'phones#update'
     delete '/user/phones', to: 'phones#destroy'
 
+    scope :health do
+      scope :rx do
+        scope :prescriptions do
+          get '/', to: 'prescriptions#index'
+          put '/:id/refill', to: 'prescriptions#refill'
+          get '/:id/tracking', to: 'prescriptions#tracking'
+        end
+      end
+    end
+
     scope :messaging do
       scope :health do
         resources :triage_teams, only: [:index], defaults: { format: :json }, path: 'recipients'
