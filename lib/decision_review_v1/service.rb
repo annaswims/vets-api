@@ -19,11 +19,17 @@ module DecisionReviewV1
     configuration DecisionReviewV1::Configuration
 
     STATSD_KEY_PREFIX = 'api.decision_review'
+    REQUIRED_CREATE_HEADERS = %w[X-VA-First-Name X-VA-Last-Name X-VA-SSN X-VA-Birth-Date].freeze
+
+    # Higher Level Reviews
     HLR_CREATE_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'HLR-CREATE-RESPONSE-200_V1'
     HLR_SHOW_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'HLR-SHOW-RESPONSE-200_V1'
-    HLR_GET_CONTESTABLE_ISSUES_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'HLR-GET-CONTESTABLE-ISSUES-RESPONSE-200'
     HLR_GET_LEGACY_APPEALS_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'HLR-GET-LEGACY-APPEALS-RESPONSE-200'
-    REQUIRED_CREATE_HEADERS = %w[X-VA-First-Name X-VA-Last-Name X-VA-SSN X-VA-Birth-Date].freeze
+    # This schema is the same for HLR/NOD:
+    HLR_GET_CONTESTABLE_ISSUES_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'HLR-GET-CONTESTABLE-ISSUES-RESPONSE-200'
+    # Notice of Disagreement
+    NOD_CREATE_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'NOD-CREATE-RESPONSE-200_V1'
+    NOD_SHOW_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'NOD-SHOW-RESPONSE-200_V1'
 
     ##
     # Create a Higher-Level Review
@@ -119,10 +125,11 @@ module DecisionReviewV1
       with_monitoring_and_error_handling do
         headers = create_notice_of_disagreement_headers(user)
         response = perform :post, 'notice_of_disagreements', request_body, headers
-        raise_schema_error_unless_200_status response.status
-        validate_against_schema(
-          json: response.body, schema: Schemas::NOD_CREATE_RESPONSE_200, append_to_error_class: ' (NOD)'
-        )
+        # todo
+        #         raise_schema_error_unless_200_status response.status
+        #         validate_against_schema(
+        #           json: response.body, schema: Schemas::NOD_CREATE_RESPONSE_200, append_to_error_class: ' (NOD)'
+        #         )
         response
       end
     end
@@ -136,10 +143,11 @@ module DecisionReviewV1
     def get_notice_of_disagreement(uuid)
       with_monitoring_and_error_handling do
         response = perform :get, "notice_of_disagreements/#{uuid}", nil
-        raise_schema_error_unless_200_status response.status
-        validate_against_schema(
-          json: response.body, schema: Schemas::NOD_SHOW_RESPONSE_200, append_to_error_class: ' (NOD)'
-        )
+        # todo
+        #         raise_schema_error_unless_200_status response.status
+        #         validate_against_schema(
+        #           json: response.body, schema: Schemas::NOD_SHOW_RESPONSE_200, append_to_error_class: ' (NOD)'
+        #         )
         response
       end
     end
@@ -155,10 +163,11 @@ module DecisionReviewV1
         path = 'contestable_issues/notice_of_disagreements'
         headers = get_contestable_issues_headers(user)
         response = perform :get, path, nil, headers
+        # todo
         raise_schema_error_unless_200_status response.status
         validate_against_schema(
           json: response.body,
-          schema: Schemas::NOD_CONTESTABLE_ISSUES_RESPONSE_200,
+          schema: HLR_GET_CONTESTABLE_ISSUES_RESPONSE_SCHEMA,
           append_to_error_class: ' (NOD)'
         )
         response
