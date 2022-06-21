@@ -25,11 +25,12 @@ module DecisionReviewV1
     HLR_CREATE_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'HLR-CREATE-RESPONSE-200_V1'
     HLR_SHOW_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'HLR-SHOW-RESPONSE-200_V1'
     HLR_GET_LEGACY_APPEALS_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'HLR-GET-LEGACY-APPEALS-RESPONSE-200'
-    # This schema is the same for HLR/NOD:
-    HLR_GET_CONTESTABLE_ISSUES_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'HLR-GET-CONTESTABLE-ISSUES-RESPONSE-200'
     # Notice of Disagreement
     NOD_CREATE_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'NOD-CREATE-RESPONSE-200_V1'
     NOD_SHOW_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'NOD-SHOW-RESPONSE-200_V1'
+    # TODO: add evidence stuff, remaining endpoints
+    # This schema is the same for HLR/NOD:
+    HLR_GET_CONTESTABLE_ISSUES_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'HLR-GET-CONTESTABLE-ISSUES-RESPONSE-200'
 
     ##
     # Create a Higher-Level Review
@@ -72,7 +73,7 @@ module DecisionReviewV1
     #
     def get_higher_level_review_contestable_issues(user:, benefit_type:)
       with_monitoring_and_error_handling do
-        path = "contestable_issues/higher_level_reviews?benefit_type=#{benefit_type}"
+        path = "higher_level_reviews/contestable_issues/#{benefit_type}"
         headers = get_contestable_issues_headers(user)
         response = perform :get, path, nil, headers
         raise_schema_error_unless_200_status response.status
@@ -125,11 +126,10 @@ module DecisionReviewV1
       with_monitoring_and_error_handling do
         headers = create_notice_of_disagreement_headers(user)
         response = perform :post, 'notice_of_disagreements', request_body, headers
-        # todo
-        #         raise_schema_error_unless_200_status response.status
-        #         validate_against_schema(
-        #           json: response.body, schema: Schemas::NOD_CREATE_RESPONSE_200, append_to_error_class: ' (NOD)'
-        #         )
+        raise_schema_error_unless_200_status response.status
+        validate_against_schema(
+          json: response.body, schema: NOD_CREATE_RESPONSE_SCHEMA, append_to_error_class: ' (NOD)'
+        )
         response
       end
     end
@@ -143,11 +143,10 @@ module DecisionReviewV1
     def get_notice_of_disagreement(uuid)
       with_monitoring_and_error_handling do
         response = perform :get, "notice_of_disagreements/#{uuid}", nil
-        # todo
-        #         raise_schema_error_unless_200_status response.status
-        #         validate_against_schema(
-        #           json: response.body, schema: Schemas::NOD_SHOW_RESPONSE_200, append_to_error_class: ' (NOD)'
-        #         )
+        raise_schema_error_unless_200_status response.status
+        validate_against_schema(
+          json: response.body, schema: NOD_SHOW_RESPONSE_SCHEMA, append_to_error_class: ' (NOD)'
+        )
         response
       end
     end
@@ -198,7 +197,6 @@ module DecisionReviewV1
     # @return [Faraday::Response]
     #
     def put_notice_of_disagreement_upload(upload_url:, file_upload:, metadata_string:)
-      # TODO: confirm endpoint
       content_tmpfile = Tempfile.new(file_upload.filename, encoding: file_upload.read.encoding)
       content_tmpfile.write(file_upload.read)
       content_tmpfile.rewind
