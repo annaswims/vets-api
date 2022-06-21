@@ -259,6 +259,27 @@ module DecisionReviewV1
       headers
     end
 
+    def create_notice_of_disagreement_headers(user)
+      headers = {
+        'X-VA-First-Name' => user.first_name.to_s.strip, # can be an empty string for those with 1 legal name
+        'X-VA-Middle-Initial' => middle_initial(user),
+        'X-VA-Last-Name' => user.last_name.to_s.strip.presence,
+        'X-VA-SSN' => user.ssn.to_s.strip.presence,
+        'X-VA-File-Number' => nil,
+        'X-VA-Birth-Date' => user.birth_date.to_s.strip.presence
+      }.compact
+
+      missing_required_fields = REQUIRED_CREATE_HEADERS - headers.keys
+      if missing_required_fields.present?
+        raise Common::Exceptions::Forbidden.new(
+          source: "#{self.class}##{__method__}",
+          detail: { missing_required_fields: missing_required_fields }
+        )
+      end
+
+      headers
+    end
+
     def middle_initial(user)
       user.middle_name.to_s.strip.presence&.first&.upcase
     end
@@ -344,26 +365,5 @@ module DecisionReviewV1
     def remove_pii_from_json_schemer_errors(errors)
       errors.map { |error| error.slice 'data_pointer', 'schema', 'root_schema' }
     end
-  end
-
-  def create_notice_of_disagreement_headers(user)
-    headers = {
-      'X-VA-First-Name' => user.first_name.to_s.strip, # can be an empty string for those with 1 legal name
-      'X-VA-Middle-Initial' => middle_initial(user),
-      'X-VA-Last-Name' => user.last_name.to_s.strip.presence,
-      'X-VA-SSN' => user.ssn.to_s.strip.presence,
-      'X-VA-File-Number' => nil,
-      'X-VA-Birth-Date' => user.birth_date.to_s.strip.presence
-    }.compact
-
-    missing_required_fields = REQUIRED_CREATE_HEADERS - headers.keys
-    if missing_required_fields.present?
-      raise Common::Exceptions::Forbidden.new(
-        source: "#{self.class}##{__method__}",
-        detail: { missing_required_fields: missing_required_fields }
-      )
-    end
-
-    headers
   end
 end
