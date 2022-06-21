@@ -43,7 +43,7 @@ jobs:
       - name: Hostname
         run: hostname
       - name: Wait for Docker Host
-        run: sleep 5s
+        run: sleep 600s
       - name: Docker Info
         run: docker info
       - name: Docker Version
