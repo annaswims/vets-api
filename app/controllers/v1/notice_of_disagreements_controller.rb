@@ -33,5 +33,4 @@ module V1
       "#{self.class.name}##{method} exception #{exception_class} (NOD)"
     end
   end
-  end
 end
