@@ -51,7 +51,7 @@ USER vets-api
 # XXX: this is tacky
 RUN freshclam --config-file freshclam.conf
 RUN gem install vtk
-ENTRYPOINT ["/usr/bin/dumb-init", "--", "./docker-entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/dumb-init", "--", "/srv/vets-api/src/docker-entrypoint.sh"]
 
 ###
 # build stage; use --target=builder to stop here
@@ -85,4 +85,4 @@ COPY --from=builder --chown=vets-api:vets-api /srv/vets-api/src ./
 COPY --from=builder --chown=vets-api:vets-api /srv/vets-api/clamav/database ../clamav/database
 RUN if [ -d certs-tmp ] ; then cd certs-tmp ; for i in * ; do cp $i /usr/local/share/ca-certificates/${i/pem/crt} ; done ; fi && update-ca-certificates
 USER vets-api
-ENTRYPOINT ["/usr/bin/dumb-init", "--", "./docker-entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/dumb-init", "--", "/srv/vets-api/src/docker-entrypoint.sh"]
