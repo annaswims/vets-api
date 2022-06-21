@@ -8,8 +8,6 @@ require 'common/exceptions/schema_validation_errors'
 require 'decision_review_v1/configuration'
 require 'decision_review_v1/service_exception'
 
-require 'pp'
-
 module DecisionReviewV1
   ##
   # Proxy Service for the Lighthouse Decision Reviews API.
@@ -68,7 +66,7 @@ module DecisionReviewV1
     #
     def get_higher_level_review_contestable_issues(user:, benefit_type:)
       with_monitoring_and_error_handling do
-        path = "higher_level_reviews/contestable_issues/#{benefit_type}"
+        path = "contestable_issues/higher_level_reviews?benefit_type=#{benefit_type}"
         headers = get_contestable_issues_headers(user)
         response = perform :get, path, nil, headers
         raise_schema_error_unless_200_status response.status
@@ -108,6 +106,125 @@ module DecisionReviewV1
     # Only upper/lower case letters, hyphens(-), spaces and forward-slash(/) allowed
     def self.transliterate_name(str)
       I18n.transliterate(str.to_s).gsub(%r{[^a-zA-Z\-/\s]}, '').strip.first(50)
+    end
+
+    ##
+    # Create a Notice of Disagreement
+    #
+    # @param request_body [JSON] JSON serialized version of a Notice of Disagreement Form (10182)
+    # @param user [User] Veteran who the form is in regard to
+    # @return [Faraday::Response]
+    #
+    def create_notice_of_disagreement(request_body:, user:)
+      with_monitoring_and_error_handling do
+        headers = create_notice_of_disagreement_headers(user)
+        response = perform :post, 'notice_of_disagreements', request_body, headers
+        raise_schema_error_unless_200_status response.status
+        validate_against_schema(
+          json: response.body, schema: Schemas::NOD_CREATE_RESPONSE_200, append_to_error_class: ' (NOD)'
+        )
+        response
+      end
+    end
+
+    ##
+    # Retrieve a Notice of Disagreement
+    #
+    # @param uuid [uuid] A Notice of Disagreement's UUID (included in a create_notice_of_disagreement response)
+    # @return [Faraday::Response]
+    #
+    def get_notice_of_disagreement(uuid)
+      with_monitoring_and_error_handling do
+        response = perform :get, "notice_of_disagreements/#{uuid}", nil
+        raise_schema_error_unless_200_status response.status
+        validate_against_schema(
+          json: response.body, schema: Schemas::NOD_SHOW_RESPONSE_200, append_to_error_class: ' (NOD)'
+        )
+        response
+      end
+    end
+
+    ##
+    # Get Contestable Issues for a Notice of Disagreement
+    #
+    # @param user [User] Veteran who the form is in regard to
+    # @return [Faraday::Response]
+    #
+    def get_notice_of_disagreement_contestable_issues(user:)
+      with_monitoring_and_error_handling do
+        path = 'contestable_issues/notice_of_disagreements'
+        headers = get_contestable_issues_headers(user)
+        response = perform :get, path, nil, headers
+        raise_schema_error_unless_200_status response.status
+        validate_against_schema(
+          json: response.body,
+          schema: Schemas::NOD_CONTESTABLE_ISSUES_RESPONSE_200,
+          append_to_error_class: ' (NOD)'
+        )
+        response
+      end
+    end
+
+    ##
+    # Get the url to upload supporting evidence for a Notice of Disagreement
+    #
+    # @param nod_uuid [uuid] The uuid of the submited Notice of Disagreement
+    # @return [Faraday::Response]
+    #
+    def get_notice_of_disagreement_upload_url(nod_uuid:, ssn:)
+      # TODO: confirm endpoint
+      with_monitoring_and_error_handling do
+        perform :post, 'notice_of_disagreements/evidence_submissions', { nod_uuid: nod_uuid },
+                { 'X-VA-SSN' => ssn.to_s.strip.presence }
+      end
+    end
+
+    ##
+    # Get the url to upload supporting evidence for a Notice of Disagreement
+    #
+    # @param upload_url [String] The url for the document to be uploaded
+    # @param file_path [String] The file path for the document to be uploaded
+    # @param metadata [Hash] additional data
+    #
+    # @return [Faraday::Response]
+    #
+    def put_notice_of_disagreement_upload(upload_url:, file_upload:, metadata_string:)
+      # TODO: confirm endpoint
+      content_tmpfile = Tempfile.new(file_upload.filename, encoding: file_upload.read.encoding)
+      content_tmpfile.write(file_upload.read)
+      content_tmpfile.rewind
+
+      json_tmpfile = Tempfile.new('metadata.json', encoding: 'utf-8')
+      json_tmpfile.write(metadata_string)
+      json_tmpfile.rewind
+
+      params = { metadata: Faraday::UploadIO.new(json_tmpfile.path, Mime[:json].to_s, 'metadata.json'),
+                 content: Faraday::UploadIO.new(content_tmpfile.path, Mime[:pdf].to_s, file_upload.filename) }
+
+      # when we upgrade to Faraday >1.0
+      # params = { metadata: Faraday::FilePart.new(json_tmpfile, Mime[:json].to_s, 'metadata.json'),
+      #            content: Faraday::FilePart.new(content_tmpfile, Mime[:pdf].to_s, file_upload.filename) }
+      with_monitoring_and_error_handling do
+        perform :put, upload_url, params, { 'Content-Type' => 'multipart/form-data' }
+      end
+    ensure
+      content_tmpfile.close
+      content_tmpfile.unlink
+      json_tmpfile.close
+      json_tmpfile.unlink
+    end
+
+    ##
+    # Returns all of the data associated with a specific Notice of Disagreement Evidence Submission.
+    #
+    # @param guid [uuid] the uuid returnd from get_notice_of_disagreement_upload_url
+    #
+    # @return [Faraday::Response]
+    #
+    def get_notice_of_disagreement_upload(guid:)
+      with_monitoring_and_error_handling do
+        perform :get, "notice_of_disagreements/evidence_submissions/#{guid}", nil
+      end
     end
 
     private
@@ -241,144 +358,5 @@ module DecisionReviewV1
     end
 
     headers
-  end
-
-  ##
-  # Create a Notice of Disagreement
-  #
-  # @param request_body [JSON] JSON serialized version of a Notice of Disagreement Form (10182)
-  # @param user [User] Veteran who the form is in regard to
-  # @return [Faraday::Response]
-  #
-  def create_notice_of_disagreement(request_body:, user:)
-    # testing
-    pp request_body
-    pp user
-    # actual
-    with_monitoring_and_error_handling do
-      headers = create_notice_of_disagreement_headers(user)
-      response = perform :post, 'notice_of_disagreements', request_body, headers
-      raise_schema_error_unless_200_status response.status
-      validate_against_schema(
-        json: response.body, schema: Schemas::NOD_CREATE_RESPONSE_200, append_to_error_class: ' (NOD)'
-      )
-      response
-    end
-  end
-
-  ##
-  # Retrieve a Notice of Disagreement
-  #
-  # @param uuid [uuid] A Notice of Disagreement's UUID (included in a create_notice_of_disagreement response)
-  # @return [Faraday::Response]
-  #
-  def get_notice_of_disagreement(uuid)
-    # testing
-    pp uuid
-    # actual
-    with_monitoring_and_error_handling do
-      response = perform :get, "notice_of_disagreements/#{uuid}", nil
-      raise_schema_error_unless_200_status response.status
-      validate_against_schema(
-        json: response.body, schema: Schemas::NOD_SHOW_RESPONSE_200, append_to_error_class: ' (NOD)'
-      )
-      response
-    end
-  end
-
-  ##
-  # Get Contestable Issues for a Notice of Disagreement
-  #
-  # @param user [User] Veteran who the form is in regard to
-  # @return [Faraday::Response]
-  #
-  def get_notice_of_disagreement_contestable_issues(user:)
-    # testing
-    pp user
-    # actual
-    with_monitoring_and_error_handling do
-      # TODO: confirm the path, should be different, reference HLR
-      path = 'notice_of_disagreements/contestable_issues'
-      headers = get_contestable_issues_headers(user)
-      response = perform :get, path, nil, headers
-      raise_schema_error_unless_200_status response.status
-      validate_against_schema(
-        json: response.body,
-        schema: Schemas::NOD_CONTESTABLE_ISSUES_RESPONSE_200,
-        append_to_error_class: ' (NOD)'
-      )
-      response
-    end
-  end
-
-  ##
-  # Get the url to upload supporting evidence for a Notice of Disagreement
-  #
-  # @param nod_uuid [uuid] The uuid of the submited Notice of Disagreement
-  # @return [Faraday::Response]
-  #
-  def get_notice_of_disagreement_upload_url(nod_uuid:, ssn:)
-    # testing
-    pp nod_uuid
-    # actual
-    # todo: confirm endpoint
-    with_monitoring_and_error_handling do
-      perform :post, 'notice_of_disagreements/evidence_submissions', { nod_uuid: nod_uuid },
-              { 'X-VA-SSN' => ssn.to_s.strip.presence }
-    end
-  end
-
-  ##
-  # Get the url to upload supporting evidence for a Notice of Disagreement
-  #
-  # @param upload_url [String] The url for the document to be uploaded
-  # @param file_path [String] The file path for the document to be uploaded
-  # @param metadata [Hash] additional data
-  #
-  # @return [Faraday::Response]
-  #
-  def put_notice_of_disagreement_upload(upload_url:, file_upload:, metadata_string:)
-    # testing
-    pp upload_url
-    pp file_upload
-    # actual
-    # todo: confirm endpoint
-    content_tmpfile = Tempfile.new(file_upload.filename, encoding: file_upload.read.encoding)
-    content_tmpfile.write(file_upload.read)
-    content_tmpfile.rewind
-
-    json_tmpfile = Tempfile.new('metadata.json', encoding: 'utf-8')
-    json_tmpfile.write(metadata_string)
-    json_tmpfile.rewind
-
-    params = { metadata: Faraday::UploadIO.new(json_tmpfile.path, Mime[:json].to_s, 'metadata.json'),
-               content: Faraday::UploadIO.new(content_tmpfile.path, Mime[:pdf].to_s, file_upload.filename) }
-
-    # when we upgrade to Faraday >1.0
-    # params = { metadata: Faraday::FilePart.new(json_tmpfile, Mime[:json].to_s, 'metadata.json'),
-    #            content: Faraday::FilePart.new(content_tmpfile, Mime[:pdf].to_s, file_upload.filename) }
-    with_monitoring_and_error_handling do
-      perform :put, upload_url, params, { 'Content-Type' => 'multipart/form-data' }
-    end
-  ensure
-    content_tmpfile.close
-    content_tmpfile.unlink
-    json_tmpfile.close
-    json_tmpfile.unlink
-  end
-
-  ##
-  # Returns all of the data associated with a specific Notice of Disagreement Evidence Submission.
-  #
-  # @param guid [uuid] the uuid returnd from get_notice_of_disagreement_upload_url
-  #
-  # @return [Faraday::Response]
-  #
-  def get_notice_of_disagreement_upload(guid:)
-    # testing
-    pp guid
-    with_monitoring_and_error_handling do
-      perform :get, "notice_of_disagreements/evidence_submissions/#{guid}", nil
-    end
   end
 end
