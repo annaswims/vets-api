@@ -3,6 +3,9 @@ on: push
 
 jobs:
   container-job:
+    defaults:
+      run:
+        shell: bash
     env:
       BUNDLE_ENTERPRISE__CONTRIBSYS__COM: ${{ secrets.BUNDLE_ENTERPRISE__CONTRIBSYS__COM }}
       CI: true
@@ -11,7 +14,7 @@ jobs:
       TERM: xterm-256color
       DOCKER_IMAGE: ${{ github.sha }}-${{ github.run_id }}${{ github.run_number }}
     runs-on: kmatheny
-    # Docker Hub image that `container-job` executes in
+    # Docker image that `container-job` executes in
     container:
       image: 1986/docker-job-runner:latest
       options: >-
