@@ -2,18 +2,22 @@
 
 require 'rails_helper'
 
-RSpec.describe SignIn::CodeChallengeStateMapper do
+RSpec.describe SignIn::StatePayloadJwtEncoder do
   describe '#perform' do
     subject do
-      SignIn::CodeChallengeStateMapper.new(code_challenge: code_challenge,
-                                           code_challenge_method: code_challenge_method,
-                                           client_state: client_state,
-                                           client_id: client_id).perform
+      SignIn::StatePayloadJwtEncoder.new(code_challenge: code_challenge,
+                                         code_challenge_method: code_challenge_method,
+                                         client_state: client_state,
+                                         type: type,
+                                         acr: acr,
+                                         client_id: client_id).perform
     end
 
     let(:code_challenge) { 'some-code-challenge' }
     let(:code_challenge_method) { 'some-code-challenge-method' }
     let(:client_state) { 'some-client-state' }
+    let(:acr) { 'some-acr' }
+    let(:type) { 'some-type' }
     let(:client_id) { 'some-client-id' }
     let(:client_state_minimum_length) { SignIn::Constants::Auth::CLIENT_STATE_MINIMUM_LENGTH }
 
@@ -45,31 +49,32 @@ RSpec.describe SignIn::CodeChallengeStateMapper do
         let(:code_challenge_remove_base64_padding) do
           Base64.urlsafe_encode64(Base64.urlsafe_decode64(code_challenge.to_s), padding: false)
         end
-        let(:state) { 'some-state-value' }
+        let(:seed) { 'some-seed-value' }
         let(:client_id) { SignIn::Constants::ClientConfig::CLIENT_IDS.first }
+        let(:acr) { SignIn::Constants::Auth::ACR_VALUES.first }
+        let(:type) { SignIn::Constants::Auth::REDIRECT_URLS.first }
         let(:client_state) { SecureRandom.alphanumeric(client_state_minimum_length + 1) }
 
         before do
-          allow(SecureRandom).to receive(:hex).and_return(state)
+          allow(SecureRandom).to receive(:hex).and_return(seed)
         end
 
-        shared_context 'properly mapped code challenge state' do
-          it 'returns a state value' do
-            expect(subject).to eq(state)
-          end
-
-          it 'creates a CodeChallengeStateMap object that maps code_challenge and state' do
-            state = subject
-            code_challenge_state_map = SignIn::CodeChallengeStateMap.find(state)
-            expect(code_challenge_state_map.code_challenge).to eq(code_challenge_remove_base64_padding)
-            expect(code_challenge_state_map.client_state).to eq(client_state)
+        shared_context 'properly encoded state payload jwt' do
+          it 'returns an encoded jwt value' do
+            decoded_jwt = OpenStruct.new(JWT.decode(subject, false, nil).first)
+            expect(decoded_jwt.acr).to eq(acr)
+            expect(decoded_jwt.type).to eq(type)
+            expect(decoded_jwt.client_id).to eq(client_id)
+            expect(decoded_jwt.code_challenge).to eq(code_challenge)
+            expect(decoded_jwt.client_state).to eq(client_state)
+            expect(decoded_jwt.seed).to eq(seed)
           end
         end
 
         context 'and given client_id is not within accepted client ids list' do
           let(:client_id) { 'some-arbitrary-client-id' }
-          let(:expected_error) { SignIn::Errors::CodeChallengeStateMapError }
-          let(:expected_error_message) { 'Code Challenge or State or Client id is not valid' }
+          let(:expected_error) { SignIn::Errors::StatePayloadError }
+          let(:expected_error_message) { 'Attributes are not valid' }
 
           it 'raises a code challenge state map error' do
             expect { subject }.to raise_exception(expected_error, expected_error_message)
@@ -79,19 +84,51 @@ RSpec.describe SignIn::CodeChallengeStateMapper do
         context 'and given client_id is within accepted client ids list' do
           let(:client_id) { SignIn::Constants::ClientConfig::CLIENT_IDS.first }
 
-          it_behaves_like 'properly mapped code challenge state'
+          it_behaves_like 'properly encoded state payload jwt'
+        end
+
+        context 'and given acr is not within accepted acr values list' do
+          let(:acr) { 'some-arbitrary-acr' }
+          let(:expected_error) { SignIn::Errors::StatePayloadError }
+          let(:expected_error_message) { 'Attributes are not valid' }
+
+          it 'raises a code challenge state map error' do
+            expect { subject }.to raise_exception(expected_error, expected_error_message)
+          end
+        end
+
+        context 'and given acr is within accepted acr values list' do
+          let(:acr) { SignIn::Constants::Auth::ACR_VALUES.first }
+
+          it_behaves_like 'properly encoded state payload jwt'
+        end
+
+        context 'and given type is not within accepted type values list' do
+          let(:type) { 'some-arbitrary-type' }
+          let(:expected_error) { SignIn::Errors::StatePayloadError }
+          let(:expected_error_message) { 'Attributes are not valid' }
+
+          it 'raises a code challenge state map error' do
+            expect { subject }.to raise_exception(expected_error, expected_error_message)
+          end
+        end
+
+        context 'and given type is within accepted type values list' do
+          let(:type) { SignIn::Constants::Auth::REDIRECT_URLS.first }
+
+          it_behaves_like 'properly encoded state payload jwt'
         end
 
         context 'and given client_state is nil' do
           let(:client_state) { nil }
 
-          it_behaves_like 'properly mapped code challenge state'
+          it_behaves_like 'properly encoded state payload jwt'
         end
 
         context 'and given client_state is less than minimum client state length' do
           let(:client_state) { SecureRandom.alphanumeric(client_state_minimum_length - 1) }
-          let(:expected_error) { SignIn::Errors::CodeChallengeStateMapError }
-          let(:expected_error_message) { 'Code Challenge or State or Client id is not valid' }
+          let(:expected_error) { SignIn::Errors::StatePayloadError }
+          let(:expected_error_message) { 'Attributes are not valid' }
 
           it 'raises a code challenge state map error' do
             expect { subject }.to raise_exception(expected_error, expected_error_message)
@@ -101,7 +138,7 @@ RSpec.describe SignIn::CodeChallengeStateMapper do
         context 'and given client_state is greater than minimum client state length' do
           let(:client_state) { SecureRandom.alphanumeric(client_state_minimum_length + 1) }
 
-          it_behaves_like 'properly mapped code challenge state'
+          it_behaves_like 'properly encoded state payload jwt'
         end
       end
     end
