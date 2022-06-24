@@ -261,11 +261,10 @@ module DecisionReviewV1
 
     def create_notice_of_disagreement_headers(user)
       headers = {
-        'X-VA-First-Name' => user.first_name.to_s.strip, # can be an empty string for those with 1 legal name
+        'X-VA-File-Number' => user.ssn.to_s.strip.presence,
+        'X-VA-First-Name' => user.first_name.to_s.strip,
         'X-VA-Middle-Initial' => middle_initial(user),
         'X-VA-Last-Name' => user.last_name.to_s.strip.presence,
-        'X-VA-SSN' => user.ssn.to_s.strip.presence,
-        'X-VA-File-Number' => 'testing',
         'X-VA-Birth-Date' => user.birth_date.to_s.strip.presence
       }.compact
 
