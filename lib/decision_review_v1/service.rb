@@ -19,16 +19,17 @@ module DecisionReviewV1
     configuration DecisionReviewV1::Configuration
 
     STATSD_KEY_PREFIX = 'api.decision_review'
-    REQUIRED_CREATE_HEADERS = %w[X-VA-First-Name X-VA-Last-Name X-VA-SSN X-VA-Birth-Date].freeze
 
-    # Higher Level Reviews
+    HLR_REQUIRED_CREATE_HEADERS = %w[X-VA-First-Name X-VA-Last-Name X-VA-SSN X-VA-Birth-Date].freeze
+    NOD_REQUIRED_CREATE_HEADERS = %w[X-VA-File-Number X-VA-First-Name X-VA-Last-Name X-VA-Birth-Date].freeze
+
     HLR_CREATE_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'HLR-CREATE-RESPONSE-200_V1'
     HLR_SHOW_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'HLR-SHOW-RESPONSE-200_V1'
     HLR_GET_LEGACY_APPEALS_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'HLR-GET-LEGACY-APPEALS-RESPONSE-200'
-    # Notice of Disagreement
+
     NOD_CREATE_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'NOD-CREATE-RESPONSE-200_V1'
     NOD_SHOW_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'NOD-SHOW-RESPONSE-200_V1'
-    # TODO: add evidence stuff, remaining endpoints
+
     # This schema is the same for HLR/NOD:
     HLR_GET_CONTESTABLE_ISSUES_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'HLR-GET-CONTESTABLE-ISSUES-RESPONSE-200'
 
@@ -180,7 +181,6 @@ module DecisionReviewV1
     # @return [Faraday::Response]
     #
     def get_notice_of_disagreement_upload_url(nod_uuid:, ssn:)
-      # TODO: confirm endpoint
       with_monitoring_and_error_handling do
         perform :post, 'notice_of_disagreements/evidence_submissions', { nod_uuid: nod_uuid },
                 { 'X-VA-SSN' => ssn.to_s.strip.presence }
@@ -243,12 +243,12 @@ module DecisionReviewV1
         'X-VA-Middle-Initial' => middle_initial(user),
         'X-VA-Last-Name' => user.last_name.to_s.strip.first(18).presence,
         'X-VA-Birth-Date' => user.birth_date.to_s.strip.presence,
-        'X-VA-File-Number' => nil,
+        'X-VA-File-Number' => user.ssn.to_s.strip.presence,
         'X-VA-Service-Number' => nil,
         'X-VA-Insurance-Policy-Number' => nil
       }.compact
 
-      missing_required_fields = REQUIRED_CREATE_HEADERS - headers.keys
+      missing_required_fields = HLR_REQUIRED_CREATE_HEADERS - headers.keys
       if missing_required_fields.present?
         raise Common::Exceptions::Forbidden.new(
           source: "#{self.class}##{__method__}",
@@ -265,11 +265,11 @@ module DecisionReviewV1
         'X-VA-Middle-Initial' => middle_initial(user),
         'X-VA-Last-Name' => user.last_name.to_s.strip.presence,
         'X-VA-SSN' => user.ssn.to_s.strip.presence,
-        'X-VA-File-Number' => nil,
+        'X-VA-File-Number' => 'testing',
         'X-VA-Birth-Date' => user.birth_date.to_s.strip.presence
       }.compact
 
-      missing_required_fields = REQUIRED_CREATE_HEADERS - headers.keys
+      missing_required_fields = NOD_REQUIRED_CREATE_HEADERS - headers.keys
       if missing_required_fields.present?
         raise Common::Exceptions::Forbidden.new(
           source: "#{self.class}##{__method__}",
