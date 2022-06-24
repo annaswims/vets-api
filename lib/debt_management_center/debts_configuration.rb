@@ -22,10 +22,14 @@ module DebtManagementCenter
         f.use :breakers
         f.use Faraday::Response::RaiseError
         f.request :json
-        f.response :betamocks if Settings.dmc.mock_debts
+        f.response :betamocks if mock_enabled?
         f.response :json
         f.adapter Faraday.default_adapter
       end
+    end
+
+    def mock_enabled?
+      settings.mock || !Flipper.enabled?('debts_mock_disabled') || false
     end
   end
 end

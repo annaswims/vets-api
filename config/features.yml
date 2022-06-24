@@ -201,6 +201,9 @@ features:
   debt_letters_show_letters:
     actor_type: user
     description: Enables debt letters
+  debts_mock_disabled:
+    actor_type: user
+    description: Disables mock data for DMC debts
   decision_review_hlr_email:
     actor_type: user
     description: Send email notification for successful HLR submission
