@@ -163,7 +163,6 @@ module DecisionReviewV1
         path = 'contestable_issues/notice_of_disagreements'
         headers = get_contestable_issues_headers(user)
         response = perform :get, path, nil, headers
-        # todo
         raise_schema_error_unless_200_status response.status
         validate_against_schema(
           json: response.body,
