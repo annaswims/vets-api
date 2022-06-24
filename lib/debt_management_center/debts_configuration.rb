@@ -29,7 +29,7 @@ module DebtManagementCenter
     end
 
     def mock_enabled?
-      settings.mock || !Flipper.enabled?('debts_mock_disabled') || false
+      settings.mock || Flipper.enabled?('debts_mock_enabled') || false
     end
   end
 end
