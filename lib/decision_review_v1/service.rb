@@ -182,7 +182,7 @@ module DecisionReviewV1
     def get_notice_of_disagreement_upload_url(nod_uuid:, ssn:)
       with_monitoring_and_error_handling do
         perform :post, 'notice_of_disagreements/evidence_submissions', { nod_uuid: nod_uuid },
-                { 'X-VA-SSN' => ssn.to_s.strip.presence }
+                { 'X-VA-File-Number' => ssn.to_s.strip.presence }
       end
     end
 
