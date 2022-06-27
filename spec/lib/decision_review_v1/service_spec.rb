@@ -44,6 +44,24 @@ describe DecisionReviewV1::Service do
         it("#{schema_name} schema example is present") { expect(VetsJsonSchema::EXAMPLES).to have_key schema_name }
       end
     end
+
+    describe 'ensure NOD schemas are present' do
+      %w[
+        NOD-CREATE-REQUEST-BODY_V1
+        NOD-CREATE-RESPONSE-200_V1
+        NOD-SHOW-RESPONSE-200_V1
+      ].each do |schema_name|
+        it("#{schema_name} schema is present") { expect(VetsJsonSchema::SCHEMAS).to have_key schema_name }
+      end
+    end
+
+    describe 'ensure NOD schema examples are present' do
+      %w[
+        NOD-CREATE-REQUEST-BODY_V1
+      ].each do |schema_name|
+        it("#{schema_name} schema example is present") { expect(VetsJsonSchema::EXAMPLES).to have_key schema_name }
+      end
+    end
   end
 
   describe '#create_higher_level_review_headers' do
@@ -184,6 +202,27 @@ describe DecisionReviewV1::Service do
           expect { subject }.to raise_error(
             an_instance_of(DecisionReviewV1::ServiceException).and(having_attributes(key: 'DR_422'))
           )
+        end
+      end
+    end
+  end
+
+  describe '#create_notice_of_disagreement' do
+    subject { described_class.new.create_notice_of_disagreement(request_body: body.to_json, user: user) }
+
+    let(:body) do
+      full_body = VetsJsonSchema::EXAMPLES['NOD-CREATE-REQUEST-BODY_V1']
+      full_body.delete('nodUploads')
+      full_body
+    end
+
+    context '200 response' do
+      it 'returns a properly formatted 200 response' do
+        VCR.use_cassette('decision_review/NOD-CREATE-RESPONSE-200_V1') do
+          expect(subject).to respond_to :status
+          expect(subject.status).to be 200
+          expect(subject).to respond_to :body
+          expect(subject.body).to be_a Hash
         end
       end
     end
