@@ -233,6 +233,17 @@ module DecisionReviewV1
       end
     end
 
+    def self.file_upload_metadata(user)
+      {
+        'veteranFirstName' => transliterate_name(user.first_name),
+        'veteranLastName' => transliterate_name(user.last_name),
+        'zipCode' => user.zip,
+        'fileNumber' => user.ssn.to_s.strip,
+        'source' => 'Vets.gov',
+        'businessLine' => 'BVA'
+      }.to_json
+    end
+
     private
 
     def create_higher_level_review_headers(user)
