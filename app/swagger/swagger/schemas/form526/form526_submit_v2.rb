@@ -3,6 +3,7 @@
 module Swagger
   module Schemas
     module Form526
+      # rubocop:disable Metrics/ClassLength
       class Form526SubmitV2
         include Swagger::Blocks
 
@@ -329,15 +330,36 @@ module Swagger
                   'Air National Guard',
                   'Army',
                   'Army National Guard',
-                  'Army Reserve',
+                  'Army Reserves',
                   'Coast Guard',
-                  'Coast Guard Reserve',
+                  'Coast Guard Reserves',
                   'Marine Corps',
-                  'Marine Corps Reserve',
+                  'Marine Corps Reserves',
                   'NOAA',
                   'Navy',
-                  'Navy Reserve',
-                  'Public Health Service'
+                  'Navy Reserves',
+                  'Public Health Service',
+                  'Air Force Academy',
+                  'Air Force Civilian',
+                  'Army Air Corps or Army Air Force',
+                  'Army Air Corps',
+                  'Army Nurse Corps',
+                  'Coast Guard Academy',
+                  'Commonwealth Army Veteran',
+                  'Guerrilla Combination Service',
+                  'Marine',
+                  'Merchant Marine',
+                  'National Oceanic and Atmospheric Administration',
+                  'Naval Academy',
+                  'Other',
+                  'Regular Philippine Scout',
+                  'Regular Scout Service',
+                  'Space Force',
+                  'Special Philippine Scout',
+                  'Unknown',
+                  'US Military Academy',
+                  'Woman Air Corps',
+                  "Women's Army Corps"
                 ]
               property :dateRange, type: :array do
                 items do
@@ -435,3 +457,4 @@ module Swagger
     end
   end
 end
+# rubocop:enable Metrics/ClassLength

@@ -497,7 +497,7 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "800cdf31-546c-4a63-a803-ee94ce27b7a1",
+                    "id": "0f8188bb-2c0d-427d-b26c-365b56e360bb",
                     "type": "claims_api_claim",
                     "attributes": {
                       "evss_id": 600118851,
@@ -546,11 +546,11 @@
                       "status": "Initial review",
                       "supporting_documents": [
                         {
-                          "id": "55dd903f-c071-4b7c-b56b-e03dd29f535c",
+                          "id": "beaf355b-5573-40fc-ab31-da7eb1193699",
                           "type": "claim_supporting_document",
                           "md5": "d927c7e283b3158a54822a493d06181d",
                           "filename": "extras.pdf",
-                          "uploaded_at": "2022-06-10T20:08:02.903Z"
+                          "uploaded_at": "2022-06-28T17:37:22.478Z"
                         }
                       ]
                     }
@@ -1426,6 +1426,7 @@
                                       "Public Health Service",
                                       "Regular Philippine Scout",
                                       "Regular Scout Service",
+                                      "Space Force",
                                       "Special Philippine Scout",
                                       "Unknown",
                                       "US Military Academy",
@@ -2355,7 +2356,7 @@
                         "claimDate": {
                           "description": "Date (or Timestamp with TimeZone) when claim is being submitted to the VA. Date cannot be in the future. UTC TimeZone is assumed unless otherwise specified.",
                           "type": "string",
-                          "pattern": "^(?:[0-9]{4})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])(?:T[0-1][0-9]:[0-5][0-9]:[0-5][0-9](?:[-+][0-9]{2}:[0-9]{2}))*$",
+                          "pattern": "^(?:[0-9]{4})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])(?:T[0-1][0-9]:[0-5][0-9]:[0-5][0-9](?:[-+][0-9]{2}:[0-9]{2}|Z))*$",
                           "example": "2018-08-28T19:53:45+00:00"
                         }
                       }
@@ -2438,7 +2439,7 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "7bbe1f94-89bb-46e7-b103-1c559a411760",
+                    "id": "327ea7f6-34cd-4f47-9e05-8f1391d9814f",
                     "type": "claims_api_claim",
                     "attributes": {
                       "evss_id": null,
@@ -2456,13 +2457,13 @@
                       "current_phase_back": null,
                       "requested_decision": null,
                       "claim_type": null,
-                      "updated_at": "2022-06-10T20:08:03.204Z",
+                      "updated_at": "2022-06-28T17:37:22.722Z",
                       "contention_list": null,
                       "va_representative": null,
                       "events_timeline": [
 
                       ],
-                      "token": "7bbe1f94-89bb-46e7-b103-1c559a411760",
+                      "token": "327ea7f6-34cd-4f47-9e05-8f1391d9814f",
                       "status": "pending",
                       "flashes": [
                         "Hardship",
@@ -3287,6 +3288,7 @@
                                         "Public Health Service",
                                         "Regular Philippine Scout",
                                         "Regular Scout Service",
+                                        "Space Force",
                                         "Special Philippine Scout",
                                         "Unknown",
                                         "US Military Academy",
@@ -4216,7 +4218,7 @@
                           "claimDate": {
                             "description": "Date (or Timestamp with TimeZone) when claim is being submitted to the VA. Date cannot be in the future. UTC TimeZone is assumed unless otherwise specified.",
                             "type": "string",
-                            "pattern": "^(?:[0-9]{4})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])(?:T[0-1][0-9]:[0-5][0-9]:[0-5][0-9](?:[-+][0-9]{2}:[0-9]{2}))*$",
+                            "pattern": "^(?:[0-9]{4})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])(?:T[0-1][0-9]:[0-5][0-9]:[0-5][0-9](?:[-+][0-9]{2}:[0-9]{2}|Z))*$",
                             "example": "2018-08-28T19:53:45+00:00"
                           }
                         }
@@ -4312,7 +4314,7 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "488256ae-521b-4c53-b84a-761d7d1bcf20",
+                    "id": "4505a2c2-12b8-4c43-82e9-dbe3619bdbf6",
                     "type": "claims_api_claim",
                     "attributes": {
                       "evss_id": null,
@@ -4330,13 +4332,13 @@
                       "current_phase_back": null,
                       "requested_decision": null,
                       "claim_type": null,
-                      "updated_at": "2022-06-10T20:08:03.458Z",
+                      "updated_at": "2022-06-28T17:37:22.959Z",
                       "contention_list": null,
                       "va_representative": null,
                       "events_timeline": [
 
                       ],
-                      "token": "488256ae-521b-4c53-b84a-761d7d1bcf20",
+                      "token": "4505a2c2-12b8-4c43-82e9-dbe3619bdbf6",
                       "status": "pending",
                       "flashes": [
                         "Hardship",
@@ -5574,6 +5576,7 @@
                                         "Public Health Service",
                                         "Regular Philippine Scout",
                                         "Regular Scout Service",
+                                        "Space Force",
                                         "Special Philippine Scout",
                                         "Unknown",
                                         "US Military Academy",
@@ -6503,7 +6506,7 @@
                           "claimDate": {
                             "description": "Date (or Timestamp with TimeZone) when claim is being submitted to the VA. Date cannot be in the future. UTC TimeZone is assumed unless otherwise specified.",
                             "type": "string",
-                            "pattern": "^(?:[0-9]{4})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])(?:T[0-1][0-9]:[0-5][0-9]:[0-5][0-9](?:[-+][0-9]{2}:[0-9]{2}))*$",
+                            "pattern": "^(?:[0-9]{4})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])(?:T[0-1][0-9]:[0-5][0-9]:[0-5][0-9](?:[-+][0-9]{2}:[0-9]{2}|Z))*$",
                             "example": "2018-08-28T19:53:45+00:00"
                           }
                         }
@@ -6599,7 +6602,7 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "0a31ac63-52aa-4757-97f9-9c735d4095d7",
+                    "id": "d0a722cc-057e-4d8c-acc8-fa8a9290a9a2",
                     "type": "claims_api_claim",
                     "attributes": {
                       "evss_id": null,
@@ -6613,7 +6616,7 @@
                       "decision_letter_sent": null,
                       "requested_decision": null,
                       "claim_type": null,
-                      "updated_at": "2022-06-10T20:08:03.985Z",
+                      "updated_at": "2022-06-28T17:37:23.380Z",
                       "contention_list": null,
                       "va_representative": null,
                       "events_timeline": [
@@ -6622,7 +6625,7 @@
                       "status": "pending",
                       "supporting_documents": [
                         {
-                          "id": "1a0880d1-90dc-454d-88bb-a239b58f80da",
+                          "id": "fe96418b-28a7-4192-a7a4-5197d6439a8d",
                           "type": "claim_supporting_document",
                           "md5": null,
                           "filename": null,
@@ -8598,11 +8601,11 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "a91aa1f8-035c-4377-b0c1-868262c0c55f",
+                    "id": "035ac1eb-a442-4647-8813-ebf29e1342de",
                     "type": "claims_api_power_of_attorneys",
                     "attributes": {
                       "status": "pending",
-                      "date_request_accepted": "2022-06-10",
+                      "date_request_accepted": "2022-06-28",
                       "representative": {
                         "service_organization": {
                           "poa_code": "074"
@@ -9311,11 +9314,11 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "55283ec5-eed5-4c88-b282-af43542e097e",
+                    "id": "a8bf5273-fa97-4919-8b41-a673f20c11c9",
                     "type": "claims_api_power_of_attorneys",
                     "attributes": {
                       "status": "submitted",
-                      "date_request_accepted": "2022-06-10",
+                      "date_request_accepted": "2022-06-28",
                       "representative": {
                         "service_organization": {
                           "poa_code": "074"
@@ -9766,11 +9769,11 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "d685431e-da8f-4327-8071-9f2aa334c455",
+                    "id": "0b1c2df5-7c42-4a30-88b4-98c351e930cb",
                     "type": "claims_api_power_of_attorneys",
                     "attributes": {
                       "status": "submitted",
-                      "date_request_accepted": "2022-06-10",
+                      "date_request_accepted": "2022-06-28",
                       "representative": {
                         "service_organization": {
                           "poa_code": "074"
