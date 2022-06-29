@@ -1171,7 +1171,8 @@
                     "Naval Academy",
                     "Other",
                     "US Military Academy",
-                    "Women's Army Corps"
+                    "Women's Army Corps",
+                    "Space Force"
                   ],
                   "example": "Air Force"
                 },
@@ -1245,7 +1246,8 @@
                     "Naval Academy",
                     "Other",
                     "US Military Academy",
-                    "Women's Army Corps"
+                    "Women's Army Corps",
+                    "Space Force"
                   ],
                   "example": "Air Force"
                 },
