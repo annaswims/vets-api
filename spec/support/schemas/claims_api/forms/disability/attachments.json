@@ -25,22 +25,26 @@
               "description": "EVSS Claim ID"
             },
             "date_filed": {
-              "type": ["string", "null"],
+              "type": "string",
+              "nullable": true,
               "format": "date",
               "description": "Date in YYYY-MM-DD the claim was first filed"
             },
             "min_est_date": {
-              "type": ["string", "null"],
+              "type": "string",
+              "nullable": true,
               "format": "date",
               "description": "Minimum Estimated Claim Completion Date"
             },
             "max_est_date": {
-              "type": ["string", "null"],
+              "type": "string",
+              "nullable": true,
               "format": "date",
               "description": "Maximum Estimated Claim Completion Date"
             },
             "phase_change_date": {
-              "type": ["string", "null"],
+              "type": "string",
+              "nullable": true,
               "format": "date",
               "description": "Date of last phase change"
             },
@@ -74,11 +78,13 @@
               "type": ["string", "null"]
             },
             "requested_decision": {
-              "type": ["string", "null"],
+              "type": "string",
+              "nullable": true,
               "description": "The claim filer has requested a claim decision be made"
             },
             "claim_type": {
-              "type": ["string", "null"],
+              "type": "string",
+              "nullable": true,
               "description": "The type of claim originally submitted"
             },
             "updated_at": {
