@@ -10998,7 +10998,6 @@
       }
     }
   },
-  "basePath": "/services/benefits/v1",
   "servers": [
     {
       "url": "https://sandbox-api.va.gov/services/claims/{version}",
