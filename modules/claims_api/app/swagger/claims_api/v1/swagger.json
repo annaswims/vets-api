@@ -497,7 +497,7 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "800cdf31-546c-4a63-a803-ee94ce27b7a1",
+                    "id": "27d95066-e256-4884-b9fe-20759e1c5c05",
                     "type": "claims_api_claim",
                     "attributes": {
                       "evss_id": 600118851,
@@ -546,11 +546,11 @@
                       "status": "Initial review",
                       "supporting_documents": [
                         {
-                          "id": "55dd903f-c071-4b7c-b56b-e03dd29f535c",
+                          "id": "e5d55cf3-0fb2-4205-9bb2-786515b4b5bc",
                           "type": "claim_supporting_document",
                           "md5": "d927c7e283b3158a54822a493d06181d",
                           "filename": "extras.pdf",
-                          "uploaded_at": "2022-06-10T20:08:02.903Z"
+                          "uploaded_at": "2022-06-29T19:05:09.217Z"
                         }
                       ]
                     }
@@ -2355,7 +2355,7 @@
                         "claimDate": {
                           "description": "Date (or Timestamp with TimeZone) when claim is being submitted to the VA. Date cannot be in the future. UTC TimeZone is assumed unless otherwise specified.",
                           "type": "string",
-                          "pattern": "^(?:[0-9]{4})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])(?:T[0-1][0-9]:[0-5][0-9]:[0-5][0-9](?:[-+][0-9]{2}:[0-9]{2}))*$",
+                          "pattern": "^(?:[0-9]{4})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])(?:T[0-1][0-9]:[0-5][0-9]:[0-5][0-9](?:[-+][0-9]{2}:[0-9]{2}|Z))*$",
                           "example": "2018-08-28T19:53:45+00:00"
                         }
                       }
@@ -2438,7 +2438,7 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "7bbe1f94-89bb-46e7-b103-1c559a411760",
+                    "id": "0cf180ad-aa75-4853-ad3d-e5be1efa30a2",
                     "type": "claims_api_claim",
                     "attributes": {
                       "evss_id": null,
@@ -2456,13 +2456,13 @@
                       "current_phase_back": null,
                       "requested_decision": null,
                       "claim_type": null,
-                      "updated_at": "2022-06-10T20:08:03.204Z",
+                      "updated_at": "2022-06-29T19:05:09.446Z",
                       "contention_list": null,
                       "va_representative": null,
                       "events_timeline": [
 
                       ],
-                      "token": "7bbe1f94-89bb-46e7-b103-1c559a411760",
+                      "token": "0cf180ad-aa75-4853-ad3d-e5be1efa30a2",
                       "status": "pending",
                       "flashes": [
                         "Hardship",
@@ -4216,7 +4216,7 @@
                           "claimDate": {
                             "description": "Date (or Timestamp with TimeZone) when claim is being submitted to the VA. Date cannot be in the future. UTC TimeZone is assumed unless otherwise specified.",
                             "type": "string",
-                            "pattern": "^(?:[0-9]{4})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])(?:T[0-1][0-9]:[0-5][0-9]:[0-5][0-9](?:[-+][0-9]{2}:[0-9]{2}))*$",
+                            "pattern": "^(?:[0-9]{4})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])(?:T[0-1][0-9]:[0-5][0-9]:[0-5][0-9](?:[-+][0-9]{2}:[0-9]{2}|Z))*$",
                             "example": "2018-08-28T19:53:45+00:00"
                           }
                         }
@@ -4312,7 +4312,7 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "488256ae-521b-4c53-b84a-761d7d1bcf20",
+                    "id": "7f74f68f-7b59-47ec-8c34-fdf50480977a",
                     "type": "claims_api_claim",
                     "attributes": {
                       "evss_id": null,
@@ -4330,13 +4330,13 @@
                       "current_phase_back": null,
                       "requested_decision": null,
                       "claim_type": null,
-                      "updated_at": "2022-06-10T20:08:03.458Z",
+                      "updated_at": "2022-06-29T19:05:09.634Z",
                       "contention_list": null,
                       "va_representative": null,
                       "events_timeline": [
 
                       ],
-                      "token": "488256ae-521b-4c53-b84a-761d7d1bcf20",
+                      "token": "7f74f68f-7b59-47ec-8c34-fdf50480977a",
                       "status": "pending",
                       "flashes": [
                         "Hardship",
@@ -4388,34 +4388,26 @@
                               "description": "EVSS Claim ID"
                             },
                             "date_filed": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Date in YYYY-MM-DD the claim was first filed"
                             },
                             "min_est_date": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Minimum Estimated Claim Completion Date"
                             },
                             "max_est_date": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Maximum Estimated Claim Completion Date"
                             },
                             "phase_change_date": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Date of last phase change"
                             },
@@ -4470,17 +4462,13 @@
                               ]
                             },
                             "requested_decision": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "The claim filer has requested a claim decision be made"
                             },
                             "claim_type": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "The type of claim originally submitted"
                             },
                             "updated_at": {
@@ -6503,7 +6491,7 @@
                           "claimDate": {
                             "description": "Date (or Timestamp with TimeZone) when claim is being submitted to the VA. Date cannot be in the future. UTC TimeZone is assumed unless otherwise specified.",
                             "type": "string",
-                            "pattern": "^(?:[0-9]{4})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])(?:T[0-1][0-9]:[0-5][0-9]:[0-5][0-9](?:[-+][0-9]{2}:[0-9]{2}))*$",
+                            "pattern": "^(?:[0-9]{4})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])(?:T[0-1][0-9]:[0-5][0-9]:[0-5][0-9](?:[-+][0-9]{2}:[0-9]{2}|Z))*$",
                             "example": "2018-08-28T19:53:45+00:00"
                           }
                         }
@@ -6599,7 +6587,7 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "0a31ac63-52aa-4757-97f9-9c735d4095d7",
+                    "id": "c28ad7e7-7f01-495d-a88c-e2a0307c7491",
                     "type": "claims_api_claim",
                     "attributes": {
                       "evss_id": null,
@@ -6613,7 +6601,7 @@
                       "decision_letter_sent": null,
                       "requested_decision": null,
                       "claim_type": null,
-                      "updated_at": "2022-06-10T20:08:03.985Z",
+                      "updated_at": "2022-06-29T19:05:10.046Z",
                       "contention_list": null,
                       "va_representative": null,
                       "events_timeline": [
@@ -6622,7 +6610,7 @@
                       "status": "pending",
                       "supporting_documents": [
                         {
-                          "id": "1a0880d1-90dc-454d-88bb-a239b58f80da",
+                          "id": "22670087-4d0b-49a8-b15f-2351120d40bc",
                           "type": "claim_supporting_document",
                           "md5": null,
                           "filename": null,
@@ -6674,34 +6662,26 @@
                               "description": "EVSS Claim ID"
                             },
                             "date_filed": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Date in YYYY-MM-DD the claim was first filed"
                             },
                             "min_est_date": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Minimum Estimated Claim Completion Date"
                             },
                             "max_est_date": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Maximum Estimated Claim Completion Date"
                             },
                             "phase_change_date": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Date of last phase change"
                             },
@@ -6756,17 +6736,13 @@
                               ]
                             },
                             "requested_decision": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "The claim filer has requested a claim decision be made"
                             },
                             "claim_type": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "The type of claim originally submitted"
                             },
                             "updated_at": {
@@ -7578,10 +7554,8 @@
                           ],
                           "properties": {
                             "creation_date": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Date the Intent to File was received at the VA"
                             },
@@ -8598,11 +8572,11 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "a91aa1f8-035c-4377-b0c1-868262c0c55f",
+                    "id": "a0689975-ac05-4f1e-98c7-155bd9e27731",
                     "type": "claims_api_power_of_attorneys",
                     "attributes": {
                       "status": "pending",
-                      "date_request_accepted": "2022-06-10",
+                      "date_request_accepted": "2022-06-29",
                       "representative": {
                         "service_organization": {
                           "poa_code": "074"
@@ -8682,10 +8656,8 @@
                               }
                             },
                             "previous_poa": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "Current or Previous Power of Attorney Code submitted for Veteran"
                             }
                           }
@@ -9311,11 +9283,11 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "55283ec5-eed5-4c88-b282-af43542e097e",
+                    "id": "b0091878-1963-4a95-add9-4181e59e8815",
                     "type": "claims_api_power_of_attorneys",
                     "attributes": {
                       "status": "submitted",
-                      "date_request_accepted": "2022-06-10",
+                      "date_request_accepted": "2022-06-29",
                       "representative": {
                         "service_organization": {
                           "poa_code": "074"
@@ -9395,10 +9367,8 @@
                               }
                             },
                             "previous_poa": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "Current or Previous Power of Attorney Code submitted for Veteran"
                             }
                           }
@@ -9766,11 +9736,11 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "d685431e-da8f-4327-8071-9f2aa334c455",
+                    "id": "b7bd83d5-477a-4b20-9c26-b09335d094ff",
                     "type": "claims_api_power_of_attorneys",
                     "attributes": {
                       "status": "submitted",
-                      "date_request_accepted": "2022-06-10",
+                      "date_request_accepted": "2022-06-29",
                       "representative": {
                         "service_organization": {
                           "poa_code": "074"
@@ -9850,10 +9820,8 @@
                               }
                             },
                             "previous_poa": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "Current or Previous Power of Attorney Code submitted for Veteran"
                             }
                           }
@@ -10187,10 +10155,8 @@
                               }
                             },
                             "previous_poa": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "Current or Previous Power of Attorney Code submitted for Veteran"
                             }
                           }

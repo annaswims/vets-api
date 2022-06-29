@@ -83,7 +83,7 @@
 
         ],
         "responses": {
-          "200": {
+          "201": {
             "description": "Veteran's unique identifier",
             "content": {
               "application/json": {
@@ -936,6 +936,7 @@
       }
     }
   },
+  "basePath": "/services/benefits/v2",
   "servers": [
     {
       "url": "https://sandbox-api.va.gov/services/benefits/{version}",
