@@ -145,3 +145,7 @@ The version of Ruby and gem dependencies (including Rails) used are defined in t
 #### Version Policy
 
 The goal is to have vets-api use supported versions of gems and Ruby, which is often the latest. However the versions are generally updated as need or availability arise. If you need a newer version of a gem, please submit a pull-request marked as `draft` with just the gem updated and passing tests.
+
+##### Sandbox
+
+Investigating Sidekiq-scheduler.
