@@ -15,8 +15,19 @@ module AppealsApi
       Rails.root.join('modules', 'appeals_api', Settings.modules_appeals_api.schema_dir, schema_version)
     end
 
+    def shared_dir(file)
+      Rails.root.join(base_dir, 'shared', 'v1', file)
+    end
+
     def validate!(form, payload)
-      schema_validator = JSONSchemer.schema(schema(form), insert_property_defaults: true)
+      resolver = proc do |uri|
+        json_file = uri.path
+        parsed_schema = JSON.parse File.read shared_dir(json_file)
+        parsed_schema['properties'].values.first
+      end
+
+      schema_validator = JSONSchemer.schema(schema(form), insert_property_defaults: true, ref_resolver: resolver)
+
       # there is currently a bug in the gem
       # that it runs the logic based validations
       # before inserting defaults
