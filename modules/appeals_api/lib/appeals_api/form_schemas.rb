@@ -21,8 +21,8 @@ module AppealsApi
 
     def validate!(form, payload)
       resolver = proc do |uri|
-        json_file = uri.path
-        parsed_schema = JSON.parse File.read shared_dir(json_file)
+        json_filename = uri.path
+        parsed_schema = JSON.parse File.read shared_dir(json_filename)
         parsed_schema['properties'].values.first
       end
 

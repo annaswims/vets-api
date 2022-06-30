@@ -34,35 +34,7 @@
                   "type": "object",
                   "properties": {
                     "homeless": { "type": "boolean"},
-                    "address":  {
-                      "type": "object",
-                      "properties": {
-                        "addressLine1":    { "type": "string", "maxLength": 60 },
-                        "addressLine2":    { "type": "string", "maxLength": 30 },
-                        "addressLine3":    { "type": "string", "maxLength": 10 },
-                        "city":            { "type": "string", "maxLength": 60 },
-                        "stateCode": {
-                          "type": "string",
-                          "enum": [
-                            "AL", "AK", "AS", "AZ", "AR", "AA", "AE", "AP", "CA", "CO",
-                            "CT", "DE", "DC", "FM", "FL", "GA", "GU", "HI", "ID", "IL",
-                            "IN", "IA", "KS", "KY", "LA", "ME", "MH", "MD", "MA", "MI",
-                            "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY",
-                            "NC", "ND", "MP", "OH", "OK", "OR", "PW", "PA", "PR", "RI",
-                            "SC", "SD", "TN", "TX", "UT", "VT", "VI", "VA", "WA", "WV",
-                            "WI", "WY"
-                          ] },
-                        "countryCodeISO2": { "type": "string", "pattern": "^[A-Z]{2}$" },
-                        "zipCode5": {
-                          "type": "string",
-                          "description": "5-digit zipcode. Use \"00000\" if Veteran is outside the United States",
-                          "pattern": "^[0-9]{5}$"
-                        },
-                        "internationalPostalCode": { "type": "string", "maxLength": 16 }
-                      },
-                      "additionalProperties": false,
-                      "required": [ "addressLine1", "city", "countryCodeISO2", "zipCode5" ]
-                    },
+                    "address":  { "$ref": "address.json" },
                     "phone":    { "$ref": "phone.json" },
                     "email": {
                       "type": "string",
@@ -81,35 +53,7 @@
                   "type": "object",
                   "description": "If the claimant is a non-Veteran, claimant information is required. Without this information, we will be unable to identify the claimant. If you're a healthcare provider or an employee of a healthcare provider requesting review of a VA payment decision, you must identify the healthcare provider as the claimant and complete all relevant information in the claimant object.",
                   "properties": {
-                    "address":  {
-                      "type": "object",
-                      "properties": {
-                        "addressLine1":    { "type": "string", "minLength": 1, "maxLength": 60 },
-                        "addressLine2":    { "type": "string", "minLength": 1, "maxLength": 30 },
-                        "addressLine3":    { "type": "string", "minLength": 1, "maxLength": 10 },
-                        "city":            { "type": "string", "minLength": 1, "maxLength": 60 },
-                        "stateCode": {
-                          "type": "string",
-                          "enum": [
-                            "AL", "AK", "AS", "AZ", "AR", "AA", "AE", "AP", "CA", "CO",
-                            "CT", "DE", "DC", "FM", "FL", "GA", "GU", "HI", "ID", "IL",
-                            "IN", "IA", "KS", "KY", "LA", "ME", "MH", "MD", "MA", "MI",
-                            "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY",
-                            "NC", "ND", "MP", "OH", "OK", "OR", "PW", "PA", "PR", "RI",
-                            "SC", "SD", "TN", "TX", "UT", "VT", "VI", "VA", "WA", "WV",
-                            "WI", "WY"
-                          ] },
-                        "countryCodeISO2": { "type": "string", "pattern": "^[A-Z]{2}$" },
-                        "zipCode5": {
-                          "type": "string",
-                          "description": "5-digit zipcode. Use \"00000\" if Veteran is outside the United States",
-                          "pattern": "^[0-9]{5}$"
-                        },
-                        "internationalPostalCode": { "type": "string", "maxLength": 16 }
-                      },
-                      "additionalProperties": false,
-                      "required": [ "addressLine1", "city", "countryCodeISO2", "zipCode5" ]
-                    },
+                    "address":  { "$ref": "address.json" },
                     "phone":    { "$ref": "phone.json" },
                     "email": {
                       "type": "string",
@@ -164,7 +108,7 @@
               "attributes": {
                 "type": "object",
                 "properties": {
-                  "issue":                     { "allOf": [ { "$ref": "nonBlankString.json" }, { "maxLength": 140 } ] },
+                  "issue":                     { "allOf": [ { "$ref": "non_blank_string.json" }, { "maxLength": 140 } ] },
                   "decisionDate":              { "$ref": "date.json" },
                   "decisionIssueId":           { "type": "integer" },
                   "ratingIssueReferenceId":    { "type": "string" },
