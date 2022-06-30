@@ -16,7 +16,7 @@ module AppealsApi
     end
 
     def shared_dir(file)
-      Rails.root.join(base_dir, 'shared', 'v1', file)
+      Rails.root.join('modules', 'appeals_api', Settings.modules_appeals_api.schema_dir, 'shared', 'v1', file)
     end
 
     def validate!(form, payload)
