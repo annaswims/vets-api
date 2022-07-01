@@ -16,10 +16,10 @@ module SchemaHelpers
     )
   end
 
-  def resolver
+  def schema_ref_resolver
     proc do |uri|
       json_file = uri.path
-      parsed_schema = JSON.parse File.read shared_dir(json_file)
+      parsed_schema = JSON.parse File.read shared_schema_dir(json_file)
       parsed_schema['properties'].values.first
     end
   end
@@ -34,7 +34,7 @@ module SchemaHelpers
 
   private
 
-  def shared_dir(file)
+  def shared_schema_dir(file)
     Rails.root.join('modules', 'appeals_api', Settings.modules_appeals_api.schema_dir, 'shared', 'v1', file)
   end
 end
