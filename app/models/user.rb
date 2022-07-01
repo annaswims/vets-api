@@ -109,6 +109,10 @@ class User < Common::RedisStore
     identity.first_name.presence || first_name_mpi
   end
 
+  def common_name
+    identity.common_name.presence || [first_name, middle_name, last_name, suffix].compact.join(' ')
+  end
+
   def full_name_normalized
     {
       first: first_name&.capitalize,
@@ -182,6 +186,10 @@ class User < Common::RedisStore
       country: address[:country],
       zip: address[:postal_code]
     }
+  end
+
+  def deceased_date
+    Formatters::DateFormatter.format_date(mpi_profile&.deceased_date)
   end
 
   def birth_date_mpi
@@ -300,7 +308,6 @@ class User < Common::RedisStore
   delegate :idme_uuid, to: :identity, allow_nil: true
   delegate :logingov_uuid, to: :identity, allow_nil: true
   delegate :verified_at, to: :identity, allow_nil: true
-  delegate :common_name, to: :identity, allow_nil: true
   delegate :person_types, to: :identity, allow_nil: true, prefix: true
   delegate :sign_in, to: :identity, allow_nil: true, prefix: true
 

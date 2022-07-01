@@ -3,6 +3,8 @@
 require 'json_marshal/marshaller'
 
 class InProgressForm < ApplicationRecord
+  belongs_to :user_account, dependent: nil, optional: true
+
   class CleanUUID < ActiveRecord::Type::String
     def cast(value)
       super(value.to_s.delete('-'))
@@ -30,7 +32,7 @@ class InProgressForm < ApplicationRecord
   attribute :user_uuid, CleanUUID.new
   serialize :form_data, JsonMarshal::Marshaller
   has_kms_key
-  encrypts :form_data, key: :kms_key, **lockbox_options
+  has_encrypted :form_data, key: :kms_key, **lockbox_options
   validates(:form_data, presence: true)
   validates(:user_uuid, presence: true)
   validate(:id_me_user_uuid)

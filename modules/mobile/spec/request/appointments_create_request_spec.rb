@@ -25,12 +25,18 @@ RSpec.describe 'vaos appointments', type: :request, skip_mvi: true do
     allow_any_instance_of(Mobile::V0::VAOSAppointments::AppointmentsHelper).to receive(:get_clinic).and_return(mock_clinic)
     allow_any_instance_of(Mobile::V0::VAOSAppointments::AppointmentsHelper).to receive(:get_facility).and_return(mock_facility)
     # rubocop:enable Layout/LineLength
+  end
 
+  before(:all) do
     @original_cassette_dir = VCR.configure(&:cassette_library_dir)
     VCR.configure { |c| c.cassette_library_dir = 'modules/mobile/spec/support/vcr_cassettes' }
   end
 
-  after(:all) { VCR.configure { |c| c.cassette_library_dir = @original_cassette_dir } }
+  after(:all) do
+    VCR.configure { |c| c.cassette_library_dir = @original_cassette_dir }
+
+    Flipper.disable('va_online_scheduling')
+  end
 
   describe 'CREATE appointment', :aggregate_failures do
     let(:community_cares_request_body) do
