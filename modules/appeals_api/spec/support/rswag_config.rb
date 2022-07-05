@@ -76,7 +76,7 @@ class AppealsApi::RswagConfig
     a << sc_create_schemas
     a << sc_response_schemas('#/components/schemas')
     a << legacy_appeals_schema('#/components/schemas')
-
+    a << shared_schemas
     a.reduce(&:merge).sort_by { |k, _| k.to_s.downcase }.to_h
   end
 
@@ -674,6 +674,16 @@ class AppealsApi::RswagConfig
         }
       },
       'legacyAppeal': JSON.parse(File.read(AppealsApi::Engine.root.join('spec', 'support', 'schemas', 'legacy_appeal.json')))
+    }
+  end
+
+  def shared_schemas
+    {
+      'address': JSON.parse(File.read(AppealsApi::Engine.root.join('config', 'schemas', 'shared', 'v1', 'address.json'))),
+      'date': JSON.parse(File.read(AppealsApi::Engine.root.join('config', 'schemas', 'shared', 'v1', 'date.json'))),
+      'non_blank_string': JSON.parse(File.read(AppealsApi::Engine.root.join('config', 'schemas', 'shared', 'v1', 'non_blank_string.json'))),
+      'phone': JSON.parse(File.read(AppealsApi::Engine.root.join('config', 'schemas', 'shared', 'v1', 'phone.json'))),
+      'timezone': JSON.parse(File.read(AppealsApi::Engine.root.join('config', 'schemas', 'shared', 'v1', 'timezone.json')))
     }
   end
 

@@ -34,15 +34,15 @@
                   "type": "object",
                   "properties": {
                     "homeless": { "type": "boolean"},
-                    "address":  { "$ref": "address.json" },
-                    "phone":    { "$ref": "phone.json" },
+                    "address":  { "$ref": "#/components/schemas/address" },
+                    "phone":    { "$ref": "#/components/schemas/phone" },
                     "email": {
                       "type": "string",
                       "format": "email",
                       "minLength": 6,
                       "maxLength": 255
                     },
-                    "timezone": { "$ref":  "timezone.json"}
+                    "timezone": { "$ref":  "#/components/schemas/timezone"}
                   },
                   "additionalProperties": false,
                   "required": [ "homeless" ],
@@ -53,15 +53,15 @@
                   "type": "object",
                   "description": "If the claimant is a non-Veteran, claimant information is required. Without this information, we will be unable to identify the claimant. If you're a healthcare provider or an employee of a healthcare provider requesting review of a VA payment decision, you must identify the healthcare provider as the claimant and complete all relevant information in the claimant object.",
                   "properties": {
-                    "address":  { "$ref": "address.json" },
-                    "phone":    { "$ref": "phone.json" },
+                    "address":  { "$ref": "#/components/schemas/address" },
+                    "phone":    { "$ref": "#/components/schemas/phone" },
                     "email": {
                       "type": "string",
                       "format": "email",
                       "minLength": 6,
                       "maxLength": 255
                     },
-                    "timezone": { "$ref":  "timezone.json"}
+                    "timezone": { "$ref":  "#/components/schemas/timezone"}
                   },
                   "required": [ "address", "phone" ]
                 },
@@ -73,7 +73,7 @@
                   "properties": {
                     "firstName": { "type": "string", "maxLength": 30 },
                     "lastName":  { "type": "string", "maxLength": 40 },
-                    "phone": { "$ref": "phone.json" },
+                    "phone": { "$ref": "#/components/schemas/phone" },
                     "email": {
                       "type": "string",
                       "format": "email",
@@ -108,12 +108,12 @@
               "attributes": {
                 "type": "object",
                 "properties": {
-                  "issue":                     { "allOf": [ { "$ref": "non_blank_string.json" }, { "maxLength": 140 } ] },
-                  "decisionDate":              { "$ref": "date.json" },
+                  "issue":                     { "allOf": [ { "$ref": "#/components/schemas/non_blank_string" }, { "maxLength": 140 } ] },
+                  "decisionDate":              { "$ref": "#/components/schemas/date" },
                   "decisionIssueId":           { "type": "integer" },
                   "ratingIssueReferenceId":    { "type": "string" },
                   "ratingDecisionReferenceId": { "type": "string" },
-                  "socDate":                   { "$ref": "date.json" },
+                  "socDate":                   { "$ref": "#/components/schemas/date" },
                   "disagreementArea":          { "type": "string", "maxLength": 90 }
                 },
                 "additionalProperties": false,
