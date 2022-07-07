@@ -16,6 +16,9 @@ module DebtManagementCenter
     def initialize(user)
       super(user)
       @debts = init_debts
+      @debts_configuration = DebtsMangementCenter::DebtsConfiguration.new(
+        use_mock: mock_enabled?
+      )
     end
 
     def get_debts
@@ -49,7 +52,7 @@ module DebtManagementCenter
     def init_debts
       with_monitoring_and_error_handling do
         DebtManagementCenter::DebtsResponse.new(
-          perform(:post, Settings.dmc.debts_endpoint, fileNumber: @file_number).body
+          @debts_configuration.post(Settings.dmc.debts_endpoint, { 'fileNumber' => @file_number }).body
         ).debts
       end
     end
@@ -63,6 +66,10 @@ module DebtManagementCenter
 
     def sort_by_date(debt_history)
       debt_history.sort_by { |d| Date.strptime(d['date'], '%m/%d/%Y') }.reverse
+    end
+
+    def mock_enabled?
+      Settings.dmc.mock_debts || Flipper.enabled?(:debts_mock_enabled, @user) || false
     end
   end
 end
