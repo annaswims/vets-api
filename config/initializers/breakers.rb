@@ -4,7 +4,6 @@ require 'bb/configuration'
 require 'breakers/statsd_plugin'
 require 'caseflow/configuration'
 require 'central_mail/configuration'
-require 'debt_management_center/debts_configuration'
 require 'decision_review/configuration'
 require 'emis/military_information_configuration'
 require 'emis/payment_configuration'
@@ -44,7 +43,6 @@ Rails.application.reloader.to_prepare do
   redis_namespace = Redis::Namespace.new('breakers', redis: Redis.new(redis_options))
 
   services = [
-    DebtManagementCenter::DebtsConfiguration.instance.breakers_service,
     Caseflow::Configuration.instance.breakers_service,
     DecisionReview::Configuration.instance.breakers_service,
     Rx::Configuration.instance.breakers_service,

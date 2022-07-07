@@ -9,16 +9,15 @@ module DebtManagementCenter
     attr_reader :file_number
 
     class DebtNotFound < StandardError; end
-    configuration DebtManagementCenter::DebtsConfiguration
 
     STATSD_KEY_PREFIX = 'api.dmc'
 
     def initialize(user)
       super(user)
-      @debts = init_debts
-      @debts_configuration = DebtsMangementCenter::DebtsConfiguration.new(
+      @debts_configuration = DebtsConfiguration.new(
         use_mock: mock_enabled?
       )
+      @debts = init_debts
     end
 
     def get_debts
@@ -50,6 +49,7 @@ module DebtManagementCenter
     end
 
     def init_debts
+      binding.pry
       with_monitoring_and_error_handling do
         DebtManagementCenter::DebtsResponse.new(
           @debts_configuration.post(Settings.dmc.debts_endpoint, { 'fileNumber' => @file_number }).body

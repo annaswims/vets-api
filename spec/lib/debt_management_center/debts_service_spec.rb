@@ -12,7 +12,7 @@ RSpec.describe DebtManagementCenter::DebtsService do
   describe '#get_letters' do
     context 'with a valid file number' do
       it 'fetches the veterans debt data' do
-        VCR.use_cassette('bgs/people_service/person_data') do
+        VCR.use_cassette('bgs/people_service/person_data', VCR::MATCH_EVERYTHING) do
           VCR.use_cassette('debts/get_letters', VCR::MATCH_EVERYTHING) do
             res = described_class.new(user).get_debts
             expect(JSON.parse(res.to_json)['debts'][0]['fileNumber']).to eq('796043735')
@@ -23,7 +23,7 @@ RSpec.describe DebtManagementCenter::DebtsService do
 
     context 'without a valid file number' do
       it 'returns a bad request error' do
-        VCR.use_cassette('bgs/people_service/no_person_data') do
+        VCR.use_cassette('bgs/people_service/no_person_data', VCR::MATCH_EVERYTHING) do
           VCR.use_cassette('debts/get_letters_empty_ssn', VCR::MATCH_EVERYTHING) do
             expect(StatsD).to receive(:increment).once.with(
               'api.dmc.init_debts.fail', tags: [
@@ -56,7 +56,7 @@ RSpec.describe DebtManagementCenter::DebtsService do
 
     context 'when debt is missing from redis' do
       it 'raises an error' do
-        VCR.use_cassette('bgs/people_service/person_data') do
+        VCR.use_cassette('bgs/people_service/person_data', VCR::MATCH_EVERYTHING) do
           VCR.use_cassette('debts/get_letters', VCR::MATCH_EVERYTHING) do
             service = described_class.new(user)
             expect { service.get_debt_by_id(debt_id) }.to raise_error do |error|
@@ -69,7 +69,7 @@ RSpec.describe DebtManagementCenter::DebtsService do
 
     context 'with logged in user' do
       it 'downloads the pdf' do
-        VCR.use_cassette('bgs/people_service/person_data') do
+        VCR.use_cassette('bgs/people_service/person_data', VCR::MATCH_EVERYTHING) do
           VCR.use_cassette('debts/get_letters', VCR::MATCH_EVERYTHING) do
             service = described_class.new(user)
             debts = service.get_debts[:debts]

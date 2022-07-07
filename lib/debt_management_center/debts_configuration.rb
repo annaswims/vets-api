@@ -20,7 +20,7 @@ module DebtManagementCenter
     def request_options
       {
         open_timeout: 15,
-        read_timeout: 15
+        timeout: 15
       }
     end
 
@@ -32,7 +32,9 @@ module DebtManagementCenter
       Settings.dmc.url
     end
 
-    delegate :post, to: :connection
+    def post(path, params)
+      connection.post(path, params)
+    end
 
     private
 
