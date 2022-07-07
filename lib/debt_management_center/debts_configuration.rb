@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module DebtManagementCenter
   class DebtsConfiguration
     extend Forwardable
@@ -30,9 +32,7 @@ module DebtManagementCenter
       Settings.dmc.url
     end
 
-    def post(path, params)
-      connection.post(path, params)
-    end
+    delegate :post, to: :connection
 
     private
 
