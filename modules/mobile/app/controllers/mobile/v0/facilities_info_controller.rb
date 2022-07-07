@@ -6,13 +6,14 @@ module Mobile
   module V0
     class FacilitiesInfoController < ApplicationController
       def index
+        Rails.logger.info('Facilities info call start', { sort_method: params[:sort], user_uuid: @current_user.uuid })
         facility_ids = @current_user.va_treatment_facility_ids + @current_user.cerner_facility_ids
         facilities = appointments_proxy.fetch_facilities_from_ids(facility_ids.uniq, true)
         adapted_facilities = facilities.map do |facility|
           Mobile::V0::Adapters::FacilityInfo.new.parse(facility, @current_user, params)
         end
         sorted_facilities = sort(adapted_facilities, params[:sort])
-        render json: Mobile::V0::FacilitiesInfoSerializer.new(@current_user.id, sorted_facilities)
+        render json: Mobile::V0::FacilitiesInfoSerializer.new(@current_user.uuid, sorted_facilities)
       end
 
       private

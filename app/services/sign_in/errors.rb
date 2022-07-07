@@ -30,11 +30,11 @@ module SignIn
     class UserAccountNotFoundError < StandardError; end
     class SessionNotFoundError < StandardError; end
     class MPIUserCreationFailedError < StandardError; end
+    class MPILockedAccountError < StandardError; end
     class InvalidClientIdError < StandardError; end
     class InvalidAcrError < StandardError; end
     class InvalidTypeError < StandardError; end
     class InvalidCredentialLevelError < StandardError; end
-    class CodeChallengeStateMapError < StandardError; end
-    class StateMismatchError < StandardError; end
+    class InvalidCredentialInfoError < StandardError; end
   end
 end

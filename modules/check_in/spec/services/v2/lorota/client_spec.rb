@@ -56,7 +56,6 @@ describe V2::Lorota::Client do
       end
 
       before do
-        allow(Flipper).to receive(:enabled?).with('check_in_experience_lorota_401_mapping_enabled').and_return(true)
         allow(Flipper).to receive(:enabled?).with('check_in_experience_lorota_security_updates_enabled')
                                             .and_return(false)
         allow(Flipper).to receive(:enabled?).with('check_in_experience_mock_enabled').and_return(false)
@@ -74,11 +73,10 @@ describe V2::Lorota::Client do
 
     context 'when called with lorota security update feature flag on' do
       let(:auth_param_with_dob) do
-        { lastName: 'last', DOB: '1970-02-20' }
+        { lastName: 'last', dob: '1970-02-20' }
       end
 
       before do
-        allow(Flipper).to receive(:enabled?).with('check_in_experience_lorota_401_mapping_enabled').and_return(true)
         allow(Flipper).to receive(:enabled?).with('check_in_experience_lorota_security_updates_enabled')
                                             .and_return(true)
         allow(Flipper).to receive(:enabled?).with('check_in_experience_mock_enabled').and_return(false)

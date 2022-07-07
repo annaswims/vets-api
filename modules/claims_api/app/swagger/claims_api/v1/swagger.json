@@ -497,7 +497,7 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "800cdf31-546c-4a63-a803-ee94ce27b7a1",
+                    "id": "e8b4e91b-4b20-4588-9ea4-c4504003e573",
                     "type": "claims_api_claim",
                     "attributes": {
                       "evss_id": 600118851,
@@ -546,11 +546,11 @@
                       "status": "Initial review",
                       "supporting_documents": [
                         {
-                          "id": "55dd903f-c071-4b7c-b56b-e03dd29f535c",
+                          "id": "d374cd50-4a84-426c-82ae-18ccceee6708",
                           "type": "claim_supporting_document",
                           "md5": "d927c7e283b3158a54822a493d06181d",
                           "filename": "extras.pdf",
-                          "uploaded_at": "2022-06-10T20:08:02.903Z"
+                          "uploaded_at": "2022-07-05T15:00:42.068Z"
                         }
                       ]
                     }
@@ -2355,7 +2355,7 @@
                         "claimDate": {
                           "description": "Date (or Timestamp with TimeZone) when claim is being submitted to the VA. Date cannot be in the future. UTC TimeZone is assumed unless otherwise specified.",
                           "type": "string",
-                          "pattern": "^(?:[0-9]{4})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])(?:T[0-1][0-9]:[0-5][0-9]:[0-5][0-9](?:[-+][0-9]{2}:[0-9]{2}))*$",
+                          "pattern": "^(?:[0-9]{4})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])(?:T[0-1][0-9]:[0-5][0-9]:[0-5][0-9](?:[-+][0-9]{2}:[0-9]{2}|Z))*$",
                           "example": "2018-08-28T19:53:45+00:00"
                         }
                       }
@@ -2392,7 +2392,7 @@
             ]
           }
         ],
-        "description": "Establishes a [Disability Compensation Claim](https://www.vba.va.gov/pubs/forms/VBA-21-526EZ-ARE.pdf) in VBMS. Submits any PDF attachments as a multi-part payload and returns an ID. For claims that are not original claims, this endpoint generates a filled 526 PDF along with the submission.\n<br/><br/>\nA 200 response indicates the submission was successful, but the claim has not reached VBMS until it has a “claim established” status. Check claim status using the GET /claims/{id} endpoint.\n<br/><br/>\n**Original claims**<br/>\nAn original claim is the Veteran’s first claim filed with VA, regardless of the claim type or status. The original claim must have either the Veteran’s wet signature or e-signature. Once there is an original claim on file, future claims may be submitted by a representative without the Veteran’s signature. Uploading a PDF for subsequent claims is not required or recommended.\n<br/><br/>\nPOST the original claim with the autoCestPDFGenerationDisabled boolean as true. After a 200 response, use the PUT /forms/526/{id} endpoint to upload a scanned PDF of your form, signed in ink or e-signature, by the Veteran.\n<br/><br/>\nThe claim data submitted through the POST endpoint must match the signed PDF uploaded through the PUT endpoint. If it does not, VA will manually update the data to match the PDF, and your claim may not process correctly.\n<br/><br/>\n**Standard and fully developed claims (FDCs)**<br/>\n[Fully developed claims (FDCs)](https://www.va.gov/disability/how-to-file-claim/evidence-needed/fully-developed-claims/) are claims certified by the submitter to include all information needed for processing. These claims process faster than claims submitted through the standard claim process. If a claim is certified for the FDC, but is missing needed information, it will route through the standard claim process.\n<br/><br/>\nTo certify a claim for the FDC process, set the standardClaim indicator to false.\n<br/><br/>\n**Flashes and special issues**<br/>\nIncluding flashes and special issues in your 526 claim submission helps VA properly route and prioritize current and future claims for the Veteran and reduces claims processing time.\n\n - Flashes are attributes that describe special circumstances which apply to a Veteran, such as homelessness or terminal illness. See a full list of [supported flashes](https://github.com/department-of-veterans-affairs/vets-api/blob/30659c8e5b2dd254d3e6b5d18849ff0d5f2e2356/modules/claims_api/config/schemas/526.json#L35).\n - Special Issues are attributes that describe special circumstances which apply to a particular claim, such as PTSD. See a full list of [supported special Issues](https://github.com/department-of-veterans-affairs/vets-api/blob/30659c8e5b2dd254d3e6b5d18849ff0d5f2e2356/modules/claims_api/config/schemas/526.json#L28).\n\n\n<br/>\n**Notes On 'disabilityActionType' and 'secondaryDisabilities'**<br/>\n\n- We now recommend using the value **NEW** instead of **INCREASE** for **disabilityActionType** in the Benefits Claims API. For context:\n\n  - When requesting a disability **INCREASE**, the **ratedDisabiltiyId** and **diagnosticCode** are also required. The Benefits Claims API doesn't have access to specific values that are required for these fields. By submitting **NEW** for **disabilityActionType**, these values are not required.\n\n  - Using **NEW** instead of **INCREASE** will not significantly impact how the claim is processed by VA.\n\n- We don’t support the **disabilityActionType** of **REOPEN**. It didn't provide value in claim processing because its functionality wasn’t supported.\n\n- We now recommend using the **disabilities** attribute with a **disabilityActionType** value of **NEW**, instead of sending disabilities as nested values with the **secondaryDisabilities** attribute.\n\n  - This approach will not significantly impact how the claim is processed by VA and is better aligned with the 526 form.\n\n  - **secondaryDisabilties** is required if the primary disability has a **disabilityActionType** equal to **NONE**.\n\n- If you are required to use **secondaryDisabilities**, there are additional validations that apply:\n\n  - **disabilityActionType** of the secondary disability must equal **SECONDARY**.\n\n  - **classificationCode** in the secondary disability is optional. If provided, its value must match the value of the **name** attribute.\n\n  - If **classificationCode** isn’t provided, then the **name** attribute must not contain any special characters and must not exceed 255 characters.\n\n  - **specialIssues** must be nil.\n\n  - **approximateBeginDate** was added, but it’s optional. If provided, it must be a valid date.\n",
+        "description": "Establishes a [Disability Compensation Claim](https://www.vba.va.gov/pubs/forms/VBA-21-526EZ-ARE.pdf) in VBMS. Submits any PDF attachments as a multi-part payload and returns an ID. For claims that are not original claims, this endpoint generates a filled 526 PDF along with the submission.\n<br/><br/>\nA 200 response indicates the submission was successful, but the claim has not reached VBMS until it has a “claim established” status. Check claim status using the GET /claims/{id} endpoint.\n<br/><br/>\n**Original claims**<br/>\nAn original claim is the Veteran’s first claim filed with VA, regardless of the claim type or status. The original claim must have either the Veteran’s wet signature or e-signature. Once there is an original claim on file, future claims may be submitted by a representative without the Veteran’s signature. Uploading a PDF for subsequent claims is not required or recommended.\n<br/><br/>\nPOST the original claim with the autoCestPDFGenerationDisabled boolean as true. After a 200 response, use the PUT /forms/526/{id} endpoint to upload a scanned PDF of your form, signed in ink or e-signature, by the Veteran.\n<br/><br/>\nThe claim data submitted through the POST endpoint must match the signed PDF uploaded through the PUT endpoint. If it does not, VA will manually update the data to match the PDF, and your claim may not process correctly.\n<br/><br/>\n**Standard and fully developed claims (FDCs)**<br/>\n[Fully developed claims (FDCs)](https://www.va.gov/disability/how-to-file-claim/evidence-needed/fully-developed-claims/) are claims certified by the submitter to include all information needed for processing. These claims process faster than claims submitted through the standard claim process. If a claim is certified for the FDC, but is missing needed information, it will route through the standard claim process.\n<br/><br/>\nTo certify a claim for the FDC process, set the standardClaim indicator to false.\n<br/><br/>\n**Flashes and special issues**<br/>\nIncluding flashes and special issues in your 526 claim submission helps VA properly route and prioritize current and future claims for the Veteran and reduces claims processing time.\n\n - Flashes are attributes that describe special circumstances which apply to a Veteran, such as homelessness or terminal illness.\n - Special Issues are attributes that describe special circumstances which apply to a particular claim, such as PTSD.\n\n\n<br/>\n**Notes On 'disabilityActionType' and 'secondaryDisabilities'**<br/>\n\n- We now recommend using the value **NEW** instead of **INCREASE** for **disabilityActionType** in the Benefits Claims API. For context:\n\n  - When requesting a disability **INCREASE**, the **ratedDisabiltiyId** and **diagnosticCode** are also required. The Benefits Claims API doesn't have access to specific values that are required for these fields. By submitting **NEW** for **disabilityActionType**, these values are not required.\n\n  - Using **NEW** instead of **INCREASE** will not significantly impact how the claim is processed by VA.\n\n- We don’t support the **disabilityActionType** of **REOPEN**. It didn't provide value in claim processing because its functionality wasn’t supported.\n\n- We now recommend using the **disabilities** attribute with a **disabilityActionType** value of **NEW**, instead of sending disabilities as nested values with the **secondaryDisabilities** attribute.\n\n  - This approach will not significantly impact how the claim is processed by VA and is better aligned with the 526 form.\n\n  - **secondaryDisabilties** is required if the primary disability has a **disabilityActionType** equal to **NONE**.\n\n- If you are required to use **secondaryDisabilities**, there are additional validations that apply:\n\n  - **disabilityActionType** of the secondary disability must equal **SECONDARY**.\n\n  - **classificationCode** in the secondary disability is optional. If provided, its value must match the value of the **name** attribute.\n\n  - If **classificationCode** isn’t provided, then the **name** attribute must not contain any special characters and must not exceed 255 characters.\n\n  - **specialIssues** must be nil.\n\n  - **approximateBeginDate** was added, but it’s optional. If provided, it must be a valid date.\n",
         "parameters": [
           {
             "in": "header",
@@ -2438,7 +2438,7 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "7bbe1f94-89bb-46e7-b103-1c559a411760",
+                    "id": "943f918e-9084-4320-8aa4-54a6a1467b76",
                     "type": "claims_api_claim",
                     "attributes": {
                       "evss_id": null,
@@ -2456,13 +2456,13 @@
                       "current_phase_back": null,
                       "requested_decision": null,
                       "claim_type": null,
-                      "updated_at": "2022-06-10T20:08:03.204Z",
+                      "updated_at": "2022-07-05T15:00:42.309Z",
                       "contention_list": null,
                       "va_representative": null,
                       "events_timeline": [
 
                       ],
-                      "token": "7bbe1f94-89bb-46e7-b103-1c559a411760",
+                      "token": "943f918e-9084-4320-8aa4-54a6a1467b76",
                       "status": "pending",
                       "flashes": [
                         "Hardship",
@@ -4216,7 +4216,7 @@
                           "claimDate": {
                             "description": "Date (or Timestamp with TimeZone) when claim is being submitted to the VA. Date cannot be in the future. UTC TimeZone is assumed unless otherwise specified.",
                             "type": "string",
-                            "pattern": "^(?:[0-9]{4})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])(?:T[0-1][0-9]:[0-5][0-9]:[0-5][0-9](?:[-+][0-9]{2}:[0-9]{2}))*$",
+                            "pattern": "^(?:[0-9]{4})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])(?:T[0-1][0-9]:[0-5][0-9]:[0-5][0-9](?:[-+][0-9]{2}:[0-9]{2}|Z))*$",
                             "example": "2018-08-28T19:53:45+00:00"
                           }
                         }
@@ -4312,7 +4312,7 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "488256ae-521b-4c53-b84a-761d7d1bcf20",
+                    "id": "37c34861-8d16-4eb6-b58c-a26146ca90b1",
                     "type": "claims_api_claim",
                     "attributes": {
                       "evss_id": null,
@@ -4330,13 +4330,13 @@
                       "current_phase_back": null,
                       "requested_decision": null,
                       "claim_type": null,
-                      "updated_at": "2022-06-10T20:08:03.458Z",
+                      "updated_at": "2022-07-05T15:00:42.545Z",
                       "contention_list": null,
                       "va_representative": null,
                       "events_timeline": [
 
                       ],
-                      "token": "488256ae-521b-4c53-b84a-761d7d1bcf20",
+                      "token": "37c34861-8d16-4eb6-b58c-a26146ca90b1",
                       "status": "pending",
                       "flashes": [
                         "Hardship",
@@ -4381,41 +4381,31 @@
                           ],
                           "properties": {
                             "evss_id": {
-                              "type": [
-                                "integer",
-                                "null"
-                              ],
+                              "type": "integer",
+                              "nullable": true,
                               "description": "EVSS Claim ID"
                             },
                             "date_filed": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Date in YYYY-MM-DD the claim was first filed"
                             },
                             "min_est_date": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Minimum Estimated Claim Completion Date"
                             },
                             "max_est_date": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Maximum Estimated Claim Completion Date"
                             },
                             "phase_change_date": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Date of last phase change"
                             },
@@ -4424,63 +4414,45 @@
                               "description": "Has the claim been resolved"
                             },
                             "waiver_submitted": {
-                              "type": [
-                                "boolean",
-                                "null"
-                              ],
+                              "type": "boolean",
+                              "nullable": true,
                               "description": "Requested Decision or Waiver 5103 Submitted"
                             },
                             "documents_needed": {
-                              "type": [
-                                "boolean",
-                                "null"
-                              ],
+                              "type": "boolean",
+                              "nullable": true,
                               "description": "Does the claim require additional documents to be submitted"
                             },
                             "development_letter_sent": {
-                              "type": [
-                                "boolean",
-                                "null"
-                              ],
+                              "type": "boolean",
+                              "nullable": true,
                               "description": "Indicates if a Development Letter has been sent to the Claimant regarding a benefit claim"
                             },
                             "decision_letter_sent": {
-                              "type": [
-                                "boolean",
-                                "null"
-                              ],
+                              "type": "boolean",
+                              "nullable": true,
                               "description": "Indicates if a Decision Letter has been sent to the Claimant regarding a benefit claim"
                             },
                             "phase": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": "string",
+                              "nullable": true
                             },
                             "ever_phase_back": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": "string",
+                              "nullable": true
                             },
                             "current_phase_back": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": "string",
+                              "nullable": true
                             },
                             "requested_decision": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "The claim filer has requested a claim decision be made"
                             },
                             "claim_type": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "The type of claim originally submitted"
                             },
                             "updated_at": {
@@ -4489,16 +4461,12 @@
                               "description": "Time stamp of last change to the claim"
                             },
                             "contention_list": {
-                              "type": [
-                                "array",
-                                "null"
-                              ]
+                              "type": "array",
+                              "nullable": true
                             },
                             "va_representative": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": "string",
+                              "nullable": true
                             },
                             "events_timeline": {
                               "type": "array"
@@ -6503,7 +6471,7 @@
                           "claimDate": {
                             "description": "Date (or Timestamp with TimeZone) when claim is being submitted to the VA. Date cannot be in the future. UTC TimeZone is assumed unless otherwise specified.",
                             "type": "string",
-                            "pattern": "^(?:[0-9]{4})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])(?:T[0-1][0-9]:[0-5][0-9]:[0-5][0-9](?:[-+][0-9]{2}:[0-9]{2}))*$",
+                            "pattern": "^(?:[0-9]{4})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])(?:T[0-1][0-9]:[0-5][0-9]:[0-5][0-9](?:[-+][0-9]{2}:[0-9]{2}|Z))*$",
                             "example": "2018-08-28T19:53:45+00:00"
                           }
                         }
@@ -6599,7 +6567,7 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "0a31ac63-52aa-4757-97f9-9c735d4095d7",
+                    "id": "ef974e20-a86e-4aa5-9af5-6b7f3534aafa",
                     "type": "claims_api_claim",
                     "attributes": {
                       "evss_id": null,
@@ -6613,7 +6581,7 @@
                       "decision_letter_sent": null,
                       "requested_decision": null,
                       "claim_type": null,
-                      "updated_at": "2022-06-10T20:08:03.985Z",
+                      "updated_at": "2022-07-05T15:00:42.949Z",
                       "contention_list": null,
                       "va_representative": null,
                       "events_timeline": [
@@ -6622,7 +6590,7 @@
                       "status": "pending",
                       "supporting_documents": [
                         {
-                          "id": "1a0880d1-90dc-454d-88bb-a239b58f80da",
+                          "id": "c4fff34e-2b18-41b2-95a3-3ab439720f5a",
                           "type": "claim_supporting_document",
                           "md5": null,
                           "filename": null,
@@ -6667,41 +6635,31 @@
                           ],
                           "properties": {
                             "evss_id": {
-                              "type": [
-                                "integer",
-                                "null"
-                              ],
+                              "type": "integer",
+                              "nullable": true,
                               "description": "EVSS Claim ID"
                             },
                             "date_filed": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Date in YYYY-MM-DD the claim was first filed"
                             },
                             "min_est_date": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Minimum Estimated Claim Completion Date"
                             },
                             "max_est_date": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Maximum Estimated Claim Completion Date"
                             },
                             "phase_change_date": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Date of last phase change"
                             },
@@ -6710,63 +6668,45 @@
                               "description": "Has the claim been resolved"
                             },
                             "waiver_submitted": {
-                              "type": [
-                                "boolean",
-                                "null"
-                              ],
+                              "type": "boolean",
+                              "nullable": true,
                               "description": "Requested Decision or Waiver 5103 Submitted"
                             },
                             "documents_needed": {
-                              "type": [
-                                "boolean",
-                                "null"
-                              ],
+                              "type": "boolean",
+                              "nullable": true,
                               "description": "Does the claim require additional documents to be submitted"
                             },
                             "development_letter_sent": {
-                              "type": [
-                                "boolean",
-                                "null"
-                              ],
+                              "type": "boolean",
+                              "nullable": true,
                               "description": "Indicates if a Development Letter has been sent to the Claimant regarding a benefit claim"
                             },
                             "decision_letter_sent": {
-                              "type": [
-                                "boolean",
-                                "null"
-                              ],
+                              "type": "boolean",
+                              "nullable": true,
                               "description": "Indicates if a Decision Letter has been sent to the Claimant regarding a benefit claim"
                             },
                             "phase": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": "string",
+                              "nullable": true
                             },
                             "ever_phase_back": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": "string",
+                              "nullable": true
                             },
                             "current_phase_back": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": "string",
+                              "nullable": true
                             },
                             "requested_decision": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "The claim filer has requested a claim decision be made"
                             },
                             "claim_type": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "The type of claim originally submitted"
                             },
                             "updated_at": {
@@ -6775,16 +6715,12 @@
                               "description": "Time stamp of last change to the claim"
                             },
                             "contention_list": {
-                              "type": [
-                                "array",
-                                "null"
-                              ]
+                              "type": "array",
+                              "nullable": true
                             },
                             "va_representative": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": "string",
+                              "nullable": true
                             },
                             "events_timeline": {
                               "type": "array"
@@ -6808,24 +6744,18 @@
                                     "type": "string"
                                   },
                                   "md5": {
-                                    "type": [
-                                      "string",
-                                      "null"
-                                    ],
+                                    "type": "string",
+                                    "nullable": true,
                                     "description": "Hashed representation of document"
                                   },
                                   "filename": {
-                                    "type": [
-                                      "string",
-                                      "null"
-                                    ],
+                                    "type": "string",
+                                    "nullable": true,
                                     "description": "Name of document"
                                   },
                                   "uploaded_at": {
-                                    "type": [
-                                      "string",
-                                      "null"
-                                    ],
+                                    "type": "string",
+                                    "nullable": true,
                                     "format": "date",
                                     "description": "Date and time document was uploaded"
                                   }
@@ -7578,10 +7508,8 @@
                           ],
                           "properties": {
                             "creation_date": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Date the Intent to File was received at the VA"
                             },
@@ -8598,11 +8526,11 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "a91aa1f8-035c-4377-b0c1-868262c0c55f",
+                    "id": "d68c9544-0b9d-426d-b5db-89a5f6e7d6b8",
                     "type": "claims_api_power_of_attorneys",
                     "attributes": {
                       "status": "pending",
-                      "date_request_accepted": "2022-06-10",
+                      "date_request_accepted": "2022-07-05",
                       "representative": {
                         "service_organization": {
                           "poa_code": "074"
@@ -8682,10 +8610,8 @@
                               }
                             },
                             "previous_poa": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "Current or Previous Power of Attorney Code submitted for Veteran"
                             }
                           }
@@ -9311,11 +9237,11 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "55283ec5-eed5-4c88-b282-af43542e097e",
+                    "id": "e651503c-931b-4b02-92dd-dade4e891b83",
                     "type": "claims_api_power_of_attorneys",
                     "attributes": {
                       "status": "submitted",
-                      "date_request_accepted": "2022-06-10",
+                      "date_request_accepted": "2022-07-05",
                       "representative": {
                         "service_organization": {
                           "poa_code": "074"
@@ -9395,10 +9321,8 @@
                               }
                             },
                             "previous_poa": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "Current or Previous Power of Attorney Code submitted for Veteran"
                             }
                           }
@@ -9766,11 +9690,11 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "d685431e-da8f-4327-8071-9f2aa334c455",
+                    "id": "89a14870-7dcf-4d76-bacb-6002d742f1e6",
                     "type": "claims_api_power_of_attorneys",
                     "attributes": {
                       "status": "submitted",
-                      "date_request_accepted": "2022-06-10",
+                      "date_request_accepted": "2022-07-05",
                       "representative": {
                         "service_organization": {
                           "poa_code": "074"
@@ -9850,10 +9774,8 @@
                               }
                             },
                             "previous_poa": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "Current or Previous Power of Attorney Code submitted for Veteran"
                             }
                           }
@@ -10128,10 +10050,8 @@
                               ]
                             },
                             "date_request_accepted": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "Date request was first accepted",
                               "format": "date"
                             },
@@ -10155,26 +10075,20 @@
                                     },
                                     "first_name": {
                                       "description": "First name of representative, null if representative is an organization",
-                                      "type": [
-                                        "string",
-                                        "null"
-                                      ],
+                                      "type": "string",
+                                      "nullable": true,
                                       "example": "Jane"
                                     },
                                     "last_name": {
                                       "description": "Last name of representative, null if representative is an organization",
-                                      "type": [
-                                        "string",
-                                        "null"
-                                      ],
+                                      "type": "string",
+                                      "nullable": true,
                                       "example": "Doe"
                                     },
                                     "organization_name": {
                                       "description": "Name of representing organization, null if representative is an individual",
-                                      "type": [
-                                        "string",
-                                        "null"
-                                      ],
+                                      "type": "string",
+                                      "nullable": true,
                                       "example": "Some Great Organization"
                                     },
                                     "phone_number": {
@@ -10187,10 +10101,8 @@
                               }
                             },
                             "previous_poa": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "Current or Previous Power of Attorney Code submitted for Veteran"
                             }
                           }
@@ -10989,7 +10901,6 @@
       }
     }
   },
-  "basePath": "/services/benefits/v1",
   "servers": [
     {
       "url": "https://sandbox-api.va.gov/services/claims/{version}",

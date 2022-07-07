@@ -483,6 +483,8 @@ paths:
               - primaryCare
               - homeSleepTesting
               - socialWork
+              - cpap
+              - ophthalmology
         - description: List of facility ids
           in: path
           name: FacilityIds[]
@@ -550,7 +552,7 @@ paths:
       summary: /v0/appointments/facility/eligibility
   /v0/appointments/facilities/{facililty_id}/clinics:
     get:
-      description: \*WIP* - Returns all available clinics at a facility for a given type of service.
+      description: Returns all available clinics at a facility for a given type of service.
       operationId: clinic
       parameters:
         - description: Facility ID
@@ -578,6 +580,8 @@ paths:
               - primaryCare
               - homeSleepTesting
               - socialWork
+              - cpap
+              - ophthalmology
       responses:
         '200':
           content:
@@ -630,10 +634,10 @@ paths:
           description: A response from an upstream service timed out.
       security:
         - Bearer: []
-      summary: WIP /v0/appointments/facilities/{facililty_id}/clinics
+      summary: /v0/appointments/facilities/{facililty_id}/clinics
   /v0/appointments/facilities/{facililty_id}/clinics/{clinic_id}/slots:
     get:
-      description: \*WIP* - Accepts date range for a clinic at a va facility and returns available slots for a a direct schedule appointment.
+      description: Accepts date range for a clinic at a va facility and returns available slots for a a direct schedule appointment.
       operationId: slot
       parameters:
         - description: The start date for the range of appointments slots in ISO 8601 UTC
@@ -704,7 +708,7 @@ paths:
           description: A response from an upstream service timed out.
       security:
         - Bearer: []
-      summary: WIP /v0/appointments/facilities/{facililty_id}/clinics/{clinic_id}/slots
+      summary: /v0/appointments/facilities/{facililty_id}/clinics/{clinic_id}/slots
   /v0/appointments/va/eligibility:
     get:
       description: Lists types of service. For each type of service, lists users registered facilities that support request and direct appointments.
@@ -771,7 +775,7 @@ paths:
       summary: /v0/appointments/va/eligibility
   /v0/appointment:
     post:
-      description: \*DIRECT SCHEDULE IS WIP* - Creates a new appointment.
+      description: Creates a new appointment or appointment request.
       operationId: CreateNewAppointment
       requestBody:
         content:
@@ -853,7 +857,7 @@ paths:
           description: A response from an upstream service timed out.
       security:
         - Bearer: [ ]
-      summary: WIP /v0/appointment
+      summary: /v0/appointment
   /v0/claim/{id}:
     get:
       description: Returns info on all user's claims and appeals for mobile overview
@@ -1680,7 +1684,7 @@ paths:
           schema:
             type: string
         - description: |
-            filter by field values. Syntax: ?filter[[refill_status][eq]]=refillinprocess. fields that can be filtered: prescription_id, refill_status, refill_submit_date, facility_name. eq can be switched out with not_eq.
+            filter by field values. Syntax: ?filter[refill_status][eq]=refillinprocess. fields that can be filtered: prescription_id, refill_status, refill_submit_date, facility_name. eq can be switched out with not_eq. to filter by multiple values of the same field, deliminate the parameter value with commas. Syntax: ?filter[refill_status][eq]=refillinprocess,active
           in: query
           name: filter
           required: false
@@ -3234,10 +3238,14 @@ paths:
                           - appointments
                           - claims
                           - directDepositBenefits
+                          - disabilityRating
                           - lettersAndDocuments
                           - militaryServiceHistory
+                          - paymentHistory
                           - userProfileUpdate
+                          - secureMessaging
                           - scheduleAppointments
+                          - prescriptions
                         type: array
           description: OK
         '401':
@@ -3314,10 +3322,14 @@ paths:
                           - appointments
                           - claims
                           - directDepositBenefits
+                          - disabilityRating
                           - lettersAndDocuments
                           - militaryServiceHistory
+                          - paymentHistory
                           - userProfileUpdate
+                          - secureMessaging
                           - scheduleAppointments
+                          - prescriptions
                         type: array
           description: OK
         '401':

@@ -30,13 +30,14 @@ module AppealsApi
     serialize :auth_headers, JsonMarshal::Marshaller
     serialize :form_data, JsonMarshal::Marshaller
     has_kms_key
-    encrypts :auth_headers, :form_data, key: :kms_key, **lockbox_options
+    has_encrypted :auth_headers, :form_data, key: :kms_key, **lockbox_options
 
     has_many :evidence_submissions, as: :supportable, dependent: :destroy
     has_many :status_updates, as: :statusable, dependent: :destroy
     # the controller applies the JSON Schemas in modules/appeals_api/config/schemas/
     # further validations:
     validate(
+      :date_formats_are_valid,
       :veteran_birth_date_is_in_the_past,
       :required_claimant_data_is_present,
       :validate_claimant_type,

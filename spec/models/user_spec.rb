@@ -189,6 +189,38 @@ RSpec.describe User, type: :model do
     end
   end
 
+  describe '#common_name' do
+    let(:user) do
+      build(:user,
+            common_name: common_name,
+            first_name: first_name,
+            middle_name: middle_name,
+            last_name: last_name,
+            suffix: suffix)
+    end
+    let(:first_name) { 'some-first-name' }
+    let(:middle_name) { 'some-middle-name' }
+    let(:last_name) { 'some-last-name' }
+    let(:suffix) { 'some-suffix' }
+
+    context 'when common name is defined in the identity object' do
+      let(:common_name) { 'some-common-name' }
+
+      it 'returns the defined common name' do
+        expect(user.common_name).to eq(common_name)
+      end
+    end
+
+    context 'when common name is not defined in the identity object' do
+      let(:common_name) { nil }
+      let(:expected_common_name) { "#{first_name} #{middle_name} #{last_name} #{suffix}" }
+
+      it 'returns an expected generated common name string' do
+        expect(user.common_name).to eq(expected_common_name)
+      end
+    end
+  end
+
   describe '#ssn_mismatch?', :skip_mvi do
     let(:user) { build(:user, :loa3) }
     let(:mvi_profile) { build(:mvi_profile, ssn: mismatched_ssn) }
@@ -952,6 +984,33 @@ RSpec.describe User, type: :model do
         it 'returns nil' do
           expect(user.birth_date).to eq nil
         end
+      end
+    end
+  end
+
+  describe '#deceased_date' do
+    let!(:user) { described_class.new(build(:user, :mhv, mhv_icn: 'some-mhv-icn')) }
+
+    context 'and MPI Profile deceased date does not exist' do
+      before do
+        allow_any_instance_of(MPI::Models::MviProfile).to receive(:deceased_date).and_return nil
+      end
+
+      it 'returns nil' do
+        expect(user.deceased_date).to eq nil
+      end
+    end
+
+    context 'and MPI Profile deceased date does exist' do
+      let(:mvi_profile) { build(:mvi_profile, deceased_date: deceased_date) }
+      let(:deceased_date) { '20200202' }
+
+      before do
+        stub_mpi(mvi_profile)
+      end
+
+      it 'returns iso8601 parsed date from the MPI Profile deceased_date attribute' do
+        expect(user.deceased_date).to eq Date.parse(deceased_date).iso8601
       end
     end
   end

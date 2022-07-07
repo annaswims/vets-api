@@ -31,10 +31,10 @@ medication_response = {
       'intent' => 'order',
       'category' => [
         { 'coding' => [
-          { 'system' => 'http://terminology.hl7.org/CodeSystem/medicationrequest-category',
-            'code' => 'outpatient',
-            'display' => 'Outpatient' }
-        ],
+            { 'system' => 'http://terminology.hl7.org/CodeSystem/medicationrequest-category',
+              'code' => 'outpatient',
+              'display' => 'Outpatient' }
+          ],
           'text' => 'Outpatient' }
       ],
       'medicationReference' => {
@@ -115,8 +115,8 @@ medication_response = {
       }],
       'dispenseRequest' => {
         'numberOfRepeatsAllowed' => 0, 'quantity' => {
-          'value' => 1.0
-        },
+                                         'value' => 1.0
+                                       },
         'expectedSupplyDuration' => {
           'value' => 30,
           'unit' => 'days',

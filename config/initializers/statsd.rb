@@ -82,6 +82,8 @@ Rails.application.reloader.to_prepare do
   StatsD.increment(SignIn::Constants::Statsd::STATSD_SIS_REVOKE_FAILURE, 0, tags: ['version:v0'])
   StatsD.increment(SignIn::Constants::Statsd::STATSD_SIS_INTROSPECT_SUCCESS, 0, tags: ['version:v0'])
   StatsD.increment(SignIn::Constants::Statsd::STATSD_SIS_INTROSPECT_FAILURE, 0, tags: ['version:v0'])
+  StatsD.increment(SignIn::Constants::Statsd::STATSD_SIS_LOGOUT_SUCCESS, 0, tags: ['version:v0'])
+  StatsD.increment(SignIn::Constants::Statsd::STATSD_SIS_LOGOUT_FAILURE, 0, tags: ['version:v0'])
   StatsD.increment(SignIn::Constants::Statsd::STATSD_SIS_REVOKE_ALL_SESSIONS_SUCCESS, 0, tags: ['version:v0'])
   StatsD.increment(SignIn::Constants::Statsd::STATSD_SIS_REVOKE_ALL_SESSIONS_FAILURE, 0, tags: ['version:v0'])
 
@@ -170,6 +172,7 @@ Rails.application.reloader.to_prepare do
   StatsD.increment(Form1010cg::Auditor.metrics.submission.success, 0)
   StatsD.increment(Form1010cg::Auditor.metrics.submission.failure.client.data, 0)
   StatsD.increment(Form1010cg::Auditor.metrics.submission.failure.client.qualification, 0)
+  StatsD.increment(Form1010cg::Auditor.metrics.submission.failure.attachments, 0)
   StatsD.increment(Form1010cg::Auditor.metrics.pdf_download, 0)
 
   StatsD.increment(Form1010cg::Auditor.metrics.submission.caregivers.primary_no_secondary, 0)

@@ -13,16 +13,13 @@ Rails.application.routes.draw do
       constraints: ->(request) { V1::SessionsController::REDIRECT_URLS.include?(request.path_parameters[:type]) }
   get '/v1/sessions/ssoe_logout', to: 'v1/sessions#ssoe_slo_callback'
 
-  get '/v0/sign_in/:type/authorize',
-      to: 'v0/sign_in#authorize',
-      constraints: ->(request) { SignIn::Constants::Auth::REDIRECT_URLS.include?(request.path_parameters[:type]) }
-  get '/v0/sign_in/:type/callback',
-      to: 'v0/sign_in#callback',
-      constraints: ->(request) { SignIn::Constants::Auth::REDIRECT_URLS.include?(request.path_parameters[:type]) }
+  get '/v0/sign_in/authorize', to: 'v0/sign_in#authorize'
+  get '/v0/sign_in/callback', to: 'v0/sign_in#callback'
   post '/v0/sign_in/refresh', to: 'v0/sign_in#refresh'
   post '/v0/sign_in/revoke', to: 'v0/sign_in#revoke'
   post '/v0/sign_in/token', to: 'v0/sign_in#token'
   get '/v0/sign_in/introspect', to: 'v0/sign_in#introspect'
+  get '/v0/sign_in/logout', to: 'v0/sign_in#logout'
   get '/v0/sign_in/revoke_all_sessions', to: 'v0/sign_in#revoke_all_sessions'
 
   get '/inherited_proofing/auth', to: 'inherited_proofing#auth'
@@ -327,10 +324,6 @@ Rails.application.routes.draw do
 
     get 'feature_toggles', to: 'feature_toggles#index'
 
-    namespace :coronavirus_chatbot do
-      resource :tokens, only: :create
-    end
-
     namespace :contact_us do
       resources :inquiries, only: %i[index create]
     end
@@ -379,6 +372,11 @@ Rails.application.routes.draw do
       get 'contestable_issues(/:benefit_type)', to: 'contestable_issues#index'
     end
     resources :higher_level_reviews, only: %i[create show]
+
+    namespace :notice_of_disagreements do
+      get 'contestable_issues', to: 'contestable_issues#index'
+    end
+    resources :notice_of_disagreements, only: %i[create show]
   end
 
   root 'v0/example#index', module: 'v0'

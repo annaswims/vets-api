@@ -2,16 +2,15 @@
 
 module SignIn
   class UserCreator
-    attr_reader :user_attributes, :state, :type
+    attr_reader :user_attributes, :state_payload
 
-    def initialize(user_attributes:, state:, type:)
+    def initialize(user_attributes:, state_payload:)
       @user_attributes = user_attributes
-      @state = state
-      @type = type
+      @state_payload = state_payload
     end
 
     def perform
-      check_state_match
+      validate_mpi_record
       check_and_add_mpi_user
       update_and_persist_user
       create_code_container
@@ -19,6 +18,11 @@ module SignIn
     end
 
     private
+
+    def validate_mpi_record
+      raise SignIn::Errors::MPILockedAccountError, 'Theft Flag Detected' if current_user.id_theft_flag
+      raise SignIn::Errors::MPILockedAccountError, 'Death Flag Detected' if current_user.deceased_date
+    end
 
     def check_and_add_mpi_user
       return unless current_user.loa3? && current_user.icn.nil?
@@ -39,20 +43,12 @@ module SignIn
       current_user.save && user_identity.save
     end
 
-    def check_state_match
-      raise SignIn::Errors::StateMismatchError, 'Authentication Attempt Cannot be found' unless code_challenge_state_map
-    end
-
     def create_code_container
       SignIn::CodeContainer.new(code: login_code,
-                                client_id: code_challenge_state_map.client_id,
-                                code_challenge: code_challenge_state_map.code_challenge,
+                                client_id: state_payload.client_id,
+                                code_challenge: state_payload.code_challenge,
                                 user_verification_id: user_verification.id,
                                 credential_email: credential_email).save!
-    end
-
-    def code_challenge_state_map
-      @code_challenge_state_map ||= SignIn::CodeChallengeStateMap.find(state)
     end
 
     def user_identity
@@ -69,9 +65,9 @@ module SignIn
 
     def user_code_map
       @user_code_map ||= SignIn::UserCodeMap.new(login_code: login_code,
-                                                 type: type,
-                                                 client_state: code_challenge_state_map.client_state,
-                                                 client_id: code_challenge_state_map.client_id)
+                                                 type: state_payload.type,
+                                                 client_state: state_payload.client_state,
+                                                 client_id: state_payload.client_id)
     end
 
     def user_verification
