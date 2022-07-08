@@ -50,7 +50,7 @@ module DebtManagementCenter
       binding.pry
       with_monitoring_and_error_handling do
         DebtManagementCenter::DebtsResponse.new(
-          perform(:post, Settings.dmc.debts_endpoint, file_number: @file_number).body
+          perform(:post, Settings.dmc.debts_endpoint, fileNumber: @file_number).body
         ).debts
       end
     end
