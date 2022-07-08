@@ -9,14 +9,12 @@ module DebtManagementCenter
     attr_reader :file_number
 
     class DebtNotFound < StandardError; end
+    configuration DebtManagementCenter::DebtsConfiguration
 
     STATSD_KEY_PREFIX = 'api.dmc'
 
     def initialize(user)
       super(user)
-      @debts_configuration = DebtsConfiguration.new(
-        use_mock: mock_enabled?
-      )
       @debts = init_debts
     end
 
@@ -52,7 +50,7 @@ module DebtManagementCenter
       binding.pry
       with_monitoring_and_error_handling do
         DebtManagementCenter::DebtsResponse.new(
-          @debts_configuration.post(Settings.dmc.debts_endpoint, { 'fileNumber' => @file_number }).body
+          perform(:post, Settings.dmc.debts_endpoint, file_number: @file_number).body
         ).debts
       end
     end
@@ -66,10 +64,6 @@ module DebtManagementCenter
 
     def sort_by_date(debt_history)
       debt_history.sort_by { |d| Date.strptime(d['date'], '%m/%d/%Y') }.reverse
-    end
-
-    def mock_enabled?
-      Settings.dmc.mock_debts || Flipper.enabled?(:debts_mock_enabled, @user) || false
     end
   end
 end

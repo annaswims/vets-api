@@ -1,27 +1,12 @@
 # frozen_string_literal: true
 
 module DebtManagementCenter
-  class DebtsConfiguration
-    extend Forwardable
-
-    def initialize(use_mock: false)
-      @use_mock = use_mock
-    end
-
-    def base_request_headers
-      {
-        'Accept' => 'application/json',
-        'Content-Type' => 'application/json',
+  class DebtsConfiguration < Common::Client::Configuration::REST
+    def self.base_request_headers
+      super.merge(
         'client_id' => Settings.dmc.client_id,
         'client_secret' => Settings.dmc.client_secret
-      }
-    end
-
-    def request_options
-      {
-        open_timeout: 15,
-        timeout: 15
-      }
+      )
     end
 
     def service_name
@@ -32,21 +17,21 @@ module DebtManagementCenter
       Settings.dmc.url
     end
 
-    def post(path, params)
-      connection.post(path, params)
-    end
-
-    private
-
     def connection
       Faraday.new(base_path, headers: base_request_headers, request: request_options) do |f|
         f.use :breakers
         f.use Faraday::Response::RaiseError
         f.request :json
-        f.response :betamocks if @use_mock
+        f.response :betamocks if mock_enabled?
         f.response :json
         f.adapter Faraday.default_adapter
       end
+    end
+
+    private
+
+    def mock_enabled?
+      Settings.dmc.mock_debts || Flipper.enabled?(:debts_mock_enabled) || false
     end
   end
 end
