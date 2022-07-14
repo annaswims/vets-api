@@ -83,7 +83,7 @@ module DebtManagementCenter
       end
 
       def generate_payload
-        {
+        d = {
           "personalIdentification" => {
               "ssn" => Faker::Number.number(digits: 10),
               "fileNumber" => Faker::Number.number(digits: 10),
@@ -294,6 +294,12 @@ module DebtManagementCenter
               "veteranDateSigned" => "06/#{Faker::Number.between(from: 1, to: 28)}/2022"
           }
       }
+
+      File.open("tmp/vbs/payload.json", "w") do |f|
+        f.write(d.to_json)
+      end
+
+      d
       end
 
       ##
