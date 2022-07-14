@@ -83,7 +83,7 @@ module DebtManagementCenter
     def submit_vha_fsr(form)
       request = DebtManagementCenter::VBS::Request.build
       parsed_form = remove_form_delimiters(form)
-      response = request.post("#{vbs_settings.base_path}/UploadFSRJsonDocument", parsed_form)
+      response = request.post("#{vbs_settings.base_path}/UploadFSRJsonDocument", { jsonDocument: parsed_form })
 
       send_confirmation_email if response.success?
 
