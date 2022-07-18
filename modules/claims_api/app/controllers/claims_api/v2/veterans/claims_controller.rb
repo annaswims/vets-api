@@ -126,7 +126,11 @@ module ClaimsApi
             end_product_code: claim_details[:end_prdct_type_cd],
             filed5103_waiver_ind: claim_details[:filed5103_waiver_ind],
             development_letter_sent: claim_details[:development_letter_sent],
-            decision_notification_sent: claim_details[:decision_notification_sent]
+            decision_notification_sent: claim_details[:decision_notification_sent],
+            benefitClaimTypeCode: claim_details[:bnft_claim_type_cd],
+            attentionNeeded: claim_details[:attention_needed],
+            submitterApplicationCode: claim_details[:submtr_applcn_type_cd],
+            submitterRoleCode: claim_details[:submtr_role_type_cd]
           }
         end
       end
