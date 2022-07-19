@@ -186,11 +186,11 @@ RSpec.describe 'Claims', type: :request do
                 expect(json_response.count).to eq(1)
                 claim = json_response.first
                 expect(claim['id']).to eq('0958d973-36fb-43ef-8801-2718bd33c825')
-                expect(claim['type']).to eq('Compensation')
+                expect(claim['claimType']).to eq('Compensation')
                 expect(claim['status']).to eq('Pending')
                 expect(claim['dateFiled']).to eq('05/02/17')
                 expect(claim['documentsNeeded']).to eq(true)
-                expect(claim['requestedDecision']).to eq(true)
+                expect(claim['requestedDecision']).to eq(nil)
                 expect(claim['developmentLetterSent']).to eq(true)
                 expect(claim['decisionLetterSent']).to eq(false)
 
@@ -446,7 +446,7 @@ RSpec.describe 'Claims', type: :request do
                 expect(response.status).to eq(200)
                 expect(json_response).to be_an_instance_of(Hash)
                 expect(json_response['id']).to eq('0958d973-36fb-43ef-8801-2718bd33c825')
-                expect(json_response['type']).to eq('value from BGS')
+                expect(json_response['claimType']).to eq('value from BGS')
                 expect(json_response['status']).to eq('Pending')
               end
             end
@@ -518,8 +518,13 @@ RSpec.describe 'Claims', type: :request do
                 expect(json_response).to be_an_instance_of(Hash)
                 expect(response['endProductCode']).to eq(nil)
                 expect(json_response['id']).to eq('0958d973-36fb-43ef-8801-2718bd33c825')
-                expect(json_response['type']).to eq('value from BGS')
+                expect(json_response['claimType']).to eq('value from BGS')
                 expect(json_response['status']).to eq('Pending')
+                expect(json_response['phaseType']).to eq('Pending')
+                expect(json_response['decisionLetterSent']).to eq(false)
+                expect(json_response['developmentLetterSent']).to eq(false)
+                expect(json_response['documentsNeeded']).to eq(false)
+                expect(json_response['appealPossible']).to eq(false)
               end
             end
           end
@@ -555,7 +560,7 @@ RSpec.describe 'Claims', type: :request do
                 expect(json_response).to be_an_instance_of(Hash)
                 expect(response['endProductCode']).to eq(nil)
                 expect(json_response['id']).to eq('0958d973-36fb-43ef-8801-2718bd33c825')
-                expect(json_response['type']).to eq('value from BGS')
+                expect(json_response['claimType']).to eq('value from BGS')
                 expect(json_response['status']).to eq('Pending')
               end
             end

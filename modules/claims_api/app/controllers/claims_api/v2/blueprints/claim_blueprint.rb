@@ -14,6 +14,7 @@ module ClaimsApi
           }
         end
 
+        field :lighthouse_id
         field :contention_list
         field :date_filed
         field :decision_letter_sent
@@ -22,6 +23,19 @@ module ClaimsApi
         field :end_product_code
         field :requested_decision
         field :status
+        field :claim_type
+        field :type
+        field :base_end_prdct_type_cd
+        field :claim_id
+        field :bnft_claim_type_cd
+        field :claim_close_dt
+        field :claim_complete_dt
+        field :claim_status
+        field :phase_type
+        field :program_type
+        field :ptcpnt_clmant_id
+        field :ptcpnt_vet_id
+        field :appeal_possible
         field :supporting_documents do |claim, _options|
           auto_established_claim = ClaimsApi::AutoEstablishedClaim.find_by evss_id: claim[:id]
           if auto_established_claim.present?

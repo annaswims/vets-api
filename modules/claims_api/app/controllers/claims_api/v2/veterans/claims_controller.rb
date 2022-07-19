@@ -113,6 +113,7 @@ module ClaimsApi
 
         # the 'ebenefits' services used in the 'index' and 'show' actions return differing data structures
         #  massage the 'show' data structure to be in a state that the BGSToLighthouseClaimsMapperService can use
+        # rubocop:disable Metrics/MethodLength
         def massage_bgs_claim(bgs_claim:)
           claim_details = bgs_claim[:benefit_claim_details_dto]
           {
@@ -127,12 +128,23 @@ module ClaimsApi
             filed5103_waiver_ind: claim_details[:filed5103_waiver_ind],
             development_letter_sent: claim_details[:development_letter_sent],
             decision_notification_sent: claim_details[:decision_notification_sent],
-            benefitClaimTypeCode: claim_details[:bnft_claim_type_cd],
-            attentionNeeded: claim_details[:attention_needed],
-            submitterApplicationCode: claim_details[:submtr_applcn_type_cd],
-            submitterRoleCode: claim_details[:submtr_role_type_cd]
+            bnft_claim_type_cd: claim_details[:bnft_claim_type_cd],
+            submtr_applcn_type_cd: claim_details[:submtr_applcn_type_cd],
+            submtr_role_type_cd: claim_details[:submtr_role_type_cd],
+            supporting_documents: claim_details[:supporting_documents],
+            base_end_prdct_type_cd: claim_details[:base_end_prdct_type_cd],
+            bnft_claim_lc_status: claim_details[:bnft_claim_lc_status],
+            phase_chngd_dt: claim_details[:phase_chngd_dt],
+            claim_complete_dt: claim_details[:claim_complete_dt],
+            phase_type_change_ind: claim_details[:phase_type_change_ind],
+            claim_status: claim_details[:claim_status],
+            program_type: claim_details[:program_type],
+            ptcpnt_clmant_id: claim_details[:ptcpnt_clmant_id],
+            ptcpnt_vet_id: claim_details[:ptcpnt_vet_id],
+            regional_office_jrsdctn: claim_details[:regional_office_jrsdctn]
           }
         end
+        # rubocop:enable Metrics/MethodLength
       end
     end
   end

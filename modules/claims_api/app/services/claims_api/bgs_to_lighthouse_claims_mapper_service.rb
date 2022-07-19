@@ -33,31 +33,50 @@ module ClaimsApi
 
     def matched_claim
       # this claim was submitted via Lighthouse, so use the 'id' the user is most likely to know
-      { id: lighthouse_claim.id }.merge(shared_claim_traits)
+      { id: lighthouse_claim.id, lighthouseId: lighthouse_claim.id, claimId: lighthouse_claim.evss_id,
+        claimType: lighthouse_claim.claim_type }.merge(shared_claim_traits)
     end
 
     def unmatched_bgs_claim
-      { id: bgs_claim[:benefit_claim_id] }.merge(shared_claim_traits)
+      { id: bgs_claim[:benefit_claim_id], claimType: bgs_claim[:claim_status_type] }.merge(shared_claim_traits)
     end
 
+    # rubocop:disable Metrics/MethodLength
     def shared_claim_traits
       {
-        type: bgs_claim[:claim_status_type],
+        claim_type: bgs_claim[:claim_status_type],
+        lighthouse_id: bgs_claim[:id],
+        claimType: bgs_claim[:claim_status_type],
         date_filed: bgs_claim[:claim_dt].present? ? bgs_claim[:claim_dt].strftime('%D') : nil,
         status: bgs_claim[:phase_type],
         contention_list: bgs_claim[:contentions],
         poa: bgs_claim[:poa],
         end_product_code: bgs_claim[:end_product_code],
         documents_needed: map_yes_no_to_boolean('attention_needed', bgs_claim[:attention_needed]),
-        requested_decision: map_y_n_to_boolean('filed5103_waiver_ind', bgs_claim[:filed5103_waiver_ind]),
+        waiver_5103_Submitted: map_y_n_to_boolean('filed5103_waiver_ind', bgs_claim[:filed5103_waiver_ind]),
         development_letter_sent: map_yes_no_to_boolean('development_letter_sent', bgs_claim[:development_letter_sent]),
+        base_end_prdct_type_cd: bgs_claim[:base_end_prdct_type_cd],
+        claim_id: bgs_claim[:benefit_claim_id],
+        benefit_claim_type_code: bgs_claim[:bnft_claim_type_cd],
+        claim_close_date: bgs_claim[:claim_close_dt],
+        claim_complete_date: bgs_claim[:claim_complete_dt],
+        claim_status: bgs_claim[:claim_status],
+        end_product_type_code: bgs_claim[:end_prdct_type_cd],
+        phase_changed_date: bgs_claim[:phase_chngd_dt],
+        phase_type: bgs_claim[:phase_type],
+        program_type: bgs_claim[:program_type],
+        participant_claimant_id: bgs_claim[:ptcpnt_clmant_id],
+        participant_vet_id: bgs_claim[:ptcpnt_vet_id],
+        appeal_possible: map_yes_no_to_boolean('appeal_possible', bgs_claim[:appeal_possible]),
         decision_letter_sent: map_yes_no_to_boolean('decision_notification_sent',
                                                     bgs_claim[:decision_notification_sent])
       }
     end
+    # rubocop:enable Metrics/MethodLength
 
     def unmatched_lighthouse_claim
-      { id: lighthouse_claim.id, type: lighthouse_claim.claim_type, status: lighthouse_claim.status.capitalize }
+      { id: lighthouse_claim.id, lighthouseId: lighthouse_claim.id, claimType: lighthouse_claim.claim_type,
+        status: lighthouse_claim.status.capitalize, claimId: lighthouse_claim.evss_id }
     end
 
     def map_yes_no_to_boolean(key, value)
