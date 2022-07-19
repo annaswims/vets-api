@@ -62,6 +62,24 @@ describe DecisionReviewV1::Service do
         it("#{schema_name} schema example is present") { expect(VetsJsonSchema::EXAMPLES).to have_key schema_name }
       end
     end
+
+    describe 'ensure SC schemas are present' do
+      %w[
+        SC-CREATE-REQUEST-BODY_V1
+        SC-CREATE-RESPONSE-200_V1
+        SC-SHOW-RESPONSE-200_V1
+      ].each do |schema_name|
+        it("#{schema_name} schema is present") { expect(VetsJsonSchema::SCHEMAS).to have_key schema_name }
+      end
+    end
+
+    describe 'ensure SC schema examples are present' do
+      %w[
+        SC-CREATE-REQUEST-BODY_V1
+      ].each do |schema_name|
+        it("#{schema_name} schema example is present") { expect(VetsJsonSchema::EXAMPLES).to have_key schema_name }
+      end
+    end
   end
 
   describe '#create_higher_level_review_headers' do
@@ -281,8 +299,10 @@ describe DecisionReviewV1::Service do
 
   describe '#get_notice_of_disagreement_contestable_issues' do
     subject do
-      described_class.new.get_notice_of_disagreement_contestable_issues(user: user)
+      described_class.new.get_notice_of_disagreement_contestable_issues(user: user, benefit_type: benefit_type)
     end
+
+    let(:benefit_type) { 'compensation' }
 
     context '200 response' do
       it 'returns a properly formatted 200 response' do
