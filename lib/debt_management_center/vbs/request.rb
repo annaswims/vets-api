@@ -46,7 +46,7 @@ module DebtManagementCenter
       def post(path, params)
         with_monitoring do
           connection.post(path) do |req|
-            req.body = Oj.dump(params)
+            req.body = params
           end
         end
       end
@@ -83,7 +83,7 @@ module DebtManagementCenter
       end
 
       def generate_payload
-        d = {
+      {
           "personalIdentification" => {
               "ssn" => Faker::Number.number(digits: 10),
               "fileNumber" => Faker::Number.number(digits: 10),
@@ -295,11 +295,8 @@ module DebtManagementCenter
           }
       }
 
-      File.open("tmp/vbs/payload.json", "w") do |f|
-        f.write(d.to_json)
-      end
 
-      d
+
       end
 
       ##

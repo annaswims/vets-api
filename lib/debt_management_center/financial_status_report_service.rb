@@ -71,6 +71,9 @@ module DebtManagementCenter
     end
 
     def submit_vba_fsr(form)
+      File.open('lib/debt_management_center/tmp-form.json', 'w') do |f|
+        f.write(form.to_json)
+      end
       response = perform(:post, 'financial-status-report/formtopdf', form)
       fsr_response = DebtManagementCenter::FinancialStatusReportResponse.new(response.body)
 
