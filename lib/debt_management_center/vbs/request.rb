@@ -83,10 +83,10 @@ module DebtManagementCenter
       end
 
       def generate_payload
-      {
+      d = {
           "personalIdentification" => {
-              "ssn" => Faker::Number.number(digits: 10),
-              "fileNumber" => Faker::Number.number(digits: 10),
+              "ssn" => Faker::Number.number(digits: 10).to_s,
+              "fileNumber" => Faker::Number.number(digits: 10).to_s,
               "fsrReason" => Faker::Lorem.word
           },
           "personalData" => {
@@ -114,8 +114,8 @@ module DebtManagementCenter
                   "last" => Faker::Name.last_name
               },
               "agesOfOtherDependents" => [
-                  Faker::Number.between(from: 1, to: 17),
-                  Faker::Number.between(from: 1, to: 17)
+                  Faker::Number.between(from: 1, to: 17).to_s,
+                  Faker::Number.between(from: 1, to: 17).to_s
               ],
               "employmentHistory" => [
                   {
@@ -174,85 +174,85 @@ module DebtManagementCenter
           "income" => [
               {
                   "veteranOrSpouse" => "VETERAN",
-                  "monthlyGrossSalary" => Faker::Number.number(digits: 4),
+                  "monthlyGrossSalary" => Faker::Number.number(digits: 4).to_s,
                   "deductions" => {
-                      "taxes" => Faker::Number.number(digits: 3),
-                      "retirement" => Faker::Number.number(digits: 3),
-                      "socialSecurity" => Faker::Number.number(digits: 3),
+                      "taxes" => Faker::Number.number(digits: 3).to_s,
+                      "retirement" => Faker::Number.number(digits: 3).to_s,
+                      "socialSecurity" => Faker::Number.number(digits: 3).to_s,
                       "otherDeductions" => {
                           "name" => Faker::Lorem.sentence,
-                          "amount" => Faker::Number.number(digits: 3)
+                          "amount" => Faker::Number.number(digits: 3).to_s
                       }
                   },
-                  "totalDeductions" => Faker::Number.number(digits: 3),
-                  "netTakeHomePay" => Faker::Number.number(digits: 5),
+                  "totalDeductions" => Faker::Number.number(digits: 3).to_s,
+                  "netTakeHomePay" => Faker::Number.number(digits: 5).to_s,
                   "otherIncome" => {
                       "name" => Faker::Lorem.sentence,
-                      "amount" =>Faker::Number.number(digits: 3)
+                      "amount" =>Faker::Number.number(digits: 3).to_s
                   },
-                  "totalMonthlyNetIncome" => Faker::Number.number(digits: 4)
+                  "totalMonthlyNetIncome" => Faker::Number.number(digits: 4).to_s
               },
               {
                   "veteranOrSpouse" => "SPOUSE",
-                  "monthlyGrossSalary" => Faker::Number.number(digits: 4),
+                  "monthlyGrossSalary" => Faker::Number.number(digits: 4).to_s,
                   "deductions" => {
-                      "taxes" => Faker::Number.number(digits: 3),
-                      "retirement" => Faker::Number.number(digits: 3),
-                      "socialSecurity" => Faker::Number.number(digits: 3),
+                      "taxes" => Faker::Number.number(digits: 3).to_s,
+                      "retirement" => Faker::Number.number(digits: 3).to_s,
+                      "socialSecurity" => Faker::Number.number(digits: 3).to_s,
                       "otherDeductions" => {
                           "name" => Faker::Lorem.sentence,
-                          "amount" => Faker::Number.number(digits: 3)
+                          "amount" => Faker::Number.number(digits: 3).to_s
                       }
                   },
-                  "totalDeductions" => Faker::Number.number(digits: 3),
-                  "netTakeHomePay" => Faker::Number.number(digits: 5),
+                  "totalDeductions" => Faker::Number.number(digits: 3).to_s,
+                  "netTakeHomePay" => Faker::Number.number(digits: 5).to_s,
                   "otherIncome" => {
                       "name" => Faker::Lorem.sentence,
-                      "amount" =>Faker::Number.number(digits: 3)
+                      "amount" =>Faker::Number.number(digits: 3).to_s
                   },
-                  "totalMonthlyNetIncome" => Faker::Number.number(digits: 4)
+                  "totalMonthlyNetIncome" => Faker::Number.number(digits: 4).to_s
               }
           ],
           "expenses" => {
-              "rentOrMortgage" => Faker::Number.number(digits: 3),
-              "food" => Faker::Number.number(digits: 3),
-              "utilities" => Faker::Number.number(digits: 3),
+              "rentOrMortgage" => Faker::Number.number(digits: 3).to_s,
+              "food" => Faker::Number.number(digits: 3).to_s,
+              "utilities" => Faker::Number.number(digits: 3).to_s,
               "otherLivingExpenses" => {
                   "name" => Faker::Lorem.sentence,
-                  "amount" => Faker::Number.number(digits: 3)
+                  "amount" => Faker::Number.number(digits: 3).to_s
               },
-              "expensesInstallmentContractsAndOtherDebts" => Faker::Number.number(digits: 3),
-              "totalMonthlyExpenses" => Faker::Number.number(digits: 4)
+              "expensesInstallmentContractsAndOtherDebts" => Faker::Number.number(digits: 3).to_s,
+              "totalMonthlyExpenses" => Faker::Number.number(digits: 4).to_s
           },
           "discretionaryIncome" => {
-              "netMonthlyIncomeLessExpenses" => Faker::Number.number(digits: 4),
-              "amountCanBePaidTowardDebt" => Faker::Number.number(digits: 3)
+              "netMonthlyIncomeLessExpenses" => Faker::Number.number(digits: 4).to_s,
+              "amountCanBePaidTowardDebt" => Faker::Number.number(digits: 3).to_s
           },
           "assets" => {
-              "cashInBank" => Faker::Number.number(digits: 5),
-              "cashOnHand" => Faker::Number.number(digits: 3),
+              "cashInBank" => Faker::Number.number(digits: 5).to_s,
+              "cashOnHand" => Faker::Number.number(digits: 3).to_s,
               "automobiles" => [
                   {
                       "make" => Faker::Vehicle.make,
                       "model" => Faker::Vehicle.model,
-                      "year" => Faker::Number.between(from: 1960, to: 2020),
-                      "resaleValue" => Faker::Number.number(digits: 4)
+                      "year" => Faker::Number.between(from: 1960, to: 2020).to_s,
+                      "resaleValue" => Faker::Number.number(digits: 4).to_s
                   },
                   {
 
                   }
               ],
-              "trailersBoatsCampers" => Faker::Number.number(digits: 3),
-              "usSavingsBonds" => Faker::Number.number(digits: 3),
-              "stocksAndOtherBonds" => Faker::Number.number(digits: 4),
-              "realEstateOwned" => Faker::Number.number(digits: 6),
+              "trailersBoatsCampers" => Faker::Number.number(digits: 3).to_s,
+              "usSavingsBonds" => Faker::Number.number(digits: 3).to_s,
+              "stocksAndOtherBonds" => Faker::Number.number(digits: 4).to_s,
+              "realEstateOwned" => Faker::Number.number(digits: 6).to_s,
               "otherAssets" => [
                   {
                       "name" => Faker::Lorem.word,
-                      "amount" => Faker::Number.number(digits: 3)
+                      "amount" => Faker::Number.number(digits: 3).to_s
                   }
               ],
-              "totalAssets" => Faker::Number.number(digits: 6)
+              "totalAssets" => Faker::Number.number(digits: 6).to_s
           },
           "installmentContractsAndOtherDebts" => [
               {
@@ -268,24 +268,24 @@ module DebtManagementCenter
                   },
                   "dateStarted" => "#{Faker::Number.between(from: 1, to: 12)}/#{Faker::Number.between(from: 1, to: 28)}/#{Faker::Number.between(from: 1990, to: 2022)}",
                   "purpose" => Faker::Lorem.sentence,
-                  "originalAmount" => Faker::Number.number(digits: 5),
-                  "unpaidBalance" => Faker::Number.number(digits: 4),
-                  "amountDueMonthly" => Faker::Number.number(digits: 3),
-                  "amountPastDue" => Faker::Number.number(digits: 2)
+                  "originalAmount" => Faker::Number.number(digits: 5).to_s,
+                  "unpaidBalance" => Faker::Number.number(digits: 4).to_s,
+                  "amountDueMonthly" => Faker::Number.number(digits: 3).to_s,
+                  "amountPastDue" => Faker::Number.number(digits: 2).to_s
               }
           ],
           "totalOfInstallmentContractsAndOtherDebts" => {
-            "originalAmount" => Faker::Number.number(digits: 5),
-            "unpaidBalance" => Faker::Number.number(digits: 4),
-            "amountDueMonthly" => Faker::Number.number(digits: 3),
-            "amountPastDue" => Faker::Number.number(digits: 2)
+            "originalAmount" => Faker::Number.number(digits: 5).to_s,
+            "unpaidBalance" => Faker::Number.number(digits: 4).to_s,
+            "amountDueMonthly" => Faker::Number.number(digits: 3).to_s,
+            "amountPastDue" => Faker::Number.number(digits: 2).to_s
           },
           "additionalData" => {
               "bankruptcy" => {
                   "hasBeenAdjudicatedBankrupt" => true,
                   "dateDischarged" => "#{Faker::Number.between(from: 1, to: 12)}/#{Faker::Number.between(from: 1, to: 28)}/#{Faker::Number.between(from: 1990, to: 2022)}",
                   "courtLocation" => Faker::Address.city,
-                  "docketNumber" => Faker::Number.number(digits: 8)
+                  "docketNumber" => Faker::Number.number(digits: 8).to_s
               },
               "additionalComments" => Faker::Lorem.paragraph
           },
@@ -295,8 +295,11 @@ module DebtManagementCenter
           }
       }
 
+      File.open('lib/debt_management_center/vbs/temp.json', 'w') do |f|
+        f.write(d.to_json)
+      end
 
-
+      d
       end
 
       ##
