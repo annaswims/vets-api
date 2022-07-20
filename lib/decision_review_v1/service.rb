@@ -34,11 +34,8 @@ module DecisionReviewV1
     SC_CREATE_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'SC-CREATE-RESPONSE-200_V1'
     SC_SHOW_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'SC-SHOW-RESPONSE-200_V1'
 
-    # TODO: the schema seems to be the same for the old endpoint & the new one
-    # we should eventually update get_higher_level_review_contestable_issues
-    # to use the same endpoint as NOD & SC:
-    # OLD: /higher_level_reviews/contestable_issues/
-    # NEW: /contestable_issues/notice_of_disagreements
+    # TODO: when making next round of schema changes, swap HLR-GET-CONTESTABLE-ISSUES-RESPONSE-200
+    # for the generic schema
     GET_CONTESTABLE_ISSUES_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'HLR-GET-CONTESTABLE-ISSUES-RESPONSE-200'
 
     ##
@@ -82,7 +79,7 @@ module DecisionReviewV1
     #
     def get_higher_level_review_contestable_issues(user:, benefit_type:)
       with_monitoring_and_error_handling do
-        path = "higher_level_reviews/contestable_issues/#{benefit_type}"
+        path = "contestable_issues/higher_level_reviews?benefit_type=#{benefit_type}"
         headers = get_contestable_issues_headers(user)
         response = perform :get, path, nil, headers
         raise_schema_error_unless_200_status response.status
