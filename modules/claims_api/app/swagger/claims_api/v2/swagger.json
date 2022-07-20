@@ -405,11 +405,6 @@
                 "example": [
                   {
                     "id": "555555555",
-                    "@links": {
-                      "rel": "self",
-                      "type": "GET",
-                      "url": "http://www.example.com/services/benefits/v2/veterans/1013062086V794840/claims/555555555"
-                    },
                     "dateFiled": "05/02/17",
                     "decisionLetterSent": false,
                     "developmentLetterSent": false,
@@ -465,15 +460,6 @@
                         "type": "boolean",
                         "description": "If true, a decision letter has been sent to the claimant regarding a benefit claim",
                         "example": "false"
-                      },
-                      "@links": {
-                        "type": "object",
-                        "description": "HATEOAS links in the HAL standard format",
-                        "example": {
-                          "rel": "self",
-                          "type": "GET",
-                          "url": "https://api.va.gov/services/claims/v2/claims/600131328"
-                        }
                       }
                     }
                   }
@@ -644,11 +630,6 @@
               "application/json": {
                 "example": {
                   "id": "555555555",
-                  "@links": {
-                    "rel": "self",
-                    "type": "GET",
-                    "url": "http://www.example.com/services/benefits/v2/veterans/1013062086V794840/claims/555555555"
-                  },
                   "appealPossible": false,
                   "baseEndPrdctTypeCd": "400",
                   "bnftClaimTypeCd": null,
@@ -692,15 +673,6 @@
                       "type": "string",
                       "description": "Claim ID",
                       "example": "600131328"
-                    },
-                    "@links": {
-                      "type": "object",
-                      "description": "HATEOAS links in the HAL standard format",
-                      "example": {
-                        "rel": "self",
-                        "type": "GET",
-                        "url": "https://api.va.gov/services/claims/v2/claims/600131328"
-                      }
                     },
                     "contentionList": {
                       "type": "array",

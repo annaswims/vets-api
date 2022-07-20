@@ -6,14 +6,6 @@ module ClaimsApi
       class ClaimBlueprint < Blueprinter::Base
         identifier :id
 
-        field :@links do |claim, options|
-          {
-            rel: 'self',
-            type: 'GET',
-            url: "#{options[:base_url]}/services/benefits/v2/veterans/#{options[:veteran_id]}/claims/#{claim[:id]}"
-          }
-        end
-
         field :lighthouse_id
         field :contention_list
         field :date_filed
@@ -63,7 +55,6 @@ module ClaimsApi
           exclude :contention_list
           exclude :end_product_code
           exclude :supporting_documents
-          exclude :poa
           exclude :appeal_possible
           exclude :base_end_prdct_type_cd
           exclude :bnft_claim_type_cd
