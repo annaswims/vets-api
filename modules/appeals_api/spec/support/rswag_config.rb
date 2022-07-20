@@ -76,6 +76,7 @@ class AppealsApi::RswagConfig
     a << sc_create_schemas
     a << sc_response_schemas('#/components/schemas')
     a << legacy_appeals_schema('#/components/schemas')
+    a << shared_schemas unless Settings.vsp_environment == 'production'
 
     a.reduce(&:merge).sort_by { |k, _| k.to_s.downcase }.to_h
   end
@@ -536,8 +537,14 @@ class AppealsApi::RswagConfig
     sc_v2_schema = parse_create_schema('v2', '200995.json')
     return sc_v2_schema if wip_doc_enabled?(:sc_v2_claimant)
 
+    # Removes NVC-related schema data from production docs
     sc_v2_schema.tap do |s|
-      s.dig(*%w[scCreate properties data properties attributes properties]).delete('claimant')
+      attrs = s.dig(*%w[scCreate properties data properties attributes])
+      attrs['properties'].delete('claimant')
+      attrs['properties']['claimantType']['enum'] = ['veteran']
+      attrs['properties'].delete('claimantTypeOtherValue')
+      attrs['allOf'].delete_at(3) # Remove 'if claimantType ~= NCV, require claimant'
+      attrs['allOf'].delete_at(2) # Remove 'if const "other", require claimantTypeOtherValue'
     end
   end
 
@@ -677,10 +684,29 @@ class AppealsApi::RswagConfig
     }
   end
 
+  def shared_schemas
+    {
+      'address': JSON.parse(File.read(AppealsApi::Engine.root.join('config', 'schemas', 'shared', 'v1', 'address.json')))['properties']['address'],
+      'date': JSON.parse(File.read(AppealsApi::Engine.root.join('config', 'schemas', 'shared', 'v1', 'date.json')))['properties']['date'],
+      'non_blank_string': JSON.parse(File.read(AppealsApi::Engine.root.join('config', 'schemas', 'shared', 'v1', 'non_blank_string.json')))['properties']['nonBlankString'],
+      'phone': JSON.parse(File.read(AppealsApi::Engine.root.join('config', 'schemas', 'shared', 'v1', 'phone.json')))['properties']['phone'],
+      'timezone': JSON.parse(File.read(AppealsApi::Engine.root.join('config', 'schemas', 'shared', 'v1', 'timezone.json')))['properties']['timezone']
+    }
+  end
+
   def parse_create_schema(version, schema_file)
     file = File.read(AppealsApi::Engine.root.join('config', 'schemas', version, schema_file))
     file.gsub! '#/definitions/', '#/components/schemas/'
     schema = JSON.parse file
+
+    schema.deep_transform_values! do |value|
+      if value.respond_to?(:end_with?) && value.end_with?('.json')
+        "#/components/schemas/#{value.gsub('.json', '')}"
+      else
+        value
+      end
+    end
+
     schema['definitions']
   end
 end

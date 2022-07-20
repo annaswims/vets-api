@@ -12,6 +12,10 @@
 # Sorted using http://yaml-sorter.herokuapp.com/
 
 features:
+  burial_claim_confirmation_email:
+    actor_type: user
+    description: Enables burial claim form email submission confirmation
+    enable_in_development: true
   caregiver_sigi_enabled:
     actor_type: user
     description: Whether Self-Identifying Gender Identity is enabled for caregiver.
@@ -69,29 +73,13 @@ features:
     actor_type: user
     description: Enables the health care check-in experiences
     enable_in_development: true
-  check_in_experience_emergency_contact_enabled:
-    actor_type: user
-    description: Enables the health care check-in experiences to show the emergency contact page.
-    enable_in_development: true
   check_in_experience_pre_check_in_enabled:
     actor_type: user
     description: Enables the health care check-in experiences to show the pre-check-in experience.
     enable_in_development: true
-  check_in_experience_demographics_confirmation_enabled:
-    actor_type: user
-    description: Enables the health care pre-check-in experiences to send demographics confirmation.
-    enable_in_development: true
-  check_in_experience_no_demographics_confirmation_for_unverified_enabled:
-    actor_type: user
-    description: Enables the health care pre-check-in experiences to send demographics confirmation.
-    enable_in_development: true
   check_in_experience_day_of_demographics_flags_enabled:
     actor_type: user
     description: Enables the capture of user responses to demographics up-to-date questions
-    enable_in_development: true
-  check_in_experience_custom_cookie_for_low_auth:
-    actor_type: user
-    description: Enables custom cookie for storing low auth token
     enable_in_development: true
   check_in_experience_translation_day_of_enabled:
     actor_type: user
@@ -133,6 +121,9 @@ features:
     actor_type: user
     description: Enables users to interact with combined debt portal experience
     enable_in_development: true
+  combined_financial_status_report:
+    actor_type: user
+    description: Enables users to submit FSR forms for VHA and VBA debts
   communication_preferences:
     actor_type: user
     description: Allow user to access backend communication_preferences API
@@ -352,6 +343,10 @@ features:
     actor_type: user
     description: Enable/disable in progress form reminders (sent via VaNotify)
     enable_in_development: true
+  in_progress_form_reminder_age_param:
+    actor_type: user
+    description: Enable/disable in progress form reminder age param
+    enable_in_development: true
   in_progress_form_reminder_1010ez:
     actor_type: user
     description: Enable/disable 1010ez in progress form reminders (sent via VaNotify)
@@ -402,6 +397,10 @@ features:
   mobile_appointment_use_VAOS_MFS:
     actor_type: user
     description: Finds facilities using VAOS's Mobile Facility Service.
+    enable_in_development: false
+  mobile_appointment_use_VAOS_v2:
+    actor_type: user
+    description: Enables a user to use VAOS v2 endpoints rather then v0
     enable_in_development: false
   mobile_precache_appointments:
     actor_type: user
@@ -457,9 +456,6 @@ features:
     actor_type: user
     description: Allows to force the BAI experience for UAT testing
     enable_in_development: false
-  profile_show_demographics:
-    actor_type: user
-    description: Used to show demographic data (preferred name and gender identity) for the profile
   profile_show_gender:
     actor_type: user
     description: Show/hide the gender field UI on the profile page
@@ -495,7 +491,7 @@ features:
     description: For 526 disability compensation asthma claims, add RRD PDF and set RRD special issue to route to RVSRs
     enable_in_development: true
   my_va_redirect:
-    actor_type: cookie_id
+    actor_type: user
     description: After authentication redirects a user to the My VA page if they are on the homepage
     enable_in_development: true
   rrd_hypertension_compensation:
@@ -586,7 +582,7 @@ features:
   sign_in_service_enabled:
     actor_type: cookie_id
     description: Enables the ability to use OAuth authentication via the Sign in Service (Identity)
-    enable_in_development: true
+    enable_in_development: false
   medical_copays_zero_debt:
     actor_type: user
     description: Enables zero debt balances feature on the medical copays application

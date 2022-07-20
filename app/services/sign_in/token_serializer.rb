@@ -38,21 +38,24 @@ module SignIn
       end
     end
 
-    def set_cookie!(name:, value:, expires:, path: '/', httponly: true)
+    def set_cookie!(name:, value:, expires:, path: '/')
       cookies[name] = {
         value: value,
         expires: expires,
         path: path,
         secure: Settings.sign_in.cookies_secure,
-        httponly: httponly
+        httponly: true
       }
     end
 
     def set_info_cookie
-      set_cookie!(name: Constants::Auth::INFO_COOKIE_NAME,
-                  value: info_cookie_value,
-                  expires: refresh_token_expiration,
-                  httponly: false)
+      cookies[Constants::Auth::INFO_COOKIE_NAME] = {
+        value: info_cookie_value,
+        expires: refresh_token_expiration,
+        secure: Settings.sign_in.cookies_secure,
+        httponly: false,
+        domain: Settings.sign_in.info_cookie_domain
+      }
     end
 
     def info_cookie_value

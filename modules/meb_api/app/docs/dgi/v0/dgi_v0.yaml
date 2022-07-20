@@ -18,11 +18,15 @@ tags:
     description: Claim Status
   - name: claim letter
     description: Claim Letter
+  - name: fry claim letter
+    description: Fry Claim Letter
   - name: enrollment
     description: Enrollment List
   - name: submit enrollment verification
     description: Enrollment Verification Submission
   - name: sponsors
+    description: Sponsors
+  - name: fry_dea_sponsors
     description: Sponsors
 servers:
   - url: https://sandbox-api.va.gov/meb_api/v0
@@ -245,6 +249,47 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
         '504':
           $ref: '#/components/responses/GatewayTimeout'
+  /claim_letter/fry:
+    post:
+      tags:
+        - fry claim letter
+      summary: Dowloads an approval or denial fry letter to the client.
+      operationId: getFryClaimLetter
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimantInfoRequestBody'
+      responses:
+        '201':
+          description: Retrives a Fry Claim Letter.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '501':
+          $ref: '#/components/responses/NotImplemented'
+        '502':
+          $ref: '#/components/responses/BadGateway'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
   /enrollment:
     post:
       tags:
@@ -425,6 +470,66 @@ paths:
           $ref: '#/components/responses/GatewayTimeout'
         default:
           description: Default error sample response
+  /fry_dea_sponsors:
+    post:
+      tags:
+        - sponsors
+      summary: >-
+        Retrieves a JSON object containing sponsors data for an authenticated
+        benefits recipient.
+      description: Retrieves and returns the sponsors data for benefit selection.
+      operationId: fry_dea_sponsors
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Sponsors'
+      responses:
+        '201':
+          description: Retrieves sponsors containing an array of sponsor data.
+          content:
+            application/json:
+              schema:
+                required:
+                  - data
+                properties:
+                  data:
+                    required:
+                      - id
+                      - type
+                      - attributes
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      type:
+                        type: string
+                      attributes:
+                        $ref: '#/components/schemas/Sponsors'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '501':
+          $ref: '#/components/responses/NotImplemented'
+        '502':
+          $ref: '#/components/responses/BadGateway'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+        default:
+          description: Default error sample response
 components:
   securitySchemes:
     bearerAuth:
@@ -432,6 +537,15 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    Sponsors:
+      description: >-
+        Unique identifier in the request body to create the claimant
+        information.
+      type: object
+      properties:
+        ssn:
+          type: string
+          example: 539139735
     ClaimantInfoRequestBody:
       description: >-
         Unique identifier in the request body to create the claimant
@@ -796,7 +910,29 @@ components:
               dateOfBirth:
                 type: string
                 example: "2021-08-31"
-
+    FryDeaSponsorsResponse:
+      description: >-
+        Response proxied from DGI microservice pipeline.
+      type: object
+      properties:
+        sponsors:
+          type: array
+          description: Contains one or more sponsor data.
+          items:
+            type: object
+            properties:
+              firstName:
+                type: string
+                example: "Jeff"
+              lastName:
+                type: string
+                example: "Tedford"
+              sponsorRelationship:
+                type: string
+                example: "spouse"
+              dateOfBirth:
+                type: string
+                example: "2021-08-31"
 
     Errors:
       required:

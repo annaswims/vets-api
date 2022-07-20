@@ -405,16 +405,11 @@
                 "example": [
                   {
                     "id": "555555555",
-                    "@links": {
-                      "rel": "self",
-                      "type": "GET",
-                      "url": "http://www.example.com/services/benefits/v2/veterans/1013062086V794840/claims/555555555"
-                    },
-                    "date_filed": "05/02/17",
-                    "decision_letter_sent": false,
-                    "development_letter_sent": false,
-                    "documents_needed": false,
-                    "requested_decision": null,
+                    "dateFiled": "05/02/17",
+                    "decisionLetterSent": false,
+                    "developmentLetterSent": false,
+                    "documentsNeeded": false,
+                    "requestedDecision": null,
                     "status": "Complete",
                     "type": "Compensation"
                   }
@@ -440,41 +435,32 @@
                         "description": "Status of claim",
                         "example": "Complete"
                       },
-                      "date_filed": {
+                      "dateFiled": {
                         "type": "string",
                         "format": "date",
                         "description": "Date in YYYY-MM-DD the claim was first filed",
                         "example": "2018-06-04"
                       },
-                      "documents_needed": {
+                      "documentsNeeded": {
                         "type": "boolean",
                         "description": "If true, the claim requires additional documents to be submitted",
                         "example": "false"
                       },
-                      "requested_decision": {
+                      "requestedDecision": {
                         "type": "boolean",
                         "nullable": true,
                         "description": "If true, the claim filer has requested a claim decision be made",
                         "example": "false"
                       },
-                      "development_letter_sent": {
+                      "developmentLetterSent": {
                         "type": "boolean",
                         "description": "If true, a development letter has been sent to the claimant regarding a benefit claim",
                         "example": "false"
                       },
-                      "decision_letter_sent": {
+                      "decisionLetterSent": {
                         "type": "boolean",
                         "description": "If true, a decision letter has been sent to the claimant regarding a benefit claim",
                         "example": "false"
-                      },
-                      "@links": {
-                        "type": "object",
-                        "description": "HATEOAS links in the HAL standard format",
-                        "example": {
-                          "rel": "self",
-                          "type": "GET",
-                          "url": "https://api.va.gov/services/claims/v2/claims/600131328"
-                        }
                       }
                     }
                   }
@@ -645,11 +631,6 @@
               "application/json": {
                 "example": {
                   "id": "555555555",
-                  "@links": {
-                    "rel": "self",
-                    "type": "GET",
-                    "url": "http://www.example.com/services/benefits/v2/veterans/1013062086V794840/claims/555555555"
-                  },
                   "contentionList": [
                     "abnormal heart (New)",
                     " abscess kidney (New)",
@@ -665,7 +646,6 @@
                   "developmentLetterSent": false,
                   "documentsNeeded": false,
                   "endProductCode": "404",
-                  "poa": "Random E Person",
                   "requestedDecision": null,
                   "status": "Complete",
                   "supportingDocuments": [
@@ -681,15 +661,6 @@
                       "type": "string",
                       "description": "Claim ID",
                       "example": "600131328"
-                    },
-                    "@links": {
-                      "type": "object",
-                      "description": "HATEOAS links in the HAL standard format",
-                      "example": {
-                        "rel": "self",
-                        "type": "GET",
-                        "url": "https://api.va.gov/services/claims/v2/claims/600131328"
-                      }
                     },
                     "contentionList": {
                       "type": "array",
@@ -751,7 +722,7 @@
                             "type": "string",
                             "description": "Name of document"
                           },
-                          "uploaded_at": {
+                          "uploadedAt": {
                             "type": "string",
                             "format": "date",
                             "description": "Date and time document was uploaded"
@@ -763,11 +734,6 @@
                       "type": "string",
                       "description": "Name of claim type",
                       "example": "Appeals Control"
-                    },
-                    "poa": {
-                      "type": "string",
-                      "description": "The current organization or individual representing the Veteran on a claim",
-                      "example": "American Legion"
                     }
                   }
                 }

@@ -19,9 +19,9 @@ describe AppealsApi::V2::DecisionReviews::HigherLevelReviewsController, type: :r
     @data_extra = fixture_to_s 'valid_200996_extra.json', version: 'v2'
     @invalid_data = fixture_to_s 'invalid_200996.json', version: 'v2'
     @headers = fixture_as_json 'valid_200996_headers.json', version: 'v2'
-    @minimum_required_headers = fixture_as_json 'valid_200996_headers_minimum.json', version: 'v1'
+    @minimum_required_headers = fixture_as_json 'valid_200996_headers_minimum.json', version: 'v2'
     @headers_extra = fixture_as_json 'valid_200996_headers_extra.json', version: 'v2'
-    @invalid_headers = fixture_as_json 'invalid_200996_headers.json', version: 'v1'
+    @invalid_headers = fixture_as_json 'invalid_200996_headers.json', version: 'v2'
   end
 
   let(:parsed) { JSON.parse(response.body) }
@@ -135,7 +135,7 @@ describe AppealsApi::V2::DecisionReviews::HigherLevelReviewsController, type: :r
       end
     end
 
-    it 'create the job to build the PDF' do
+    it 'updates the appeal status once submitted to central mail' do
       client_stub = instance_double('CentralMail::Service')
       faraday_response = instance_double('Faraday::Response')
 
@@ -143,12 +143,20 @@ describe AppealsApi::V2::DecisionReviews::HigherLevelReviewsController, type: :r
       allow(client_stub).to receive(:upload).and_return(faraday_response)
       allow(faraday_response).to receive(:success?).and_return(true)
 
-      Sidekiq::Testing.inline! do
-        post(path, params: @data, headers: @headers)
-      end
+      with_settings(Settings.vanotify.services.lighthouse.template_id,
+                    higher_level_review_received: 'veteran_template',
+                    higher_level_review_received_claimant: 'claimant_template') do
+        client = instance_double(VaNotify::Service)
+        allow(VaNotify::Service).to receive(:new).and_return(client)
+        allow(client).to receive(:send_email)
 
-      nod = AppealsApi::HigherLevelReview.find_by(id: parsed['data']['id'])
-      expect(nod.status).to eq('submitted')
+        Sidekiq::Testing.inline! do
+          post(path, params: @data, headers: @headers)
+        end
+
+        hlr = AppealsApi::HigherLevelReview.find_by(id: parsed['data']['id'])
+        expect(hlr.status).to eq('submitted')
+      end
     end
 
     context 'when invalid headers supplied' do
@@ -298,7 +306,7 @@ describe AppealsApi::V2::DecisionReviews::HigherLevelReviewsController, type: :r
     let(:path) { base_path 'higher_level_reviews/' }
 
     it 'returns a higher_level_review with all of its data' do
-      uuid = create(:higher_level_review).id
+      uuid = create(:higher_level_review_v2).id
       get("#{path}#{uuid}")
       expect(response.status).to eq(200)
       expect(parsed.dig('data', 'attributes', 'formData')).to be_a Hash
@@ -314,7 +322,7 @@ describe AppealsApi::V2::DecisionReviews::HigherLevelReviewsController, type: :r
     it 'allow for status simulation' do
       with_settings(Settings, vsp_environment: 'development') do
         with_settings(Settings.modules_appeals_api, status_simulation_enabled: true) do
-          uuid = create(:higher_level_review).id
+          uuid = create(:higher_level_review_v2).id
           status_simulation_headers = { 'Status-Simulation' => 'error' }
           get("#{path}#{uuid}", headers: status_simulation_headers)
 

@@ -7,15 +7,6 @@
       "description": "Claim ID",
       "example": "600131328"
     },
-    "@links": {
-      "type": "object",
-      "description": "HATEOAS links in the HAL standard format",
-      "example": {
-        "rel": "self",
-        "type": "GET",
-        "url": "https://api.va.gov/services/claims/v2/claims/600131328"
-      }
-    },
     "contentionList": {
       "type": "array",
       "items": {
@@ -73,7 +64,7 @@
             "type": "string",
             "description": "Name of document"
           },
-          "uploaded_at": {
+          "uploadedAt": {
             "type": "string",
             "format": "date",
             "description": "Date and time document was uploaded"
@@ -85,11 +76,6 @@
       "type": "string",
       "description": "Name of claim type",
       "example": "Appeals Control"
-    },
-    "poa": {
-      "type": "string",
-      "description": "The current organization or individual representing the Veteran on a claim",
-      "example": "American Legion"
     }
   }
 }

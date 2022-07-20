@@ -89,18 +89,22 @@ describe SignIn::Logingov::Service do
   end
 
   describe '#normalized_attributes' do
+    let(:client_id) { SignIn::Constants::ClientConfig::COOKIE_AUTH }
     let(:expected_standard_attributes) do
       {
         uuid: user_uuid,
         logingov_uuid: user_uuid,
         loa: { current: LOA::THREE, highest: LOA::THREE },
-        sign_in: { service_name: 'logingov', auth_broker: SignIn::Constants::Auth::BROKER_CODE },
+        sign_in: { service_name: service_name, auth_broker: auth_broker,
+                   client_id: SignIn::Constants::ClientConfig::COOKIE_AUTH },
         csp_email: email,
-        authn_context: type
+        authn_context: authn_context
       }
     end
     let(:credential_level) { create(:credential_level, current_ial: IAL::TWO, max_ial: IAL::TWO) }
-    let(:type) { 'logingov' }
+    let(:service_name) { SAML::User::LOGINGOV_CSID }
+    let(:auth_broker) { SignIn::Constants::Auth::BROKER_CODE }
+    let(:authn_context) { IAL::LOGIN_GOV_IAL2 }
     let(:expected_attributes) do
       expected_standard_attributes.merge({ ssn: ssn.tr('-', ''),
                                            birth_date: birth_date,
@@ -109,7 +113,9 @@ describe SignIn::Logingov::Service do
     end
 
     it 'returns expected attributes' do
-      expect(subject.normalized_attributes(user_info, credential_level)).to eq(expected_attributes)
+      expect(subject.normalized_attributes(user_info,
+                                           credential_level,
+                                           client_id)).to eq(expected_attributes)
     end
   end
 end

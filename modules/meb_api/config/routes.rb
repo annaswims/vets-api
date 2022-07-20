@@ -13,6 +13,8 @@ MebApi::Engine.routes.draw do
     post 'submit_enrollment_verification', to: 'education_benefits#submit_enrollment_verification'
 
     post 'sponsors', to: 'toes#sponsors'
+    post 'fry_dea_sponsors', to: 'fry_dea#sponsors'
+    get 'claim_letter/fry', to: 'fry_dea#claim_letter'
 
     get 'apidocs', to: 'apidocs#index'
   end

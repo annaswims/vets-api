@@ -113,37 +113,6 @@ describe AppealsApi::PdfConstruction::Generator do
     end
 
     context 'Higher Level Review' do
-      let(:higher_level_review) { create(:higher_level_review, created_at: '2021-02-03T14:15:16Z') }
-      let(:extra_higher_level_review) { create(:extra_higher_level_review, created_at: '2021-02-03T14:15:16Z') }
-      let(:minimal_higher_level_review) { create(:minimal_higher_level_review, created_at: '2021-02-03T14:15:16Z') }
-
-      context 'pdf content verification' do
-        it 'generates the expected pdf' do
-          generated_pdf = described_class.new(higher_level_review).generate
-          expected_pdf = fixture_filepath('expected_200996.pdf', version: 'v1')
-          expect(generated_pdf).to match_pdf expected_pdf
-          File.delete(generated_pdf) if File.exist?(generated_pdf)
-        end
-      end
-
-      context 'pdf extra content verification' do
-        it 'generates the expected pdf' do
-          generated_pdf = described_class.new(extra_higher_level_review).generate
-          expected_pdf = fixture_filepath('expected_200996_extra.pdf', version: 'v1')
-          expect(generated_pdf).to match_pdf expected_pdf
-          File.delete(generated_pdf) if File.exist?(generated_pdf)
-        end
-      end
-
-      context 'pdf minimum content verification' do
-        it 'generates the expected pdf' do
-          generated_pdf = described_class.new(minimal_higher_level_review).generate
-          expected_pdf = fixture_filepath('expected_200996_minimum.pdf', version: 'v1')
-          expect(generated_pdf).to match_pdf(expected_pdf)
-          File.delete(generated_pdf) if File.exist?(generated_pdf)
-        end
-      end
-
       context 'v2' do
         context 'pdf verification' do
           let(:higher_level_review_v2) { create(:higher_level_review_v2, created_at: '2021-02-03T14:15:16Z') }
@@ -183,7 +152,7 @@ describe AppealsApi::PdfConstruction::Generator do
 
         context 'special character verification' do
           it 'allows certain typography characters into Windows-1252' do
-            hlr = build(:minimal_higher_level_review)
+            hlr = build(:minimal_higher_level_review_v2)
             hlr.form_data['included'][0]['attributes']['issue'] = 'Smartquotes: “”‘’'
             hlr.save!
             generated_pdf = described_class.new(hlr, version: 'V2').generate
@@ -193,7 +162,7 @@ describe AppealsApi::PdfConstruction::Generator do
           end
 
           it 'removes characters that fall outsize Windows-1252 charset that cannot be downgraded' do
-            hlr = build(:minimal_higher_level_review)
+            hlr = build(:minimal_higher_level_review_v2)
             hlr.form_data['included'][0]['attributes']['issue'] = '∑mer allergies'
             hlr.save!
             generated_pdf = described_class.new(hlr, version: 'V2').generate
@@ -215,6 +184,10 @@ describe AppealsApi::PdfConstruction::Generator do
             allow_any_instance_of(AppealsApi::PdfConstruction::HigherLevelReview::V2::FormData).to receive(:claimant_phone_string).and_return('+WWW-WWWWWWWWWWWWWWW')
 
             hlr.form_data = data
+            # TODO: update countryCodeISO2 in expected_200996_maxlength.pdf with expected override_max_lengths tranforms
+            hlr.form_data['data']['attributes']['veteran']['address']['countryCodeISO2'] = 'US'
+            hlr.form_data['data']['attributes']['claimant']['address']['countryCodeISO2'] = 'US'
+
             # we tried to use JSON_SCHEMER for headers, but it did not work with our headers, and chose not to invest more time atm.
             hlr.auth_headers['X-VA-First-Name'] = 'W' * 30
             hlr.auth_headers['X-VA-Middle-Initial'] = 'W' * 1
@@ -276,7 +249,6 @@ describe AppealsApi::PdfConstruction::Generator do
           allow_any_instance_of(AppealsApi::PdfConstruction::SupplementalClaim::V2::FormData).to receive(:signing_appellant_email).and_return('W' * 255)
 
           sc.form_data = data
-
           # we tried to use JSON_SCHEMER, but it did not work with our headers, and chose not to invest more time atm.
           sc.auth_headers['X-VA-First-Name'] = 'W' * 30
           sc.auth_headers['X-VA-Last-Name'] = 'W' * 40

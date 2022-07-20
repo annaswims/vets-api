@@ -22,9 +22,6 @@ module AppealsApi
         unstamped_path = finalize_pages
         #=> '#{appeal.id}-rebuilt-pages-tmp.pdf OR @all_pages_path'
 
-        # TODO: remove this call once hlr v1 is sunset
-        return structure.stamp(unstamped_path) if hlr_v1?
-
         AppealsApi::PdfConstruction::Stamper.new(appeal, unstamped_path).call
       end
 
@@ -81,11 +78,6 @@ module AppealsApi
 
       def pdf_template_path
         Rails.root.join('modules', 'appeals_api', 'config', 'pdfs')
-      end
-
-      # TODO: remove once hlr v1 sunset
-      def hlr_v1?
-        appeal.class.name.demodulize == 'HigherLevelReview' && appeal.pdf_version == 'V1'
       end
     end
 

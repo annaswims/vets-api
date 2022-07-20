@@ -186,20 +186,26 @@ describe SignIn::Idme::Service do
   describe '#normalized_attributes' do
     before { subject.type = type }
 
+    let(:client_id) { SignIn::Constants::ClientConfig::COOKIE_AUTH }
     let(:expected_standard_attributes) do
       {
         uuid: user_uuid,
         idme_uuid: user_uuid,
         loa: { current: LOA::THREE, highest: LOA::THREE },
-        sign_in: { service_name: 'idme', auth_broker: SignIn::Constants::Auth::BROKER_CODE },
+        sign_in: { service_name: service_name, auth_broker: auth_broker, client_id: client_id },
         csp_email: email,
-        authn_context: type
+        authn_context: authn_context
       }
     end
+    let(:service_name) { 'idme' }
+    let(:authn_context) { LOA::IDME_LOA3 }
+    let(:auth_broker) { SignIn::Constants::Auth::BROKER_CODE }
     let(:credential_level) { create(:credential_level, current_ial: IAL::TWO, max_ial: IAL::TWO) }
 
     context 'when type is idme' do
       let(:type) { 'idme' }
+      let(:authn_context) { LOA::IDME_LOA3 }
+      let(:service_name) { 'idme' }
       let(:user_info) do
         OpenStruct.new(
           {
@@ -231,12 +237,16 @@ describe SignIn::Idme::Service do
       end
 
       it 'returns expected idme attributes' do
-        expect(subject.normalized_attributes(user_info, credential_level)).to eq(expected_attributes)
+        expect(subject.normalized_attributes(user_info,
+                                             credential_level,
+                                             client_id)).to eq(expected_attributes)
       end
     end
 
     context 'when type is dslogon' do
       let(:type) { 'dslogon' }
+      let(:authn_context) { LOA::IDME_DSLOGON_LOA3 }
+      let(:service_name) { 'dslogon' }
       let(:user_info) do
         OpenStruct.new(
           {
@@ -274,12 +284,16 @@ describe SignIn::Idme::Service do
       end
 
       it 'returns expected dslogon attributes' do
-        expect(subject.normalized_attributes(user_info, credential_level)).to eq(expected_attributes)
+        expect(subject.normalized_attributes(user_info,
+                                             credential_level,
+                                             client_id)).to eq(expected_attributes)
       end
     end
 
     context 'when type is mhv' do
       let(:type) { 'mhv' }
+      let(:authn_context) { LOA::IDME_MHV_LOA3 }
+      let(:service_name) { 'myhealthevet' }
       let(:user_info) do
         OpenStruct.new(
           {
@@ -308,7 +322,9 @@ describe SignIn::Idme::Service do
       end
 
       it 'returns expected mhv attributes' do
-        expect(subject.normalized_attributes(user_info, credential_level)).to eq(expected_attributes)
+        expect(subject.normalized_attributes(user_info,
+                                             credential_level,
+                                             client_id)).to eq(expected_attributes)
       end
     end
   end
