@@ -56,6 +56,71 @@
       "description": "Status of claim",
       "example": "Complete"
     },
+    "appealPossible":{
+      "type": "boolean",
+      "description": "is it possible to appeal this result?",
+      "example": false
+    },
+    "baseEndPrdctTypeCd": {
+      "type": "string",
+      "description": "Status of claim",
+      "example": "Complete"
+    },
+    "bnftClaimTypeCd": {
+      "type": "string",
+      "description": "Status of claim",
+      "example": "Complete"
+    },
+    "claimCloseDt": {
+      "type": "string",
+      "description": "Status of claim",
+      "example": "Complete"
+    },
+    "claimId": {
+      "type": "string",
+      "description": "Status of claim",
+      "example": "Complete"
+    },
+    "claimStatus": {
+      "type": "string",
+      "description": "Status of claim",
+      "example": "Complete"
+    },
+    "claimType": {
+      "type": "string",
+      "description": "Status of claim",
+      "example": "Complete"
+    },
+    "claimCompleteDt": {
+      "type": "string",
+      "description": "Status of claim",
+      "example": "Complete"
+    },
+    "lighthouseId": {
+      "type": "string",
+      "description": "Status of claim",
+      "example": "Complete"
+    },
+    "programType": {
+      "type": "string",
+      "description": "Status of claim",
+      "example": "Complete"
+    },
+    "phaseType": {
+      "type": "string",
+      "description": "Status of claim",
+      "example": "Complete"
+    },
+    "ptcpntClmantId": {
+      "type": "string",
+      "description": "Status of claim",
+      "example": "Complete"
+    },
+    "ptcpntVetId": {
+      "type": "string",
+      "description": "participant veteran id",
+      "example": "Complete"
+    },
     "supportingDocuments": {
       "type": "array",
       "description": "Information regarding any supported documents attached to a claim",

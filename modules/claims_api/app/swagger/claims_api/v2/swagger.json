@@ -415,8 +415,7 @@
                     "developmentLetterSent": false,
                     "documentsNeeded": false,
                     "requestedDecision": null,
-                    "status": "Complete",
-                    "type": "Compensation"
+                    "status": "Complete"
                   }
                 ],
                 "schema": {
@@ -650,6 +649,14 @@
                     "type": "GET",
                     "url": "http://www.example.com/services/benefits/v2/veterans/1013062086V794840/claims/555555555"
                   },
+                  "appealPossible": false,
+                  "baseEndPrdctTypeCd": "400",
+                  "bnftClaimTypeCd": null,
+                  "claimCloseDt": null,
+                  "claimCompleteDt": null,
+                  "claimId": "555555555",
+                  "claimStatus": "CAN",
+                  "claimType": "Compensation",
                   "contentionList": [
                     "abnormal heart (New)",
                     " abscess kidney (New)",
@@ -665,12 +672,17 @@
                   "developmentLetterSent": false,
                   "documentsNeeded": false,
                   "endProductCode": "404",
+                  "lighthouseId": null,
+                  "phaseType": "Complete",
+                  "programType": "CPL",
+                  "ptcpntClmantId": null,
+                  "ptcpntVetId": null,
                   "requestedDecision": null,
                   "status": "Complete",
                   "supportingDocuments": [
 
                   ],
-                  "type": "Compensation"
+                  "type": null
                 },
                 "schema": {
                   "type": "object",
@@ -733,6 +745,71 @@
                       "description": "Status of claim",
                       "example": "Complete"
                     },
+                    "appealPossible": {
+                      "type": "boolean",
+                      "description": "is it possible to appeal this result?",
+                      "example": false
+                    },
+                    "baseEndPrdctTypeCd": {
+                      "type": "string",
+                      "description": "Status of claim",
+                      "example": "Complete"
+                    },
+                    "bnftClaimTypeCd": {
+                      "type": "string",
+                      "description": "Status of claim",
+                      "example": "Complete"
+                    },
+                    "claimCloseDt": {
+                      "type": "string",
+                      "description": "Status of claim",
+                      "example": "Complete"
+                    },
+                    "claimId": {
+                      "type": "string",
+                      "description": "Status of claim",
+                      "example": "Complete"
+                    },
+                    "claimStatus": {
+                      "type": "string",
+                      "description": "Status of claim",
+                      "example": "Complete"
+                    },
+                    "claimType": {
+                      "type": "string",
+                      "description": "Status of claim",
+                      "example": "Complete"
+                    },
+                    "claimCompleteDt": {
+                      "type": "string",
+                      "description": "Status of claim",
+                      "example": "Complete"
+                    },
+                    "lighthouseId": {
+                      "type": "string",
+                      "description": "Status of claim",
+                      "example": "Complete"
+                    },
+                    "programType": {
+                      "type": "string",
+                      "description": "Status of claim",
+                      "example": "Complete"
+                    },
+                    "phaseType": {
+                      "type": "string",
+                      "description": "Status of claim",
+                      "example": "Complete"
+                    },
+                    "ptcpntClmantId": {
+                      "type": "string",
+                      "description": "Status of claim",
+                      "example": "Complete"
+                    },
+                    "ptcpntVetId": {
+                      "type": "string",
+                      "description": "Status of claim",
+                      "example": "Complete"
+                    },
                     "supportingDocuments": {
                       "type": "array",
                       "description": "Information regarding any supported documents attached to a claim",
@@ -762,11 +839,6 @@
                       "type": "string",
                       "description": "Name of claim type",
                       "example": "Appeals Control"
-                    },
-                    "poa": {
-                      "type": "string",
-                      "description": "The current organization or individual representing the Veteran on a claim",
-                      "example": "American Legion"
                     }
                   }
                 }
@@ -936,6 +1008,7 @@
       }
     }
   },
+  "basePath": "/services/benefits/v2",
   "servers": [
     {
       "url": "https://sandbox-api.va.gov/services/benefits/{version}",

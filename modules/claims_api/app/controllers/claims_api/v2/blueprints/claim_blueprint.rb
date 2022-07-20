@@ -64,6 +64,20 @@ module ClaimsApi
           exclude :end_product_code
           exclude :supporting_documents
           exclude :poa
+          exclude :appeal_possible
+          exclude :base_end_prdct_type_cd
+          exclude :bnft_claim_type_cd
+          exclude :claim_close_dt
+          exclude :claim_complete_dt
+          exclude :claim_id
+          exclude :claim_status
+          exclude :claim_type
+          exclude :lighthouse_id
+          exclude :phase_type
+          exclude :ptcpnt_clmant_id
+          exclude :ptcpnt_vet_id
+          exclude :program_type
+          exclude :type
 
           transform ClaimsApi::V2::Blueprints::Transformers::LowerCamelTransformer
         end
