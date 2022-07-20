@@ -165,7 +165,7 @@ class Form1095B < ApplicationRecord
   # rubocop:enable Metrics/MethodLength
 
   def data
-    @data ||= JSON.parse(form_data, {:symbolize_names => true})
+    @data ||= JSON.parse(form_data, { symbolize_names: true })
   end
 
   def proper_form_data_schema
