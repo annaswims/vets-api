@@ -377,6 +377,11 @@ Rails.application.routes.draw do
       get 'contestable_issues', to: 'contestable_issues#index'
     end
     resources :notice_of_disagreements, only: %i[create show]
+
+    namespace :supplemental_claims do
+      get 'contestable_issues', to: 'contestable_issues#index'
+    end
+    resources :supplemental_claims, only: %i[create show]
   end
 
   root 'v0/example#index', module: 'v0'
