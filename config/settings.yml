@@ -232,7 +232,10 @@ mdot:
 decision_review:
   prefill: true
   url: https://sandbox-api.va.gov/services/appeals/v1/decision_reviews
-  api_key: abcd1234abcd1234abcd1234abcd1234abcd1234
+  # url: https://staging-api.va.gov/services/appeals/v1/decision_reviews
+  api_key:  zG9BxRQAZ3hXv5hq1zherGnLVJHu3V8w # staging
+  # api_key: QC2d8jEuN2rhLVA8dvYgcgY3cHAWbR3m # sandbox
+    # api_key: abcd1234abcd1234abcd1234abcd1234abcd1234 # default
   mock: false
   s3:
     aws_access_key_id: ~
