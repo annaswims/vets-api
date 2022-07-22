@@ -38,20 +38,20 @@ Part II Information About Certain Employer-Sponsored Coverage (see instructions)
 
 Part III Issuer or Other Coverage Provider (see instructions)
 
-16 Name US Department of Veterans Affairs
-17 Employer identification number (EIN) 74-1612229
-18 Contact telephone number 877-222-8387
-19 Street address (including room or suite no.) P.O. BOX 149975
-20 City or town AUSTIN
-21 State or province TX
-22 Country and ZIP or foreign postal code 78714-8957
+16 Name ---- US Department of Veterans Affairs
+17 Employer identification number (EIN) ---- 74-1612229
+18 Contact telephone number ---- 877-222-8387
+19 Street address (including room or suite no.) ---- P.O. BOX 149975
+20 City or town ---- AUSTIN
+21 State or province ---- TX
+22 Country and ZIP or foreign postal code ---- 78714-8957
 
 Part IV Covered Individuals (Enter the information for each covered individual.)
 
 23
 (a) Name of covered individual(s) First name, middle initial, last name ---- %{first_name} %{middle_init} %{last_name}
-(b) SSN or other TIN ----
-(c) DOB (if SSN or other TIN is not available) ----
+(b) SSN or other TIN ---- %{last_4_ssn}
+(c) DOB (if SSN or other TIN is not available) ---- %{birth_date_field}
 (d) Covered all 12 months %{coverage_month_0} 
 (e) Months of coverage
 %{coverage_month_1} Jan
