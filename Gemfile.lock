@@ -64,15 +64,6 @@ GIT
       xmlenc
 
 GIT
-  remote: https://github.com/department-of-veterans-affairs/vets-json-schema
-  revision: f72711e27e0f9831b0afef481954c62263f32260
-  branch: master
-  specs:
-    vets_json_schema (20.20.7)
-      multi_json (~> 1.0)
-      script_utils (= 0.0.4)
-
-GIT
   remote: https://github.com/puzzle/prawn-markup.git
   revision: f7956009df696c9d126843d2d35ff270b9c031cd
   ref: f7956009df696c9d126843d2d35ff270b9c031cd
@@ -89,6 +80,13 @@ GIT
   specs:
     redis-namespace (1.8.2)
       redis (>= 3.0.4)
+
+PATH
+  remote: ../vets-json-schema
+  specs:
+    vets_json_schema (20.20.7)
+      multi_json (~> 1.0)
+      script_utils (= 0.0.4)
 
 PATH
   remote: modules

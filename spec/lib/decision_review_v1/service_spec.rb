@@ -10,17 +10,41 @@ describe DecisionReviewV1::Service do
   let(:user) { build(:user, :loa3, ssn: ssn_with_mockdata) }
 
   describe 'VetsJsonSchema used in service' do
+    describe 'ensure Contestable Issues schemas are present' do
+      %w[
+        HLR-GET-CONTESTABLE-ISSUES-REQUEST-BENEFIT-TYPE
+        HLR-GET-CONTESTABLE-ISSUES-REQUEST-HEADERS
+        HLR-GET-CONTESTABLE-ISSUES-RESPONSE-200
+        HLR-GET-CONTESTABLE-ISSUES-RESPONSE-404
+        HLR-GET-CONTESTABLE-ISSUES-RESPONSE-422
+        DECISION-REVIEW-GET-CONTESTABLE-ISSUES-RESPONSE-200_V1
+        DECISION-REVIEW-GET-CONTESTABLE-ISSUES-RESPONSE-404_V1
+        DECISION-REVIEW-GET-CONTESTABLE-ISSUES-RESPONSE-422_V1
+      ].each do |schema_name|
+        it("#{schema_name} schema is present") { expect(VetsJsonSchema::SCHEMAS[schema_name]).to be_a Hash }
+      end
+    end
+
+    describe 'ensure Contestable Issues schema examples are present' do
+      %w[
+        HLR-GET-CONTESTABLE-ISSUES-REQUEST-HEADERS
+        HLR-GET-CONTESTABLE-ISSUES-RESPONSE-200
+        HLR-GET-CONTESTABLE-ISSUES-RESPONSE-404
+        HLR-GET-CONTESTABLE-ISSUES-RESPONSE-422
+        DECISION-REVIEW-GET-CONTESTABLE-ISSUES-RESPONSE-200_V1
+        DECISION-REVIEW-GET-CONTESTABLE-ISSUES-RESPONSE-404_V1
+        DECISION-REVIEW-GET-CONTESTABLE-ISSUES-RESPONSE-422_V1
+      ].each do |schema_name|
+        it("#{schema_name} schema example is present") { expect(VetsJsonSchema::EXAMPLES).to have_key schema_name }
+      end
+    end
+
     describe 'ensure HLR schemas are present' do
       %w[
         HLR-CREATE-REQUEST-BODY_V1
         HLR-CREATE-REQUEST-HEADERS
         HLR-CREATE-RESPONSE-200
         HLR-CREATE-RESPONSE-422
-        HLR-GET-CONTESTABLE-ISSUES-REQUEST-BENEFIT-TYPE
-        HLR-GET-CONTESTABLE-ISSUES-REQUEST-HEADERS
-        HLR-GET-CONTESTABLE-ISSUES-RESPONSE-200
-        HLR-GET-CONTESTABLE-ISSUES-RESPONSE-404
-        HLR-GET-CONTESTABLE-ISSUES-RESPONSE-422
         HLR-SHOW-RESPONSE-200
         HLR-SHOW-RESPONSE-404
       ].each do |schema_name|
@@ -34,10 +58,6 @@ describe DecisionReviewV1::Service do
         HLR-CREATE-REQUEST-HEADERS
         HLR-CREATE-RESPONSE-200
         HLR-CREATE-RESPONSE-422
-        HLR-GET-CONTESTABLE-ISSUES-REQUEST-HEADERS
-        HLR-GET-CONTESTABLE-ISSUES-RESPONSE-200
-        HLR-GET-CONTESTABLE-ISSUES-RESPONSE-404
-        HLR-GET-CONTESTABLE-ISSUES-RESPONSE-422
         HLR-SHOW-RESPONSE-200
         HLR-SHOW-RESPONSE-404
       ].each do |schema_name|
