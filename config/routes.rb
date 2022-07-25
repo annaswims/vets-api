@@ -47,6 +47,7 @@ Rails.application.routes.draw do
 
     resources :medical_copays, only: %i[index show]
     get 'medical_copays/get_pdf_statement_by_id/:statement_id', to: 'medical_copays#get_pdf_statement_by_id'
+    post 'medical_copays/send_new_statements_notifications', to: 'medical_copays#send_new_statements_notifications'
 
     resources :apps, only: %i[index show]
     scope_default = { category: 'unknown_category' }
@@ -375,7 +376,7 @@ Rails.application.routes.draw do
     resources :higher_level_reviews, only: %i[create show]
 
     namespace :notice_of_disagreements do
-      get 'contestable_issues', to: 'contestable_issues#index'
+      get 'contestable_issues(/:benefit_type)', to: 'contestable_issues#index'
     end
     resources :notice_of_disagreements, only: %i[create show]
   end
