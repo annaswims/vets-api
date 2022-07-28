@@ -38,14 +38,14 @@ module Mobile
           arrived
           noshow
           fulfilled
+          pending
         ].freeze
 
         STATUSES = {
           booked: 'BOOKED',
           cancelled: 'CANCELLED',
           hidden: 'HIDDEN',
-          proposed: 'PROPOSED',
-          pending: 'PENDING'
+          proposed: 'SUBMITTED'
         }.freeze
 
         VIDEO_GFE_CODE = 'MOBILE_GFE'
@@ -59,7 +59,7 @@ module Mobile
         # @return Hash the adapted list
         #
         def parse(appointments)
-          appointments_list = appointments.dig(:data) || []
+          appointments_list = appointments || []
 
           appointments_list.map do |appointment_hash|
             build_appointment_model(appointment_hash)
@@ -70,18 +70,16 @@ module Mobile
 
         # rubocop:disable Metrics/MethodLength
         def build_appointment_model(appointment_hash)
-          binding.pry
           facility_id = Mobile::V0::Appointment.toggle_non_prod_id!(
-            appointment_hash[:locationId]
+            appointment_hash[:location_id]
           )
           sta6aid = Mobile::V0::Appointment.toggle_non_prod_id!(
-            appointment_hash[:locationId]
+            appointment_hash[:location_id]
           )
           type = parse_by_appointment_type(appointment_hash, appointment_hash[:kind])
           start_date_utc = start_date_utc(appointment_hash)
           time_zone = time_zone(facility_id)
           start_date_local = start_date_utc.in_time_zone(time_zone)
-          status = status(appointment_hash)
 
           adapted_hash = {
             id: appointment_hash[:id],
@@ -90,20 +88,20 @@ module Mobile
             comment: appointment_hash[:comment] || appointment_hash.dig(:reasonCode, :text),
             facility_id: facility_id,
             sta6aid: sta6aid,
-            healthcare_provider: nil, # healthcare_provider is currently only used by CC appointments
+            healthcare_provider: healthcare_provider(appointment_hash[:practitioners]),
             healthcare_service: healthcare_service(appointment_hash, type),
-            location: location(appointment_hash[:telehealth], facility_id),
+            location: location(appointment_hash[:telehealth], facility_id,appointment_hash),
             minutes_duration: minutes_duration(appointment_hash[:minutesDuration], type),
             phone_only: appointment_hash[:kind] == 'phone',
             start_date_local: start_date_local,
             start_date_utc: start_date_utc,
-            status: status,
+            status: status(appointment_hash),
             status_detail: nil,
             time_zone: time_zone,
             vetext_id: vetext_id(appointment_hash, start_date_local),
             reason: appointment_hash.dig(:reasonCode, :coding, 0, :code),
             is_covid_vaccine: covid_vaccine?(appointment_hash),
-            is_pending: false,
+            is_pending: appointment_hash[:status] == 'pending',
             proposed_times: nil,
             type_of_care: nil,
             patient_phone_number: nil,
@@ -123,14 +121,16 @@ module Mobile
         end
 
         def status(appointment_hash)
-          status = appointment_hash[:status]
-          return STATUSES[:hidden] if PAST_HIDDEN_STATUS.include?(status)
+
+          status = STATUSES[appointment_hash[:status].to_sym]
+
+          return STATUSES[:hidden] if PAST_HIDDEN_STATUS.include?(appointment_hash[:status])
 
           status
         end
 
         def start_date_utc(appointment_hash)
-          DateTime.parse(appointment_hash[:start] || appointment_hash.dig(:requestedPeriods, 0, :start))
+          DateTime.parse(appointment_hash[:start] || appointment_hash.dig(:requested_periods, 0, :start))
         end
 
         def parse_by_appointment_type(appointment_hash, type)
@@ -140,7 +140,7 @@ module Mobile
           when 'clinic'
             APPOINTMENT_TYPES[:va]
           when 'telehealth'
-            if appointment_hash[:telehealth][:atlas].nil?
+            if appointment_hash.dig(:telehealth, :atlas).nil?
               APPOINTMENT_TYPES[:va_video_connect_home]
             else
               APPOINTMENT_TYPES[:va_video_connect_atlas]
@@ -149,11 +149,10 @@ module Mobile
         end
 
         # rubocop:disable Metrics/MethodLength
-        def location(telehealth, facility_id)
-          facility = Mobile::VA_FACILITIES_BY_ID["dfn-#{facility_id}"]
+        def location(type, facility_id,appointment_hash)
           location = {
-            id: facility_id,
-            name: facility ? facility[:name] : nil,
+            id: nil,
+            name: nil,
             address: {
               street: nil,
               city: nil,
@@ -171,21 +170,38 @@ module Mobile
             code: nil
           }
 
-          location_by_type(telehealth, location)
+          case type
+          when 'telehealth'
+            location[:id] = facility_id
+            facility = Mobile::VA_FACILITIES_BY_ID["dfn-#{facility_id}"]
+            location[:name] = facility[:name] if facility
+
+            location_atlas(telehealth, location)
+          when 'cc'
+            cc_location = appointment_hash.dig(:extension, :ccLocation)
+
+            location[:name] = cc_location[:practiceName] || appointment_hash.dig(:practitioners, 0, :practitioner_name)
+            location[:address] = {
+              street: cc_location.dig(:address, :line).join(' ').strip,
+              city: cc_location.dig(:address, :city),
+              state: cc_location.dig(:address, :state),
+              zip_code: cc_location.dig(:address, :postalCode)
+            }
+          end
+          location
         end
         # rubocop:enable Metrics/MethodLength
-
-        def location_by_type(telehealth, location)
-          if telehealth
-            location_atlas(telehealth, location)
-          else
-            location
-          end
-        end
 
         def time_zone(facility_id)
           facility = Mobile::VA_FACILITIES_BY_ID["dfn-#{facility_id}"]
           facility ? facility[:time_zone] : nil
+        end
+
+        def healthcare_provider(practitioners)
+          practitioners_names = practitioners.map do |practitioner|
+            "#{practitioner.dig(:name, :given).join(' ').strip}, #{practitioner.dig(:name, :family)}"
+          end
+          practitioners_names.join("\n").strip
         end
 
         def healthcare_service(appointment_hash, type)
