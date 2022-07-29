@@ -11,17 +11,17 @@ module ClaimsApi
     # As of the time of this comment they exist as the source of truth for this information
     # in the future we'll likely try to make this the source of truth
     #############################
-    EVIDENCE_GATHERING = 'Evidence gathering, review, and decision'
+    EVIDENCE_GATHERING = 'EVIDENCE_GATHERING_REVIEW_DECISION'
 
     PHASE_TO_STATUS = {
-      1 => 'Claim received',
-      2 => 'Initial review',
+      1 => 'CLAIM_RECEIVED',
+      2 => 'INITIAL_REVIEW',
       3 => EVIDENCE_GATHERING,
       4 => EVIDENCE_GATHERING,
       5 => EVIDENCE_GATHERING,
       6 => EVIDENCE_GATHERING,
-      7 => 'Preparation for notification',
-      8 => 'Complete'
+      7 => 'PREPARATION_FOR_NOTIFICATION',
+      8 => 'COMPLETE'
     }.freeze
 
     attribute :evss_id, Integer
