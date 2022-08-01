@@ -15,26 +15,11 @@ module Mobile
           va: 'VA',
           cc: 'COMMUNITY_CARE',
           va_video_connect_home: 'VA_VIDEO_CONNECT_HOME',
+          va_video_connect_gfe: 'VA_VIDEO_CONNECT_GFE',
           va_video_connect_atlas: 'VA_VIDEO_CONNECT_ATLAS'
         }.freeze
 
-        CANCELLED_STATUS = [
-          'CANCELLED BY CLINIC & AUTO RE-BOOK',
-          'CANCELLED BY CLINIC',
-          'CANCELLED BY PATIENT & AUTO-REBOOK',
-          'CANCELLED BY PATIENT'
-        ].freeze
-
-        FUTURE_HIDDEN = %w[NO-SHOW DELETED].freeze
-
-        FUTURE_HIDDEN_STATUS = [
-          'ACT REQ/CHECKED IN',
-          'ACT REQ/CHECKED OUT'
-        ].freeze
-
-        PAST_HIDDEN = %w[FUTURE DELETED null <null> Deleted].freeze
-
-        PAST_HIDDEN_STATUS = %w[
+        HIDDEN_STATUS = %w[
           arrived
           noshow
           fulfilled
@@ -48,10 +33,14 @@ module Mobile
           proposed: 'SUBMITTED'
         }.freeze
 
-        VIDEO_GFE_CODE = 'MOBILE_GFE'
-        COVID_VACCINE_CODE = 'CDQC'
+        CANCELLATION_REASON= {
+          pat: 'CANCELLED BY PATIENT',
+          prov: 'CANCELLED BY CLINIC'
+        }.freeze
 
-        # Takes a result set of VA appointments from the appointments web service
+        VIDEO_GFE_CODE = 'MOBILE_GFE'
+
+        # Takes a result set of VAOS v2 appointments from the appointments web service
         # and returns the set adapted to a common schema.
         #
         # @appointments Hash a list of various VA appointment types
@@ -90,41 +79,64 @@ module Mobile
             sta6aid: sta6aid,
             healthcare_provider: healthcare_provider(appointment_hash[:practitioners]),
             healthcare_service: healthcare_service(appointment_hash, type),
-            location: location(appointment_hash[:telehealth], facility_id,appointment_hash),
+            location: location(type, facility_id, appointment_hash),
             minutes_duration: minutes_duration(appointment_hash[:minutesDuration], type),
             phone_only: appointment_hash[:kind] == 'phone',
             start_date_local: start_date_local,
             start_date_utc: start_date_utc,
             status: status(appointment_hash),
-            status_detail: nil,
+            status_detail: cancellation_reason(appointment_hash[:cancelation_reason]),
             time_zone: time_zone,
             vetext_id: vetext_id(appointment_hash, start_date_local),
             reason: appointment_hash.dig(:reasonCode, :coding, 0, :code),
             is_covid_vaccine: covid_vaccine?(appointment_hash),
             is_pending: appointment_hash[:status] == 'pending',
-            proposed_times: nil,
-            type_of_care: nil,
-            patient_phone_number: nil,
-            patient_email: nil,
-            best_time_to_call: nil,
-            friendly_location_name: nil
+            proposed_times: proposed_times(appointment_hash[:requested_periods]),
+            type_of_care: appointment_hash[:serviceType],
+            patient_phone_number: contact(appointment_hash.dig(:contact, :telecom), 'phone'),
+            patient_email: contact(appointment_hash.dig(:contact, :telecom), 'email'),
+            best_time_to_call: appointment_hash[:preferredTimesForPhoneCall],
+            friendly_location_name: appointment_hash.dig(:practitioners, 0, :practitioner_name)
           }
-
+          p appointment_hash[:cancelation_reason]
           Rails.logger.info('metric.mobile.appointment.type', type: type)
 
           Mobile::V0::Appointment.new(adapted_hash)
         end
         # rubocop:enable Metrics/MethodLength
+        def cancellation_reason(cancellation_reason)
+          return nil unless cancellation_reason
+          cancel_code = cancellation_reason.dig(:coding, 0, :code)
+          CANCELLATION_REASON[cancel_code.to_sym]
+        end
+
+        def contact(telecom, type)
+          return nil if telecom.blank?
+
+          telecom.select { |contact| contact[:type] == type }&.dig(0, :value)
+        end
+
+        def proposed_times(requested_periods)
+          return nil if requested_periods.nil?
+
+          proposed_times = []
+          requested_periods.each do |period|
+            start_date = DateTime.parse(period[:start])
+            proposed_times << {
+              date: start_date.strftime('%m/%d/%Y'),
+              time: start_date.hour.zero? ? 'AM' : 'PM'
+            }
+          end
+        end
 
         def vetext_id(appointment_hash, start_date_local)
           "#{appointment_hash[:clinic]};#{start_date_local.strftime('%Y%m%d.%H%S%M')}"
         end
 
         def status(appointment_hash)
-
           status = STATUSES[appointment_hash[:status].to_sym]
 
-          return STATUSES[:hidden] if PAST_HIDDEN_STATUS.include?(appointment_hash[:status])
+          return STATUSES[:hidden] if HIDDEN_STATUS.include?(appointment_hash[:status])
 
           status
         end
@@ -135,21 +147,23 @@ module Mobile
 
         def parse_by_appointment_type(appointment_hash, type)
           case type
-          when 'phone'
+          when 'phone', 'clinic'
             APPOINTMENT_TYPES[:va]
-          when 'clinic'
-            APPOINTMENT_TYPES[:va]
+          when 'cc'
+            APPOINTMENT_TYPES[:cc]
           when 'telehealth'
-            if appointment_hash.dig(:telehealth, :atlas).nil?
-              APPOINTMENT_TYPES[:va_video_connect_home]
-            else
+            if appointment_hash.dig(:telehealth, :vvsKind) == VIDEO_GFE_CODE
+              APPOINTMENT_TYPES[:va_video_connect_gfe]
+            elsif appointment_hash.dig(:telehealth, :atlas)
               APPOINTMENT_TYPES[:va_video_connect_atlas]
+            else
+              APPOINTMENT_TYPES[:va_video_connect_home]
             end
           end
         end
 
         # rubocop:disable Metrics/MethodLength
-        def location(type, facility_id,appointment_hash)
+        def location(type, facility_id, appointment_hash)
           location = {
             id: nil,
             name: nil,
@@ -169,15 +183,9 @@ module Mobile
             url: nil,
             code: nil
           }
-
+          telehealth = appointment_hash[:telehealth]
           case type
-          when 'telehealth'
-            location[:id] = facility_id
-            facility = Mobile::VA_FACILITIES_BY_ID["dfn-#{facility_id}"]
-            location[:name] = facility[:name] if facility
-
-            location_atlas(telehealth, location)
-          when 'cc'
+          when APPOINTMENT_TYPES[:cc]
             cc_location = appointment_hash.dig(:extension, :ccLocation)
 
             location[:name] = cc_location[:practiceName] || appointment_hash.dig(:practitioners, 0, :practitioner_name)
@@ -187,10 +195,65 @@ module Mobile
               state: cc_location.dig(:address, :state),
               zip_code: cc_location.dig(:address, :postalCode)
             }
+          when APPOINTMENT_TYPES[:va_video_connect_atlas], APPOINTMENT_TYPES[:va_video_connect_home], APPOINTMENT_TYPES[:va_video_connect_gfe]
+            if telehealth
+              address = telehealth.dig(:atlas, :address)
+
+              if address
+                location[:address] = {
+                  street: address[:streetAddress],
+                  city: address[:city],
+                  state: address[:state],
+                  zip_code: address[:zipCode],
+                  country: address[:country]
+                }
+              end
+
+              location[:url] = telehealth[:url]
+              location[:code] = telehealth.dig(:atlas, :confirmationCode)
+            end
+          else
+            location[:id] = location[:id]
+            location[:name] = location[:name]
+            address = appointment_hash.dig(:location, :physicalAddress)
+            location[:address] = {
+              street: address[:line].join(' ').strip,
+              city: address[:city],
+              state: address[:state],
+              zip_code: address[:postalCode]
+            }
+            location[:lat] = appointment_hash.dig(:location, :lat)
+            location[:long] = appointment_hash.dig(:location, :long)
+            location[:phone] = location_phone(appointment_hash)
           end
+
           location
         end
         # rubocop:enable Metrics/MethodLength
+
+        def location_phone(appointment_hash)
+          phone = appointment_hash.dig(:location, :phone, :main)
+          return nil unless phone
+
+          # captures area code (\d{3}) number (\d{3}-\d{4})
+          # and optional extension (until the end of the string) (?:\sx(\d*))?$
+          phone_captures = phone.match(/^(\d{3})-(\d{3}-\d{4})(?:\sx(\d*))?$/)
+
+          if phone_captures.nil?
+            Rails.logger.warn(
+              'mobile appointments failed to parse VAOS V2 facility phone number',
+              facility_id: appointment_hash.dig(:location, :id),
+              facility_phone: phone
+            )
+            return nil
+          end
+
+          {
+            area_code: phone_captures[1].presence,
+            number: phone_captures[2].presence,
+            extension: phone_captures[3].presence
+          }
+        end
 
         def time_zone(facility_id)
           facility = Mobile::VA_FACILITIES_BY_ID["dfn-#{facility_id}"]
@@ -198,6 +261,8 @@ module Mobile
         end
 
         def healthcare_provider(practitioners)
+          return nil if practitioners.nil?
+
           practitioners_names = practitioners.map do |practitioner|
             "#{practitioner.dig(:name, :given).join(' ').strip}, #{practitioner.dig(:name, :family)}"
           end
@@ -214,25 +279,11 @@ module Mobile
           )
         end
 
-        def location_atlas(telehealth, location)
-          address = telehealth.dig(:atlas, :address)
-          location[:address] = {
-            street: address[:streetAddress],
-            city: address[:city],
-            state: address[:state],
-            zip_code: address[:zipCode],
-            country: address[:country]
-          }
-          location[:url] = telehealth[:url]
-          location[:code] = telehealth[:atlas][:confirmationCode]
-          location
-        end
-
-        def minutes_duration(minutesDuration, type)
+        def minutes_duration(minutes_duration, type)
           # not in raw data, matches va.gov default for cc appointments
-          return 60 if type == APPOINTMENT_TYPES[:cc] && minutesDuration.nil?
+          return 60 if type == APPOINTMENT_TYPES[:cc] && minutes_duration.nil?
 
-          minutesDuration
+          minutes_duration
         end
 
         def booked_va_appointment?(status, type)

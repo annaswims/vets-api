@@ -17,7 +17,56 @@ RSpec.describe 'appointments', type: :request do
   }
 
   mock_facility = {
-    'test' => 'test'
+    "id":"983",
+    "vistaSite":"983",
+    "vastParent":"983",
+    "type":"va_facilities",
+    "name":"Cheyenne VA Medical Center",
+    "classification":"VA Medical Center (VAMC)",
+    "lat":39.744507,
+    "long":-104.830956,
+    "website":"https://www.denver.va.gov/locations/directions.asp",
+    "phone":{
+      "main":"307-778-7550",
+      "fax":"307-778-7381",
+      "pharmacy":"866-420-6337",
+      "afterHours":"307-778-7550",
+      "patientAdvocate":"307-778-7550 x7517",
+      "mentalHealthClinic":"307-778-7349",
+      "enrollmentCoordinator":"307-778-7550 x7579"
+    },
+    "physicalAddress":{
+      "type":"physical",
+      "line":[
+        "2360 East Pershing Boulevard"
+      ],
+      "city":"Cheyenne",
+      "state":"WY",
+      "postalCode":"82001-5356"
+    },
+    "mobile":false,
+    "healthService":[
+      "Audiology",
+      "Cardiology",
+      "DentalServices",
+      "EmergencyCare",
+      "Gastroenterology",
+      "Gynecology",
+      "MentalHealthCare",
+      "Nutrition",
+      "Ophthalmology",
+      "Optometry",
+      "Orthopedics",
+      "Podiatry",
+      "PrimaryCare",
+      "SpecialtyCare",
+      "UrgentCare",
+      "Urology",
+      "WomensHealth"
+    ],
+    "operatingStatus":{
+      "code":"NORMAL"
+    }
   }
 
   mock_provider = { "providerIdentifier": '1407938061', "providerIdentifierType": 'NPI', "name": "DEHGHAN,
@@ -49,8 +98,8 @@ RSpec.describe 'appointments', type: :request do
 
     after { Timecop.return }
 
-    let(:start_date) { Time.zone.parse('2022-01-01T19:25:00Z').iso8601 }
-    let(:end_date) { Time.zone.parse('2022-12-01T19:45:00Z').iso8601 }
+    let(:start_date) { Time.zone.parse('2019-01-01T19:25:00Z').iso8601 }
+    let(:end_date) { Time.zone.parse('2023-12-01T19:45:00Z').iso8601 }
     let(:params) { { startDate: start_date, endDate: end_date } }
 
     context 'requests a list of appointments' do

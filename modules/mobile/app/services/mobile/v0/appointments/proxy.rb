@@ -219,7 +219,6 @@ module Mobile
         end
 
         def _include
-          binding.pry
           params[:_include]&.split(',')
         end
 
