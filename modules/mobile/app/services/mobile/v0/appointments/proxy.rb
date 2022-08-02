@@ -31,9 +31,9 @@ module Mobile
           end
         end
 
-        def get_appointments(start_date:, end_date:)
+        def get_appointments(start_date:, end_date:, pagination_params:)
           if Flipper.enabled?(:mobile_appointment_use_VAOS_v2)
-            response = vaos_v2_appointments_service.get_appointments(start_date, end_date) # TODO: add pagination params
+            response = vaos_v2_appointments_service.get_appointments(start_date, end_date,nil, pagination_params)
             normalize_v2_appointments(response)
           elsif Flipper.enabled?(:mobile_appointment_requests)
             responses = fetch_appointments(start_date, end_date)

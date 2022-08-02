@@ -71,7 +71,7 @@ module Mobile
           start_date_local = start_date_utc.in_time_zone(time_zone)
 
           adapted_hash = {
-            id: appointment_hash[:id],
+            id: "#{appointment_hash[:id]}123454321",
             appointment_type: type,
             cancel_id: appointment_hash[:id],
             comment: appointment_hash[:comment] || appointment_hash.dig(:reasonCode, :text),

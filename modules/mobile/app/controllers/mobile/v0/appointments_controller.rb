@@ -109,7 +109,8 @@ module Mobile
         else
           appointments = appointments_proxy.get_appointments(
             start_date: [validated_params[:start_date], beginning_of_last_year].min,
-            end_date: [validated_params[:end_date], one_year_from_now].max
+            end_date: [validated_params[:end_date], one_year_from_now].max,
+            pagination_params: { page: validated_params[:page_number], pageSize: validated_params[:page_size]}
           )
           Mobile::V0::Appointment.set_cached(@current_user, appointments)
           Rails.logger.info('mobile appointments service fetch', user_uuid: @current_user.uuid)
