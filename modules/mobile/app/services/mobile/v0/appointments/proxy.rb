@@ -98,10 +98,6 @@ module Mobile
           appointments.sort_by(&:start_date_utc)
         end
 
-        def mobile_ppms_service
-          VAOS::V2::MobilePPMSService.new(@user)
-        end
-
         def normalize_appointments(responses, start_date, end_date)
           va_appointments = va_appointments_adapter.parse(responses[:va][:response].body)
           cc_appointments = cc_appointments_adapter.parse(responses[:cc][:response].body)
@@ -173,7 +169,7 @@ module Mobile
           appointments.each do |appt|
             appt[:practitioners]&.each do |practitioner|
               provider = get_provider(practitioner.dig(:identifier, 0, :value))
-              practitioner[:practitioner_name] = provider[:name]
+              practitioner[:practitioner_name] = provider[:name] unless provider.nil?
             end
           end
         end
@@ -182,6 +178,7 @@ module Mobile
           mobile_ppms_service.get_provider(provider_id)
         rescue Common::Exceptions::BackendServiceException
           Rails.logger.error("Mobile: Error fetching provider #{provider_id} ")
+          nil
         end
 
         def merge_facilities(appointments)
@@ -316,6 +313,10 @@ module Mobile
             response = service.get_requests(start_date, end_date)
             response[:data]
           }
+        end
+
+        def mobile_ppms_service
+          VAOS::V2::MobilePPMSService.new(@user)
         end
 
         def vaos_v2_appointments_service

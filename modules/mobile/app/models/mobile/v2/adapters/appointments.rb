@@ -98,7 +98,7 @@ module Mobile
             best_time_to_call: appointment_hash[:preferredTimesForPhoneCall],
             friendly_location_name: appointment_hash.dig(:practitioners, 0, :practitioner_name)
           }
-          p appointment_hash[:cancelation_reason]
+
           Rails.logger.info('metric.mobile.appointment.type', type: type)
 
           Mobile::V0::Appointment.new(adapted_hash)
