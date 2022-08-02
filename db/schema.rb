@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_07_27_124515) do
+ActiveRecord::Schema.define(version: 2022_08_02_161643) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gin"
@@ -24,7 +24,7 @@ ActiveRecord::Schema.define(version: 2022_07_27_124515) do
   create_table "account_login_stats", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.datetime "idme_at"
-    t.datetime "myhealthevet_at"
+    t.datetime "mhv_at"
     t.datetime "dslogon_at"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
@@ -35,7 +35,7 @@ ActiveRecord::Schema.define(version: 2022_07_27_124515) do
     t.index ["dslogon_at"], name: "index_account_login_stats_on_dslogon_at"
     t.index ["idme_at"], name: "index_account_login_stats_on_idme_at"
     t.index ["logingov_at"], name: "index_account_login_stats_on_logingov_at"
-    t.index ["myhealthevet_at"], name: "index_account_login_stats_on_myhealthevet_at"
+    t.index ["mhv_at"], name: "index_account_login_stats_on_mhv_at"
   end
 
   create_table "accounts", id: :serial, force: :cascade do |t|
