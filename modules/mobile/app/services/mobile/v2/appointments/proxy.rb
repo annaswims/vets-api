@@ -1,0 +1,100 @@
+# frozen_string_literal: true
+
+require 'lighthouse/facilities/client'
+
+module Mobile
+  module V2
+    module Appointments
+      class Proxy
+        CANCEL_CODE = 'PC'
+        CANCEL_ASSIGNING_AUTHORITY = 'ICN'
+        UNABLE_TO_KEEP_APPOINTMENT = '5'
+        VALID_CANCEL_CODES = %w[4 5 6].freeze
+
+        def initialize(user)
+          @user = user
+        end
+
+        def get_appointments(start_date:, end_date:, pagination_params:)
+          response = vaos_v2_appointments_service.get_appointments(start_date, end_date, nil, pagination_params)
+          normalize_v2_appointments(response)
+        end
+
+        private
+
+        def normalize_v2_appointments(response)
+          appointments = merge_clinics(response[:data])
+          appointments = merge_facilities(appointments)
+          appointments = v2_appointment_adapter.parse(appointments)
+
+          appointments.sort_by(&:start_date_utc)
+        end
+
+        def merge_clinics(appointments)
+          cached_clinics = {}
+          appointments.each do |appt|
+            unless appt[:clinic].nil?
+              unless cached_clinics[appt[:clinic]]
+                clinic = get_clinic(appt[:location_id], appt[:clinic])
+                cached_clinics[appt[:clinic]] = clinic
+              end
+              if cached_clinics[appt[:clinic]]&.[](:service_name)
+                appt[:service_name] = cached_clinics[appt[:clinic]][:service_name]
+              end
+              if cached_clinics[appt[:clinic]]&.[](:physical_location)
+                appt[:physical_location] = cached_clinics[appt[:clinic]][:physical_location]
+              end
+            end
+          end
+        end
+
+        def merge_facilities(appointments)
+          cached_facilities = {}
+          appointments.each do |appt|
+            unless appt[:location_id].nil?
+              unless cached_facilities[appt[:location_id]]
+                facility = get_facility(appt[:location_id])
+                cached_facilities[appt[:location_id]] = facility
+              end
+
+              appt[:location] = cached_facilities[appt[:location_id]].to_h if cached_facilities[appt[:location_id]]
+            end
+          end
+        end
+
+        def get_clinic(location_id, clinic_id)
+          clinics = v2_systems_service.get_facility_clinics(location_id: location_id, clinic_ids: clinic_id)
+          clinics.first unless clinics.empty?
+        rescue Common::Exceptions::BackendServiceException
+          Rails.logger.error(
+            "Error fetching clinic #{clinic_id} for location #{location_id}",
+            clinic_id: clinic_id,
+            location_id: location_id
+          )
+        end
+
+        def get_facility(location_id)
+          vaos_mobile_facility_service.get_facility(location_id)
+        rescue Common::Exceptions::BackendServiceException
+          Rails.logger.error(
+            "Error fetching facility details for location_id #{location_id}",
+            location_id: location_id
+          )
+        end
+
+        def vaos_v2_appointments_service
+          VAOS::V2::AppointmentsService.new(@user)
+        end
+
+        def v2_appointment_adapter
+          Mobile::V2::Adapters::Appointments.new
+        end
+
+        def v2_systems_service
+          VAOS::V2::SystemsService.new(@user)
+        end
+
+      end
+    end
+  end
+end

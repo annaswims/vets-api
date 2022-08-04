@@ -33,7 +33,7 @@ module Mobile
           proposed: 'SUBMITTED'
         }.freeze
 
-        CANCELLATION_REASON= {
+        CANCELLATION_REASON = {
           pat: 'CANCELLED BY PATIENT',
           prov: 'CANCELLED BY CLINIC'
         }.freeze
@@ -71,16 +71,16 @@ module Mobile
           start_date_local = start_date_utc.in_time_zone(time_zone)
 
           adapted_hash = {
-            id: "#{appointment_hash[:id]}123454321",
+            id: appointment_hash[:id],
             appointment_type: type,
             cancel_id: appointment_hash[:id],
-            comment: appointment_hash[:comment] || appointment_hash.dig(:reasonCode, :text),
+            comment: appointment_hash[:comment] || appointment_hash.dig(:reason_code, :text),
             facility_id: facility_id,
             sta6aid: sta6aid,
             healthcare_provider: healthcare_provider(appointment_hash[:practitioners]),
             healthcare_service: healthcare_service(appointment_hash, type),
-            location: location(type, facility_id, appointment_hash),
-            minutes_duration: minutes_duration(appointment_hash[:minutesDuration], type),
+            location: location(type, appointment_hash),
+            minutes_duration: minutes_duration(appointment_hash[:minutes_duration], type),
             phone_only: appointment_hash[:kind] == 'phone',
             start_date_local: start_date_local,
             start_date_utc: start_date_utc,
@@ -88,24 +88,26 @@ module Mobile
             status_detail: cancellation_reason(appointment_hash[:cancelation_reason]),
             time_zone: time_zone,
             vetext_id: vetext_id(appointment_hash, start_date_local),
-            reason: appointment_hash.dig(:reasonCode, :coding, 0, :code),
+            reason: appointment_hash.dig(:reason_code, :coding, 0, :code),
             is_covid_vaccine: covid_vaccine?(appointment_hash),
-            is_pending: appointment_hash[:status] == 'pending',
+            is_pending: appointment_hash[:status] == 'proposed',
             proposed_times: proposed_times(appointment_hash[:requested_periods]),
-            type_of_care: appointment_hash[:serviceType],
+            type_of_care: appointment_hash[:service_type],
             patient_phone_number: contact(appointment_hash.dig(:contact, :telecom), 'phone'),
             patient_email: contact(appointment_hash.dig(:contact, :telecom), 'email'),
-            best_time_to_call: appointment_hash[:preferredTimesForPhoneCall],
-            friendly_location_name: appointment_hash.dig(:practitioners, 0, :practitioner_name)
+            best_time_to_call: appointment_hash[:preferred_times_for_phone_call],
+            friendly_location_name: appointment_hash[:service_name] || appointment_hash.dig(:extension, :cc_location, :practice_name)
           }
 
           Rails.logger.info('metric.mobile.appointment.type', type: type)
 
           Mobile::V0::Appointment.new(adapted_hash)
         end
+
         # rubocop:enable Metrics/MethodLength
         def cancellation_reason(cancellation_reason)
           return nil unless cancellation_reason
+
           cancel_code = cancellation_reason.dig(:coding, 0, :code)
           CANCELLATION_REASON[cancel_code.to_sym]
         end
@@ -152,7 +154,7 @@ module Mobile
           when 'cc'
             APPOINTMENT_TYPES[:cc]
           when 'telehealth'
-            if appointment_hash.dig(:telehealth, :vvsKind) == VIDEO_GFE_CODE
+            if appointment_hash.dig(:telehealth, :vvs_kind) == VIDEO_GFE_CODE
               APPOINTMENT_TYPES[:va_video_connect_gfe]
             elsif appointment_hash.dig(:telehealth, :atlas)
               APPOINTMENT_TYPES[:va_video_connect_atlas]
@@ -163,7 +165,7 @@ module Mobile
         end
 
         # rubocop:disable Metrics/MethodLength
-        def location(type, facility_id, appointment_hash)
+        def location(type, appointment_hash)
           location = {
             id: nil,
             name: nil,
@@ -186,14 +188,13 @@ module Mobile
           telehealth = appointment_hash[:telehealth]
           case type
           when APPOINTMENT_TYPES[:cc]
-            cc_location = appointment_hash.dig(:extension, :ccLocation)
-
-            location[:name] = cc_location[:practiceName] || appointment_hash.dig(:practitioners, 0, :practitioner_name)
+            cc_location = appointment_hash.dig(:extension, :cc_location)
+            location[:name] = cc_location[:practice_name]
             location[:address] = {
               street: cc_location.dig(:address, :line).join(' ').strip,
               city: cc_location.dig(:address, :city),
               state: cc_location.dig(:address, :state),
-              zip_code: cc_location.dig(:address, :postalCode)
+              zip_code: cc_location.dig(:address, :postal_code)
             }
           when APPOINTMENT_TYPES[:va_video_connect_atlas], APPOINTMENT_TYPES[:va_video_connect_home], APPOINTMENT_TYPES[:va_video_connect_gfe]
             if telehealth
@@ -201,26 +202,26 @@ module Mobile
 
               if address
                 location[:address] = {
-                  street: address[:streetAddress],
+                  street: address[:street_address],
                   city: address[:city],
                   state: address[:state],
-                  zip_code: address[:zipCode],
+                  zip_code: address[:zip_code],
                   country: address[:country]
                 }
               end
 
               location[:url] = telehealth[:url]
-              location[:code] = telehealth.dig(:atlas, :confirmationCode)
+              location[:code] = telehealth.dig(:atlas, :confirmation_code)
             end
           else
-            location[:id] = location[:id]
-            location[:name] = location[:name]
-            address = appointment_hash.dig(:location, :physicalAddress)
+            location[:id] = appointment_hash.dig(:location, :id)
+            location[:name] = appointment_hash.dig(:location, :name)
+            address = appointment_hash.dig(:location, :physical_address)
             location[:address] = {
-              street: address[:line].join(' ').strip,
+              street: address[:line]&.join(' ')&.strip,
               city: address[:city],
               state: address[:state],
-              zip_code: address[:postalCode]
+              zip_code: address[:postal_code]
             }
             location[:lat] = appointment_hash.dig(:location, :lat)
             location[:long] = appointment_hash.dig(:location, :long)
@@ -261,16 +262,17 @@ module Mobile
         end
 
         def healthcare_provider(practitioners)
-          return nil if practitioners.nil?
+          return nil if Array.wrap(practitioners&.map { |prac| prac[:name] })&.compact == []
 
           practitioners_names = practitioners.map do |practitioner|
-            "#{practitioner.dig(:name, :given).join(' ').strip}, #{practitioner.dig(:name, :family)}"
+            practitioner_name = "#{practitioner&.dig(:name, :given)&.join(' ')&.strip}, #{practitioner&.dig(:name, :family)}"
+            '' if practitioner_name == ', '
           end
           practitioners_names.join("\n").strip
         end
 
         def healthcare_service(appointment_hash, type)
-          va?(type) ? appointment_hash[:service_name] : appointment_hash.dig(:practitioners, 0, :practitioner_name)
+          va?(type) ? appointment_hash[:service_name] : appointment_hash.dig(:extension, :cc_location, :practice_name)
         end
 
         def va_clinic_name(appointment_hash, details)
@@ -291,7 +293,7 @@ module Mobile
         end
 
         def covid_vaccine?(appointment)
-          appointment[:serviceType] == 'covid'
+          appointment[:service_type] == 'covid'
         end
 
         def va?(type)
