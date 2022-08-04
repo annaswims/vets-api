@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'dgi/forms/service/sponsor_service'
+require 'dgi/forms/service/claimant_service'
 
 module MebApi
   module V0
@@ -31,26 +32,22 @@ module MebApi
         render json: response, serializer: SponsorsSerializer
       end
 
+      def submit_claim
+        response = submission_service.submit_claim(params[:education_benefit].except(:form_id))
+
+        clear_saved_form(params[:form_id]) if params[:form_id]
+
+        render json: {
+          data: {
+            'status': response.status
+          }
+        }
+      end
+
       private
 
       def get_form_type
         @form_type = params[:form_type]
-      end
-
-      def claimant_service
-        MebApi::DGI::Forms::Service::ClaimantService.new(@current_user)
-      end
-
-      def letter_service
-        MebApi::DGI::Forms::Service::LetterService.new(@current_user)
-      end
-
-      def sponsor_service
-        MebApi::DGI::Forms::Service::SponsorService.new(@current_user)
-      end
-
-      def submission_service
-        MebApi::DGI::Forms::Service::SubmissionService.new(@current_user)
       end
     end
   end

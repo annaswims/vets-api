@@ -30,6 +30,22 @@ module MebApi
       def claimant_service
         MebApi::DGI::Claimant::Service.new(@current_user)
       end
+
+      def forms_claimant_service
+        MebApi::DGI::Forms::Claimant::Service.new(@current_user)
+      end
+
+      def form_letter_service
+        MebApi::DGI::Forms::Letters::Service.new(@current_user)
+      end
+
+      def forms_sponsor_service
+        MebApi::DGI::Forms::Sponsor::Service.new(@current_user)
+      end
+
+      def forms_submission_service
+        MebApi::DGI::Forms::Submission::Service.new(@current_user)
+      end
     end
   end
 end

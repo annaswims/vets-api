@@ -10,12 +10,12 @@ require 'authentication_token_service'
 module MebApi
   module DGI
     module Forms
-      module Service
-        class SponsorService < MebApi::DGI::Service
+      module Sponsor
+        class Service < MebApi::DGI::Service
           configuration MebApi::DGI::Forms::Configuration
-          STATSD_KEY_PREFIX = 'api.dgi.fry_dea'
+          STATSD_KEY_PREFIX = 'api.dgi.sponsor'
 
-          def post_sponsor(form_type)
+          def post_sponsor(form_type = 'Chapter33')
             with_monitoring do
               options = { timeout: 60 }
               response = perform(:post, sponsor_end_point(form_type), { ssn: @user.ssn }.to_json, headers, options)

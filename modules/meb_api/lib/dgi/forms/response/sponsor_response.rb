@@ -5,8 +5,8 @@ require 'dgi/response'
 module MebApi
   module DGI
     module Forms
-      module Response
-        class SponsorResponse < MebApi::DGI::Response
+      module Sponsor
+        class Response < MebApi::DGI::Response
           attribute :sponsors, Array
 
           def initialize(response = nil)

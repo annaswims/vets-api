@@ -57,11 +57,20 @@ Rspec.describe MebApi::V0::FormsController, type: :request do
       end
     end
 
-    describe 'GET /meb_api/v0/claim_letter/fry' do
+    describe 'GET form_claim_letter' do
       context 'Retrieves a fry veterans claim letter' do
         it 'returns a 200 status when given claimant id as parameter' do
-          VCR.use_cassette('dgi/get_fry_claim_letter') do
-            get '/meb_api/v0/claim_letter/fry'
+          VCR.use_cassette('dgi/forms/get_fry_claim_letter') do
+            get '/meb_api/v0/claim_letter/fry', params: { "ssn": '796121200', "form_type": 'fry' }
+            expect(response).to have_http_status(:ok)
+          end
+        end
+      end
+
+      context 'Retrieves a toe veterans claim letter' do
+        it 'returns a 200 status when given claimant id as parameter' do
+          VCR.use_cassette('dgi/forms/get_toe_claim_letter') do
+            get '/meb_api/v0/form_claim_letter', params: { "ssn": '796121200', "form_type": 'toe' }
             expect(response).to have_http_status(:ok)
           end
         end

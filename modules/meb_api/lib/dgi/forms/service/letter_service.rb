@@ -8,12 +8,13 @@ require 'authentication_token_service'
 module MebApi
   module DGI
     module Forms
-      module Service
-        class LetterService < MebApi::DGI::Service
-          configuration MebApi::DGI::Letters::Configuration
+      module Letter
+        class Service < MebApi::DGI::Service
+          configuration MebApi::DGI::Forms::Letters::Configuration
           STATSD_KEY_PREFIX = 'api.dgi.status'
 
           def get_claim_letter(claimant_id, type = 'Chapter33')
+            # binding.pry
             with_monitoring do
               headers = request_headers
               options = { timeout: 60 }
