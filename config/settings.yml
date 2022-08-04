@@ -254,6 +254,11 @@ dhp:
     scope: 'heartrate activity nutrition sleep'
     code_challenge: ''
     code_verifier: ''
+  s3:
+    aws_access_key_id: ''
+    aws_secret_access_key: ''
+    bucket: ''
+    region: 'us-gov-west-1'
 
 # Settings for modules/appeals_api
 modules_appeals_api:
@@ -344,7 +349,8 @@ modules_appeals_api:
 onsite_notifications:
   public_key: ~
   template_ids:
-    - "f9947b27-df3b-4b09-875c-7f76594d766d"
+    - "f9947b27-df3b-4b09-875c-7f76594d766d" # staging    - debt notification
+    - "7efc2b8b-e59a-4571-a2ff-0fd70253e973" # production - debt notification
 
 vre_counseling:
   prefill: true
