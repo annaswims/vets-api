@@ -35,7 +35,7 @@ RSpec.describe MebApi::DGI::Letters::Service do
       end
     end
 
-    describe '#get_fry_claim_letter' do
+    describe '#get_fry_letter' do
       let(:faraday_response) { double('faraday_connection') }
 
       before do
@@ -44,7 +44,7 @@ RSpec.describe MebApi::DGI::Letters::Service do
 
       context 'when successful' do
         it 'returns a status of 200' do
-          VCR.use_cassette('dgi/get_fry_claim_letter') do
+          VCR.use_cassette('dgi/get_fry_letter') do
             response = service.get_claim_letter(claimant_id, 'fry')
             expect(response.status).to eq(200)
           end

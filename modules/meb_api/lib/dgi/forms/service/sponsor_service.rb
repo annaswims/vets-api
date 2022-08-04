@@ -20,7 +20,7 @@ module MebApi
               options = { timeout: 60 }
               response = perform(:post, sponsor_end_point(form_type), { ssn: @user.ssn }.to_json, headers, options)
 
-              MebApi::DGI::Forms::Response::SponsorResponse.new(response)
+              MebApi::DGI::Forms::Sponsor::Response.new(response)
             end
           end
 
