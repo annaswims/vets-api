@@ -52,10 +52,12 @@ session_cookie:
 
 sign_in:
   jwt_encode_key: 'spec/fixtures/sign_in/privatekey.pem'
-  redirect_uri: 'vamobile://login-success'
-  web_redirect_uri: 'http://localhost:3001/auth/login/callback'
   cookies_secure: false
   info_cookie_domain: localhost
+  client_redirect_uris:
+    mobile: 'vamobile://login-success'
+    web: 'http://localhost:3001/auth/login/callback'
+    mobile_test: 'http://localhost:4001/auth/sis/login-success'
 
 lockbox:
   master_key: "0d78eaf0e90d4e7b8910c9112e16e66d8b00ec4054a89aa426e32712a13371e9"
@@ -252,6 +254,11 @@ dhp:
     scope: 'heartrate activity nutrition sleep'
     code_challenge: ''
     code_verifier: ''
+  s3:
+    aws_access_key_id: ''
+    aws_secret_access_key: ''
+    bucket: ''
+    region: 'us-gov-west-1'
 
 # Settings for modules/appeals_api
 modules_appeals_api:
@@ -264,8 +271,6 @@ modules_appeals_api:
       # List of flags to indicate parts of documentation that are still WIP and not ready for production.
       # See the rswag:appeals_api:dev rake task, spec_helper, and DocHelpers#wip_doc_enabled? for usage info to opt-in.
       # NOTE: Do not remove this key even if it's empty.
-      - sc_v2_claimant
-      - nod_v2_claimant
   higher_level_review_pii_expunge_enabled: true
   higher_level_review_updater_enabled: true
   legacy_appeals_enabled: false
@@ -344,7 +349,8 @@ modules_appeals_api:
 onsite_notifications:
   public_key: ~
   template_ids:
-    - "f9947b27-df3b-4b09-875c-7f76594d766d"
+    - "f9947b27-df3b-4b09-875c-7f76594d766d" # staging    - debt notification
+    - "7efc2b8b-e59a-4571-a2ff-0fd70253e973" # production - debt notification
 
 vre_counseling:
   prefill: true
@@ -878,6 +884,7 @@ flipper:
     - jayson.perkins@adhocteam.us
     - jeff.roof@adhocteam.us
     - jennie.mcgibney@va.gov
+    - jeremy.wu@oddball.io
     - jesse.cohn@adhocteam.us
     - jlinn@governmentcio.com
     - joe.hall@thoughtworks.com # Virtual Agent
@@ -905,7 +912,7 @@ flipper:
     - lisa.zapson@adhocteam.us
     - lance.sanchez@gcio.com
     - mattgardner@navapbc.com
-    - mdewey@governmentcio.com
+    - mark.dewey@va.gov
     - metrowebz@gmail.com
     - micah@adhocteam.us
     - michel.mcdonald@adhocteam.us
@@ -914,6 +921,7 @@ flipper:
     - michael.pelz-sherman@gcio.com
     - michelle.middaugh@adhocteam.us
     - n.ratana@gmail.com
+    - nathaniel.buck@gmail.com # AFS - My Education Benefits
     - narin@adhocteam.us
     - patrick.bateman@va.gov
     - patrick@adhocteam.us
@@ -973,6 +981,10 @@ flipper:
     - karan.krishnani@thoughtworks.com # Virtual Agent Chatbot
     - aherzberg5@gmail.com # email tied to production id.me account
     - jtmills09@live.com # Josh Mills - Front End Engineer
+    - choi.won@gmail.com # AFS DevOps
+    - andrew.barrett1986@gmail.com # DGIB managed service Operations Lead
+    - erica.sauve@adhocteam.us # Erica Suave - APM Adhoc Auth Exp
+    - ajakabcin@gmail.com # Ana Jakabcin - PM Adhoc Auth Exp
 
 bgs:
   application: ~
@@ -1072,6 +1084,8 @@ lighthouse:
 
 mail_automation:
   url: https://viccs-api-test.ibm-intelligent-automation.com
+  endpoint: /mas/api/test/masInsertAndInitiateApcasClaimProcessing
+  token_endpoint: /pca/api/test/token
   client_id: va_gov_test
   client_secret: fake_key
 
@@ -1377,3 +1391,10 @@ form1095_b:
     bucket: 'bucket'
     enabled: true
     region: 'region'
+
+coverband:
+  github_organization: ~
+  github_team: ~
+  github_oauth_key: ~
+  github_oauth_secret: ~
+  github_api_key: ~

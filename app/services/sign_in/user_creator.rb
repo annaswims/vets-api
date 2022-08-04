@@ -2,6 +2,7 @@
 
 module SignIn
   class UserCreator
+    include SentryLogging
     attr_reader :state_payload,
                 :idme_uuid,
                 :logingov_uuid,
@@ -14,7 +15,8 @@ module SignIn
                 :first_name,
                 :last_name,
                 :birth_date,
-                :ssn
+                :ssn,
+                :mhv_icn
 
     def initialize(user_attributes:, state_payload:)
       @state_payload = state_payload
@@ -30,6 +32,7 @@ module SignIn
       @last_name = user_attributes[:last_name]
       @birth_date = user_attributes[:birth_date]
       @ssn = user_attributes[:ssn]
+      @mhv_icn = user_attributes[:mhv_icn]
     end
 
     def perform
@@ -43,8 +46,29 @@ module SignIn
     private
 
     def validate_mpi_record
-      raise SignIn::Errors::MPILockedAccountError, 'Theft Flag Detected' if user_for_mpi_query.id_theft_flag
-      raise SignIn::Errors::MPILockedAccountError, 'Death Flag Detected' if user_for_mpi_query.deceased_date
+      check_mpi_lock_flag(user_for_mpi_query.id_theft_flag, 'Theft Flag Detected')
+      check_mpi_lock_flag(user_for_mpi_query.deceased_date, 'Death Flag Detected')
+      check_id_mismatch(user_for_mpi_query.mpi_edipis, 'EDIPI')
+      check_id_mismatch(user_for_mpi_query.mpi_mhv_iens, 'MHV_ID')
+      check_id_mismatch(user_for_mpi_query.mpi_participant_ids, 'CORP_ID')
+      check_id_mismatch(user_for_mpi_query.mpi_birls_ids, 'BIRLS_ID', raise_error: false)
+    end
+
+    def check_mpi_lock_flag(attribute, description)
+      if attribute
+        log_message_to_sentry(description, 'warn')
+        raise SignIn::Errors::MPILockedAccountError, description
+      end
+    end
+
+    def check_id_mismatch(id_array, id_description, raise_error: true)
+      return unless id_array
+
+      if id_array.compact.uniq.size > 1
+        log_message = "User attributes contain multiple distinct #{id_description} values"
+        log_message_to_sentry(log_message, 'warn')
+        raise SignIn::Errors::MPIMalformedAccountError, log_message if raise_error
+      end
     end
 
     def check_and_add_mpi_user
@@ -61,8 +85,8 @@ module SignIn
 
       user = User.new
       user.instance_variable_set(:@identity, user_identity_from_mpi_query)
-      user.uuid = user_verification.user_account.id
-      user_identity_from_mpi_query.uuid = user_verification.user_account.id
+      user.uuid = user_uuid
+      user_identity_from_mpi_query.uuid = user_uuid
       user.last_signed_in = Time.zone.now
       user.save && user_identity_from_mpi_query.save
     end
@@ -79,7 +103,7 @@ module SignIn
       @user_identity_from_attributes ||= UserIdentity.new({ idme_uuid: idme_uuid,
                                                             logingov_uuid: logingov_uuid,
                                                             loa: loa,
-                                                            sign_in: sign_in,
+                                                            sign_in: sign_in_backing_csp_type,
                                                             uuid: credential_uuid })
     end
 
@@ -126,10 +150,27 @@ module SignIn
       user_for_mpi_query.identity.last_name = user_for_mpi_query.last_name || last_name
       user_for_mpi_query.identity.birth_date = user_for_mpi_query.birth_date || birth_date
       user_for_mpi_query.identity.ssn = user_for_mpi_query.ssn || ssn
+      user_for_mpi_query.identity.mhv_icn = user_for_mpi_query.mhv_icn || mhv_icn
     end
 
     def user_verification
       @user_verification ||= Login::UserVerifier.new(user_for_mpi_query).perform
+    end
+
+    def sign_in_backing_csp_type
+      { service_name: service_name_backing_csp_type }
+    end
+
+    def service_name_backing_csp_type
+      logingov_auth? ? SAML::User::LOGINGOV_CSID : SAML::User::IDME_CSID
+    end
+
+    def logingov_auth?
+      sign_in[:service_name] == SAML::User::LOGINGOV_CSID
+    end
+
+    def user_uuid
+      @user_uuid ||= user_verification.credential_identifier
     end
 
     def login_code

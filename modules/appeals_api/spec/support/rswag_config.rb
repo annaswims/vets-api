@@ -129,12 +129,8 @@ class AppealsApi::RswagConfig
         ]
       },
       'X-VA-Birth-Date': {
-        'allOf': [
-          { 'description': 'birth date' },
-          { 'minLength': 10 },
-          { 'maxLength': 10 },
-          { '$ref': "#{ref_root}/date" }
-        ]
+        'description': "Veteran's birth date",
+        'type': 'string', 'format': 'date'
       },
       'X-VA-Claimant-First-Name': {
         'allOf': [
@@ -155,12 +151,8 @@ class AppealsApi::RswagConfig
         ]
       },
       'X-VA-Claimant-Birth-Date': {
-        'allOf': [
-          { 'description': 'birth date' },
-          { 'minLength': 10 },
-          { 'maxLength': 10 },
-          { '$ref': "#{ref_root}/date" }
-        ]
+        'description': "Claimant's birth date",
+        'type': 'string', 'format': 'date'
       },
       'X-VA-Claimant-SSN': {
         'allOf': [
@@ -402,13 +394,7 @@ class AppealsApi::RswagConfig
   end
 
   def nod_v2_create_schemas
-    # TODO: Return full schema after we've validated all Non-Veteran Claimant functionality
-    nod_v2_schema = parse_create_schema('v2', '10182.json')
-    return nod_v2_schema if wip_doc_enabled?(:nod_v2_claimant)
-
-    nod_v2_schema.tap do |s|
-      s.dig(*%w[nodCreate properties data properties attributes properties]).delete('claimant')
-    end
+    parse_create_schema('v2', '10182.json')
   end
 
   def nod_v2_response_schemas(ref_root)
@@ -533,19 +519,7 @@ class AppealsApi::RswagConfig
   end
 
   def sc_create_schemas
-    # TODO: Return full schema after we've validated all Non-Veteran Claimant functionality
-    sc_v2_schema = parse_create_schema('v2', '200995.json')
-    return sc_v2_schema if wip_doc_enabled?(:sc_v2_claimant)
-
-    # Removes NVC-related schema data from production docs
-    sc_v2_schema.tap do |s|
-      attrs = s.dig(*%w[scCreate properties data properties attributes])
-      attrs['properties'].delete('claimant')
-      attrs['properties']['claimantType']['enum'] = ['veteran']
-      attrs['properties'].delete('claimantTypeOtherValue')
-      attrs['allOf'].delete_at(3) # Remove 'if claimantType ~= NCV, require claimant'
-      attrs['allOf'].delete_at(2) # Remove 'if const "other", require claimantTypeOtherValue'
-    end
+    parse_create_schema('v2', '200995.json')
   end
 
   def sc_response_schemas(ref_root)
@@ -687,7 +661,6 @@ class AppealsApi::RswagConfig
   def shared_schemas
     {
       'address': JSON.parse(File.read(AppealsApi::Engine.root.join('config', 'schemas', 'shared', 'v1', 'address.json')))['properties']['address'],
-      'date': JSON.parse(File.read(AppealsApi::Engine.root.join('config', 'schemas', 'shared', 'v1', 'date.json')))['properties']['date'],
       'non_blank_string': JSON.parse(File.read(AppealsApi::Engine.root.join('config', 'schemas', 'shared', 'v1', 'non_blank_string.json')))['properties']['nonBlankString'],
       'phone': JSON.parse(File.read(AppealsApi::Engine.root.join('config', 'schemas', 'shared', 'v1', 'phone.json')))['properties']['phone'],
       'timezone': JSON.parse(File.read(AppealsApi::Engine.root.join('config', 'schemas', 'shared', 'v1', 'timezone.json')))['properties']['timezone']

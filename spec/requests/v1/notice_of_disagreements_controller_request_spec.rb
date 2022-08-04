@@ -2,7 +2,6 @@
 
 require 'rails_helper'
 require 'support/controller_spec_helper'
-require 'pp'
 
 RSpec.describe V1::NoticeOfDisagreementsController do
   let(:user) { build(:user, :loa3) }
@@ -13,7 +12,7 @@ RSpec.describe V1::NoticeOfDisagreementsController do
   describe '#create' do
     def personal_information_logs
       PersonalInformationLog.where 'error_class like ?',
-                                   'V1::NoticeOfDisagreementsController#create exception % (NOD)'
+                                   'V1::NoticeOfDisagreementsController#create exception % (NOD_V1)'
     end
 
     subject do

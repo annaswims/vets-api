@@ -14,7 +14,7 @@ RSpec.describe V1::NoticeOfDisagreements::ContestableIssuesController do
                                    'V1::NoticeOfDisagreements::ContestableIssuesController#index exception % (NOD_V1)'
     end
 
-    subject { get '/v1/notice_of_disagreements/contestable_issues/compensation' }
+    subject { get '/v1/notice_of_disagreements/contestable_issues' }
 
     it 'fetches issues that the Veteran could contest via a notice of disagreement' do
       VCR.use_cassette('decision_review/NOD-GET-CONTESTABLE-ISSUES-RESPONSE-200_V1') do

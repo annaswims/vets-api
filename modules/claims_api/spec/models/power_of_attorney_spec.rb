@@ -3,6 +3,10 @@
 require 'rails_helper'
 
 RSpec.describe ClaimsApi::PowerOfAttorney, type: :model do
+  before(:all) do
+    DatabaseCleaner.clean_with(:truncation)
+  end
+
   let(:pending_record) { create(:power_of_attorney) }
 
   describe 'encrypted attributes' do
@@ -51,6 +55,17 @@ RSpec.describe ClaimsApi::PowerOfAttorney, type: :model do
         expect(result).to be_truthy
         expect(result.id).to eq(pending_record.id)
       end
+    end
+  end
+
+  describe "persisting 'cid' (OKTA client_id)" do
+    it "stores 'cid' in the DB upon creation" do
+      pending_record.cid = 'ABC123'
+      pending_record.save!
+
+      claim = ClaimsApi::PowerOfAttorney.last
+
+      expect(claim.cid).to eq('ABC123')
     end
   end
 end

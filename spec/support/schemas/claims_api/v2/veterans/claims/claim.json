@@ -2,10 +2,21 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "id": {
+    "claimId": {
       "type": "string",
-      "description": "Claim ID",
+      "nullable": true,
+      "description": "Claim ID in VBMS",
       "example": "600131328"
+    },
+    "benefitClaimTypeCode": {
+      "type": "string",
+      "description": "Type Code of benefit claim",
+      "example": "400PREDSCHRG"
+    },
+    "claimType": {
+      "type": "string",
+      "description": "Name of claim type",
+      "example": "Compensation"
     },
     "contentionList": {
       "type": "array",
@@ -15,10 +26,16 @@
       "description": "The contentions being submitted with a claim",
       "example": ["abnormal heart (New)", "abscess kidney (New)"]
     },
-    "dateFiled": {
-      "type": "string",
+    "claimDate": {
+      "type": ["string", "null"],
       "description": "The date a claim was filed",
       "example": "5/17/20"
+    },
+    "closeDate": {
+      "type": ["string", "null"],
+      "format": "date",
+      "description": "Date claim was closed",
+      "example": "2019-09-04"
     },
     "decisionLetterSent": {
       "type": "boolean",
@@ -37,15 +54,46 @@
       "description": "End product code of claim",
       "example": "930"
     },
-    "requestedDecision": {
-      "type": "boolean",
+    "lighthouseId": {
+      "type": "string",
       "nullable": true,
-      "description": "If true, indicateds a decision has been requested and/or a Waiver 5103 has been submitted"
+      "description": "Claim ID in Lighthouse",
+      "example": "600131328"
     },
     "status": {
       "type": "string",
       "description": "Status of claim",
       "example": "Complete"
+    },
+    "submitterApplicationCode": {
+      "type": "string",
+      "description": "Application Code of benefit claim submitter",
+      "example": "EBN"
+    },
+    "submitterRoleCode": {
+      "type": "string",
+      "description": "Role Code of benefit claim submitter",
+      "example": "VET"
+    },
+    "jurisdiction": {
+      "type": "string",
+      "description": "Jurisdiction of claim"
+    },
+    "tempJurisdiction": {
+      "type": ["string", "null"],
+      "description": "Temporary jurisdiction of claim"
+    },
+    "minEstClaimDate": {
+      "type": ["string", "null"],
+      "format": "date",
+      "description": "Minimum Estimated Claim Completion Date",
+      "example": "2019-06-04"
+    },
+    "maxEstClaimDate": {
+      "type": ["string", "null"],
+      "format": "date",
+      "description": "Maximum Estimated Claim Completion Date",
+      "example": "2019-09-04"
     },
     "supportingDocuments": {
       "type": "array",
@@ -72,10 +120,11 @@
         }
       }
     },
-    "type": {
-      "type": "string",
-      "description": "Name of claim type",
-      "example": "Appeals Control"
+    "5103WaiverSubmitted": {
+      "type": "boolean",
+      "nullable": true,
+      "description": "If true, indicates a decision has been requested and/or a Waiver 5103 has been submitted",
+      "example": "false"
     }
   }
 }
