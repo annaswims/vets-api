@@ -6,29 +6,23 @@ module Mobile
   module V2
     module Appointments
       class Proxy
-        CANCEL_CODE = 'PC'
-        CANCEL_ASSIGNING_AUTHORITY = 'ICN'
-        UNABLE_TO_KEEP_APPOINTMENT = '5'
-        VALID_CANCEL_CODES = %w[4 5 6].freeze
-
         def initialize(user)
           @user = user
         end
 
         def get_appointments(start_date:, end_date:, pagination_params:)
           response = vaos_v2_appointments_service.get_appointments(start_date, end_date, nil, pagination_params)
-          normalize_v2_appointments(response)
-        end
-
-        private
-
-        def normalize_v2_appointments(response)
+          response[:data].map do |appt|
+            appt[:location_id] = Mobile::V0::Appointment.toggle_non_prod_id!(appt[:location_id])
+          end
           appointments = merge_clinics(response[:data])
           appointments = merge_facilities(appointments)
           appointments = v2_appointment_adapter.parse(appointments)
 
           appointments.sort_by(&:start_date_utc)
         end
+
+        private
 
         def merge_clinics(appointments)
           cached_clinics = {}
@@ -82,6 +76,10 @@ module Mobile
           )
         end
 
+        def vaos_mobile_facility_service
+          VAOS::V2::MobileFacilityService.new(@user)
+        end
+
         def vaos_v2_appointments_service
           VAOS::V2::AppointmentsService.new(@user)
         end
@@ -93,7 +91,6 @@ module Mobile
         def v2_systems_service
           VAOS::V2::SystemsService.new(@user)
         end
-
       end
     end
   end
