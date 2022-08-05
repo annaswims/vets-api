@@ -36,8 +36,10 @@ module V0
 
     def submit_all_claim
       form_content = JSON.parse(request.body.string)
+      # so we first save the claim, and then use the saved claim for submission
       saved_claim = SavedClaim::DisabilityCompensation::Form526AllClaim.from_hash(form_content)
       saved_claim.save ? log_success(saved_claim) : log_failure(saved_claim)
+      # starts the submission process
       submission = create_submission(saved_claim)
 
       jid = submission.start

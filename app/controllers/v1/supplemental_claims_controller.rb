@@ -12,6 +12,10 @@ module V1
     end
 
     def create
+      # we'll need to first save the claim
+      # then actually attempt to file the claim with lighthouse
+      # then update our records to show the claim was successfully posted
+      # otherwise, start a worker to continue making the request until it suceeds
       sc_response_body = decision_review_service
                          .create_supplemental_claim(request_body: request_body_hash, user: @current_user)
                          .body
