@@ -76,10 +76,10 @@ module Mobile
 
         # rubocop:disable Metrics/MethodLength
         def build_appointment_model(appointment_hash)
-          facility_id = Mobile::V0::Appointment.toggle_non_prod_id!(
+          facility_id = Mobile::V0::Appointment.convert_non_prod_id!(
             appointment_hash[:facility_id]
           )
-          sta6aid = Mobile::V0::Appointment.toggle_non_prod_id!(
+          sta6aid = Mobile::V0::Appointment.convert_non_prod_id!(
             appointment_hash[:sta6aid]
           )
 
@@ -218,7 +218,7 @@ module Mobile
 
         def location_home(details, location)
           provider = details.dig(:providers, :provider)
-          return nil unless provider
+          return location unless provider
 
           location[:url] = provider.first.dig(:virtual_meeting_room, :url)
           location[:code] = provider.first.dig(:virtual_meeting_room, :pin)

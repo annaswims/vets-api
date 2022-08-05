@@ -20,15 +20,15 @@ module AppealsApi
           'form1[0].#subform[2].ClaimantsSocialSecurityNumber_LastFourNumbers[0]'
         end
 
-        def birth_month
+        def veteran_birth_month
           'form1[0].#subform[2].DOBmonth[0]'
         end
 
-        def birth_day
+        def veteran_birth_day
           'form1[0].#subform[2].DOBday[0]'
         end
 
-        def birth_year
+        def veteran_birth_year
           'form1[0].#subform[2].DOByear[0]'
         end
 
@@ -212,6 +212,7 @@ module AppealsApi
 
           { veteran_first_name: { at: [3, 560], width: 195 },
             veteran_last_name: { at: [230, 560], width: 293 },
+            veteran_file_number: { at: [215, 527], width: 143 },
             veteran_number_and_street: { at: [29, 462], width: 512 },
             veteran_city: { at: [200, 441], width: 307 },
             veteran_zip_code: { at: [297, 418], width: 82 },

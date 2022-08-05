@@ -1,0 +1,9 @@
+description: Patient contact information
+type: object
+required:
+  - telecom
+properties:
+  telecom:
+    type: array
+    items:
+      "$ref": ./ContactPoint.yml

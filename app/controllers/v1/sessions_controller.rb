@@ -34,6 +34,11 @@ module V1
     def new
       type = params[:type]
 
+      # As a temporary measure while we have the ability to authenticate either through SessionsController
+      # or through SignInController, we will delete all SignInController cookies when authenticating with SSOe
+      # to prevent undefined authentication behavior
+      delete_sign_in_service_cookies
+
       if type == 'slo'
         Rails.logger.info("SessionsController version:v1 LOGOUT of type #{type}", sso_logging_info)
         reset_session
@@ -79,6 +84,13 @@ module V1
 
     private
 
+    def delete_sign_in_service_cookies
+      cookies.delete(SignIn::Constants::Auth::ACCESS_TOKEN_COOKIE_NAME)
+      cookies.delete(SignIn::Constants::Auth::REFRESH_TOKEN_COOKIE_NAME)
+      cookies.delete(SignIn::Constants::Auth::ANTI_CSRF_COOKIE_NAME)
+      cookies.delete(SignIn::Constants::Auth::INFO_COOKIE_NAME)
+    end
+
     def set_sentry_context_for_callback
       temp_session_object = Session.find(session[:token])
       temp_current_user = User.find(temp_session_object.uuid) if temp_session_object&.uuid
@@ -88,9 +100,8 @@ module V1
       )
     end
 
-    def saml_settings(options = {})
-      options[:force_authn] ||= false
-      SAML::SSOeSettingsService.saml_settings(options)
+    def saml_settings(force_authn: true)
+      SAML::SSOeSettingsService.saml_settings(force_authn: force_authn)
     end
 
     def raise_saml_error(form)
@@ -167,21 +178,21 @@ module V1
 
       case type
       when 'mhv'
-        url_service(true).login_url('mhv', 'myhealthevet', AuthnContext::MHV)
+        url_service.login_url('mhv', 'myhealthevet', AuthnContext::MHV)
       when 'mhv_verified'
-        url_service(true).login_url('mhv', 'myhealthevet_loa3', AuthnContext::MHV)
+        url_service(false).login_url('mhv', 'myhealthevet_loa3', AuthnContext::MHV)
       when 'dslogon'
-        url_service(true).login_url('dslogon', 'dslogon', AuthnContext::DSLOGON)
+        url_service.login_url('dslogon', 'dslogon', AuthnContext::DSLOGON)
       when 'dslogon_verified'
-        url_service(true).login_url('dslogon', 'dslogon_loa3', AuthnContext::DSLOGON)
+        url_service(false).login_url('dslogon', 'dslogon_loa3', AuthnContext::DSLOGON)
       when 'idme'
         url_service.login_url('idme', LOA::IDME_LOA1_VETS, AuthnContext::ID_ME, AuthnContext::MINIMUM)
       when 'idme_verified'
-        url_service.login_url('idme', LOA::IDME_LOA3, AuthnContext::ID_ME, AuthnContext::MINIMUM)
+        url_service(false).login_url('idme', LOA::IDME_LOA3, AuthnContext::ID_ME, AuthnContext::MINIMUM)
       when 'idme_signup'
         url_service.idme_signup_url(LOA::IDME_LOA1_VETS)
       when 'idme_signup_verified'
-        url_service.idme_signup_url(LOA::IDME_LOA3)
+        url_service(false).idme_signup_url(LOA::IDME_LOA3)
       when 'logingov'
         url_service.login_url(
           'logingov',
@@ -190,7 +201,7 @@ module V1
           AuthnContext::MINIMUM
         )
       when 'logingov_verified'
-        url_service.login_url(
+        url_service(false).login_url(
           'logingov',
           [IAL::LOGIN_GOV_IAL2, AAL::LOGIN_GOV_AAL2],
           AuthnContext::LOGIN_GOV,
@@ -199,14 +210,14 @@ module V1
       when 'logingov_signup'
         url_service.logingov_signup_url([IAL::LOGIN_GOV_IAL1, AAL::LOGIN_GOV_AAL2])
       when 'logingov_signup_verified'
-        url_service.logingov_signup_url([IAL::LOGIN_GOV_IAL2, AAL::LOGIN_GOV_AAL2])
+        url_service(false).logingov_signup_url([IAL::LOGIN_GOV_IAL2, AAL::LOGIN_GOV_AAL2])
       when 'mfa'
         url_service.mfa_url
       when 'verify'
-        url_service.verify_url
+        url_service(false).verify_url
       when 'custom'
         authn = validate_inbound_login_params
-        url_service.custom_url authn
+        url_service(false).custom_url authn
       end
     end
     # rubocop:enable Metrics/MethodLength
@@ -350,8 +361,8 @@ module V1
     end
 
     def after_login_actions
-      Login::AfterLoginActions.new(@current_user).perform
       Login::UserVerifier.new(@current_user).perform
+      Login::AfterLoginActions.new(@current_user).perform
       log_persisted_session_and_warnings
     end
 
@@ -380,7 +391,7 @@ module V1
       'UNKNOWN'
     end
 
-    def url_service(force_authn = false)
+    def url_service(force_authn = true)
       @url_service ||= SAML::PostURLService.new(saml_settings(force_authn: force_authn),
                                                 session: @session_object,
                                                 user: current_user,

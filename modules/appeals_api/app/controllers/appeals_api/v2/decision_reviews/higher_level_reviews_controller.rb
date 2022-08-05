@@ -109,15 +109,7 @@ class AppealsApi::V2::DecisionReviews::HigherLevelReviewsController < AppealsApi
   end
 
   def render_model_errors
-    render json: model_errors_to_json_api, status: MODEL_ERROR_STATUS
-  end
-
-  def model_errors_to_json_api
-    errors = @higher_level_review.errors.to_a.map do |error|
-      { status: MODEL_ERROR_STATUS, detail: error }
-    end
-
-    { errors: errors }
+    render json: model_errors_to_json_api(@higher_level_review), status: MODEL_ERROR_STATUS
   end
 
   def find_higher_level_review

@@ -7,12 +7,24 @@ module AppealsApi
   class HigherLevelReview < ApplicationRecord
     include HlrStatus
     include PdfOutputPrep
+    include ModelValidations
+    required_claimant_headers %w[X-VA-Claimant-First-Name X-VA-Claimant-Last-Name X-VA-Claimant-Birth-Date]
 
     attr_readonly :auth_headers
     attr_readonly :form_data
 
     scope :pii_expunge_policy, lambda {
-      where('updated_at < ? AND status IN (?)', 7.days.ago, COMPLETE_STATUSES)
+      timeframe = 7.days.ago
+      v1.where('updated_at < ? AND status IN (?)', timeframe, COMPLETE_STATUSES + ['success'])
+        .or(v2.where('updated_at < ? AND status IN (?)', timeframe, COMPLETE_STATUSES))
+    }
+
+    scope :v1, lambda {
+      where(api_version: 'V1')
+    }
+
+    scope :v2, lambda {
+      where(api_version: 'V2')
     }
 
     def self.past?(date)
@@ -28,7 +40,7 @@ module AppealsApi
     serialize :auth_headers, JsonMarshal::Marshaller
     serialize :form_data, JsonMarshal::Marshaller
     has_kms_key
-    encrypts :auth_headers, :form_data, key: :kms_key, **lockbox_options
+    has_encrypted :auth_headers, :form_data, key: :kms_key, **lockbox_options
 
     NO_ADDRESS_PROVIDED_SENTENCE = 'USE ADDRESS ON FILE'
     NO_EMAIL_PROVIDED_SENTENCE = 'USE EMAIL ON FILE'
@@ -36,19 +48,21 @@ module AppealsApi
 
     # the controller applies the JSON Schemas in modules/appeals_api/config/schemas/
     # further validations:
-    validate(
-      :birth_date_is_a_date,
-      :birth_date_is_in_the_past,
-      :contestable_issue_dates_are_valid_dates,
-      if: proc { |a| a.form_data.present? }
-    )
+    validate :veteran_birth_date_is_in_the_past,
+             :contestable_issue_dates_are_in_the_past,
+             if: proc { |a| a.form_data.present? }
+
+    # v2 validations
+    validate :claimant_birth_date_is_in_the_past,
+             :required_claimant_data_is_present,
+             if: proc { |a| a.api_version.upcase != 'V1' && a.form_data.present? }
 
     has_many :evidence_submissions, as: :supportable, dependent: :destroy
     has_many :status_updates, as: :statusable, dependent: :destroy
 
-    def pdf_structure(version)
+    def pdf_structure(pdf_version)
       Object.const_get(
-        "AppealsApi::PdfConstruction::HigherLevelReview::#{version.upcase}::Structure"
+        "AppealsApi::PdfConstruction::HigherLevelReview::#{pdf_version.upcase}::Structure"
       ).new(self)
     end
 
@@ -103,16 +117,16 @@ module AppealsApi
       auth_headers['X-VA-File-Number']
     end
 
-    def birth_mm
-      birth_date.strftime '%m'
+    def veteran_birth_mm
+      veteran_birth_date.strftime '%m'
     end
 
-    def birth_dd
-      birth_date.strftime '%d'
+    def veteran_birth_dd
+      veteran_birth_date.strftime '%d'
     end
 
-    def birth_yyyy
-      birth_date.strftime '%Y'
+    def veteran_birth_yyyy
+      veteran_birth_date.strftime '%Y'
     end
 
     def service_number
@@ -166,31 +180,21 @@ module AppealsApi
     end
 
     def email
-      # V2 and V1 access the email data via different keys ('email' vs 'emailAddressText')
-      veteran.email.presence || veteran_data&.dig('emailAddressText').to_s.strip
+      veteran.email.presence
     end
 
     def benefit_type
       data_attributes&.dig('benefitType').to_s.strip
     end
 
-    def same_office
-      data_attributes&.dig('sameOffice')
-    end
-
     def informal_conference
       data_attributes&.dig('informalConference')
-    end
-
-    def informal_conference_times
-      data_attributes&.dig('informalConferenceTimes') || []
     end
 
     def informal_conference_contact
       data_attributes&.dig('informalConferenceContact')
     end
 
-    # V2 only allows one choice of conference time
     def informal_conference_time
       data_attributes&.dig('informalConferenceTime')
     end
@@ -231,27 +235,44 @@ module AppealsApi
       auth_headers&.dig('X-Consumer-ID')
     end
 
+    def stamp_text
+      "#{veteran.last_name.truncate(35)} - #{veteran.ssn.last(4)}"
+    end
+
+    # rubocop:disable Metrics/MethodLength
     def update_status!(status:, code: nil, detail: nil)
       current_status = self.status
-      update_handler = Events::Handler.new(event_type: :hlr_status_updated, opts: {
-                                             from: current_status,
-                                             to: status,
-                                             status_update_time: Time.zone.now.iso8601,
-                                             statusable_id: id
-                                           })
-
-      email_handler = Events::Handler.new(event_type: :hlr_received, opts: {
-                                            email_identifier: email_identifier,
-                                            first_name: first_name,
-                                            date_submitted: veterans_local_time.iso8601,
-                                            guid: id
-                                          })
-
       update!(status: status, code: code, detail: detail)
 
-      update_handler.handle! unless status == current_status
-      email_handler.handle! if status == 'submitted' && email_identifier.present?
+      if status != current_status
+        AppealsApi::StatusUpdatedJob.perform_async(
+          {
+            status_event: 'hlr_status_updated',
+            from: current_status,
+            to: status.to_s,
+            status_update_time: Time.zone.now.iso8601,
+            statusable_id: id
+          }
+        )
+      end
+
+      return if auth_headers.blank? # Go no further if we've removed PII
+
+      if status == 'submitted' && email_present?
+        AppealsApi::AppealReceivedJob.perform_async(
+          {
+            receipt_event: 'hlr_received',
+            email_identifier: email_identifier,
+            first_name: first_name,
+            date_submitted: veterans_local_time.iso8601,
+            guid: id,
+            claimant_email: claimant.email,
+            claimant_first_name: claimant.first_name
+          }
+        )
+      end
     end
+    # rubocop:enable Metrics/MethodLength
 
     def informal_conference_rep
       data_attributes&.dig('informalConferenceRep')
@@ -271,7 +292,7 @@ module AppealsApi
         'veteranReadinessAndEmployment' => 'VRE',
         'loanGuaranty' => 'CMP',
         'education' => 'EDU',
-        'nationalCemeteryAdministration' => 'NCA'
+        'nationalCemeteryAdministration' => 'CMP'
       }[benefit_type]
     end
 
@@ -282,7 +303,7 @@ module AppealsApi
         ssn: ssn,
         first_name: first_name,
         last_name: last_name,
-        birth_date: birth_date.iso8601
+        birth_date: veteran_birth_date.iso8601
       )
     end
 
@@ -302,12 +323,12 @@ module AppealsApi
       data_attributes&.dig('veteran')
     end
 
-    def birth_date_string
+    def veteran_birth_date_string
       auth_headers['X-VA-Birth-Date']
     end
 
-    def birth_date
-      self.class.date_from_string birth_date_string
+    def veteran_birth_date
+      self.class.date_from_string veteran_birth_date_string
     end
 
     def veteran_phone
@@ -322,47 +343,6 @@ module AppealsApi
       veteran_data&.dig('timezone').presence&.strip
     end
 
-    # validation (header)
-    def birth_date_is_a_date
-      add_error("Veteran birth date isn't a date: #{birth_date_string.inspect}") unless birth_date
-    end
-
-    # validation (header)
-    def birth_date_is_in_the_past
-      return unless birth_date
-
-      add_error("Veteran birth date isn't in the past: #{birth_date}") unless self.class.past? birth_date
-    end
-
-    def contestable_issue_dates_are_valid_dates
-      return if contestable_issues.blank?
-
-      contestable_issues.each_with_index do |issue, index|
-        decision_date_invalid(issue, index)
-        decision_date_not_in_past(issue, index)
-      end
-    end
-
-    def decision_date_invalid(issue, issue_index)
-      return if issue.decision_date
-
-      add_decision_date_error "isn't a valid date: #{issue.decision_date_string.inspect}", issue_index
-    end
-
-    def decision_date_not_in_past(issue, issue_index)
-      return if issue.decision_date.nil? || issue.decision_date_past?
-
-      add_decision_date_error "isn't in the past: #{issue.decision_date_string.inspect}", issue_index
-    end
-
-    def add_decision_date_error(string, issue_index)
-      add_error "included[#{issue_index}].attributes.decisionDate #{string}"
-    end
-
-    def add_error(message)
-      errors.add(:base, message)
-    end
-
     def address_combined
       return unless veteran_data.dig('address', 'addressLine1')
 
@@ -370,6 +350,10 @@ module AppealsApi
         [veteran_data.dig('address', 'addressLine1'),
          veteran_data.dig('address', 'addressLine2'),
          veteran_data.dig('address', 'addressLine3')].compact.map(&:strip).join(' ')
+    end
+
+    def email_present?
+      claimant.email.present? || email_identifier.present?
     end
 
     def clear_memoized_values

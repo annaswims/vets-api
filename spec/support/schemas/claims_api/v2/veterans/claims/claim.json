@@ -1,58 +1,99 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "id": {
+    "claimId": {
       "type": "string",
-      "description": "Claim ID",
+      "nullable": true,
+      "description": "Claim ID in VBMS",
       "example": "600131328"
     },
-    "@links": {
-      "type": "object",
-      "description": "HATEOAS links in the HAL standard format",
-      "example": {
-        "rel": "self",
-        "type": "GET",
-        "url": "https://api.va.gov/services/claims/v2/claims/600131328"
-      }
+    "benefitClaimTypeCode": {
+      "type": "string",
+      "description": "Type Code of benefit claim",
+      "example": "400PREDSCHRG"
+    },
+    "claimType": {
+      "type": "string",
+      "description": "Name of claim type",
+      "example": "Compensation"
     },
     "contentionList": {
       "type": "array",
+      "items": {
+        "type": "string"
+      },
       "description": "The contentions being submitted with a claim",
       "example": ["abnormal heart (New)", "abscess kidney (New)"]
     },
-    "dateFiled": {
-      "type": "string",
+    "claimDate": {
+      "type": ["string", "null"],
       "description": "The date a claim was filed",
       "example": "5/17/20"
     },
+    "closeDate": {
+      "type": ["string", "null"],
+      "format": "date",
+      "description": "Date claim was closed",
+      "example": "2019-09-04"
+    },
     "decisionLetterSent": {
       "type": "boolean",
-      "description": "Indicates if a Decision Letter has been sent to the Claimant regarding a benefit claim"
+      "description": "If true, a decision letter has been sent to the claimant regarding a benefit claim"
     },
     "developmentLetterSent": {
       "type": "boolean",
-      "description": "Indicates if a Development Letter has been sent to the Claimant regarding a benefit claim"
+      "description": "If true, a development letter has been sent to the claimant regarding a benefit claim"
     },
     "documentsNeeded": {
       "type": "boolean",
-      "description": "Indicates whether the claim requires additional documents to be submitted"
+      "description": "If true, the claim requires additional documents to be submitted"
     },
     "endProductCode": {
       "type": "string",
       "description": "End product code of claim",
       "example": "930"
     },
-    "requestedDecision": {
-      "type": "boolean",
+    "lighthouseId": {
+      "type": "string",
       "nullable": true,
-      "description": "Indicates if a decision has been requested and/or if a Waiver 5103 has been submitted"
+      "description": "Claim ID in Lighthouse",
+      "example": "600131328"
     },
     "status": {
       "type": "string",
       "description": "Status of claim",
       "example": "Complete"
+    },
+    "submitterApplicationCode": {
+      "type": "string",
+      "description": "Application Code of benefit claim submitter",
+      "example": "EBN"
+    },
+    "submitterRoleCode": {
+      "type": "string",
+      "description": "Role Code of benefit claim submitter",
+      "example": "VET"
+    },
+    "jurisdiction": {
+      "type": "string",
+      "description": "Jurisdiction of claim"
+    },
+    "tempJurisdiction": {
+      "type": ["string", "null"],
+      "description": "Temporary jurisdiction of claim"
+    },
+    "minEstClaimDate": {
+      "type": ["string", "null"],
+      "format": "date",
+      "description": "Minimum Estimated Claim Completion Date",
+      "example": "2019-06-04"
+    },
+    "maxEstClaimDate": {
+      "type": ["string", "null"],
+      "format": "date",
+      "description": "Maximum Estimated Claim Completion Date",
+      "example": "2019-09-04"
     },
     "supportingDocuments": {
       "type": "array",
@@ -71,7 +112,7 @@
             "type": "string",
             "description": "Name of document"
           },
-          "uploaded_at": {
+          "uploadedAt": {
             "type": "string",
             "format": "date",
             "description": "Date and time document was uploaded"
@@ -79,15 +120,11 @@
         }
       }
     },
-    "type": {
-      "type": "string",
-      "description": "Name of claim type",
-      "example": "Appeals Control"
-    },
-    "vaRepresentative": {
-      "type": "string",
-      "description": "The current organization or individual representing the Veteran on a claim",
-      "example": "American Legion"
+    "5103WaiverSubmitted": {
+      "type": "boolean",
+      "nullable": true,
+      "description": "If true, indicates a decision has been requested and/or a Waiver 5103 has been submitted",
+      "example": "false"
     }
   }
 }

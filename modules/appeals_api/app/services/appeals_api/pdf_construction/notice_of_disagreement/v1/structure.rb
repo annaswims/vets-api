@@ -105,7 +105,7 @@ module AppealsApi
 
           @additional_pages_pdf ||= Prawn::Document.new(skip_page_creation: true)
 
-          NoticeOfDisagreement::Pages::HearingTypeAndAdditionalIssues.new(
+          Pages::HearingTypeAndAdditionalIssues.new(
             @additional_pages_pdf, form_data
           ).build!
 
@@ -122,31 +122,6 @@ module AppealsApi
 
           # moves pages 2 & 3 of the original form to the end of the document. Keeps all other pages.
           [1, '4-end', '2-3']
-        end
-
-        def stamp(stamped_pdf_path)
-          stamper = CentralMail::DatestampPdf.new(stamped_pdf_path)
-
-          bottom_stamped_path = stamper.run(
-            text: "API.VA.GOV #{notice_of_disagreement.created_at.utc.strftime('%Y-%m-%d %H:%M%Z')}",
-            x: 5,
-            y: 775,
-            text_only: true
-          )
-
-          name_stamp_path = "#{Common::FileHelpers.random_file_path}.pdf"
-          Prawn::Document.generate(name_stamp_path, margin: [0, 0]) do |pdf|
-            pdf.text_box form_data.stamp_text,
-                         at: [205, 785],
-                         align: :center,
-                         valign: :center,
-                         overflow: :shrink_to_fit,
-                         min_font_size: 8,
-                         width: 215,
-                         height: 10
-          end
-
-          CentralMail::DatestampPdf.new(nil).stamp(bottom_stamped_path, name_stamp_path)
         end
 
         private

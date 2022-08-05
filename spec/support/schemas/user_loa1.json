@@ -26,9 +26,10 @@
             "prefills_available": { "type": [ "array", null ] },
             "session": {
               "type": "object",
-              "required": ["ssoe", "transactionid"],
+              "required": ["auth_broker", "ssoe", "transactionid"],
               "properties": {
-                "ssoe": { "type": "boolean"},
+                "auth_broker": { "type": "string" },
+                "ssoe": { "type": "boolean" },
                 "transactionid": { "type": [ "string", null ] }
               }
             },
@@ -54,7 +55,8 @@
                 "multifactor",
                 "verified",
                 "sign_in",
-                "authn_context"
+                "authn_context",
+                "inherited_proof_verified"
               ],
               "properties": {
                 "email": { "type": "string"},
@@ -78,10 +80,13 @@
                 "sign_in": {
                   "type": "object",
                   "properties":  {
-                    "service_name": { "type": "string" }
+                    "service_name": { "type": "string" },
+                    "auth_broker": { "type": "string" },
+                    "client_id": { "type": "string" }
                   }
                 },
-                "authn_context": { "type": "string" }
+                "authn_context": { "type": "string" },
+                "inherited_proof_verified": { "type": "boolean" }
               }
             },
             "va_profile": {

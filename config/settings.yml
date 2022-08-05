@@ -9,19 +9,23 @@ web_origin: http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,ht
 web_origin_regex: \Ahttps?:\/\/www\.va\.gov\z
 
 logingov:
-  client_id: urn:gov:gsa:openidconnect.profiles:sp:sso:va:dev_signin
-  redirect_uri: http://localhost:3000/sign_in/logingov/callback
+  client_id: https://sqa.eauth.va.gov/isam/sps/saml20sp/saml20
+  redirect_uri: http://localhost:3000/v0/sign_in/callback
+  logout_redirect_uri: http://localhost:3001
   client_cert_path: spec/fixtures/sign_in/oauth.crt
   client_key_path: spec/fixtures/sign_in/oauth.key
   oauth_url: https://idp.int.identitysandbox.gov
+  oauth_public_key: spec/fixtures/logingov/logingov_oauth_pub.pem
+  inherited_proofing_redirect_uri: http://localhost:3000/inherited_proofing/callback
 
 idme:
-  client_id: dde0b5b8bfc023a093830e64ef83f148
-  client_secret: e745319288bd005c9fca7d8164f302c7
-  redirect_uri: http://localhost:3000/sign_in/idme/callback
+  client_id: ef7f1237ed3c396e4b4a2b04b608a7b1
+  client_secret: ae657fd2b253d17be7b48ecdb39d7b34
+  redirect_uri: http://localhost:3000/v0/sign_in/callback
   client_cert_path: spec/fixtures/sign_in/oauth.crt
   client_key_path: spec/fixtures/sign_in/oauth.key
   oauth_url: https://api.idmelabs.com
+  oauth_public_key: spec/fixtures/idme/idme_oauth_pub.pem
 
 # Settings for new SAML authentication with SSOe
 saml_ssoe:
@@ -48,8 +52,13 @@ session_cookie:
 
 sign_in:
   jwt_encode_key: 'spec/fixtures/sign_in/privatekey.pem'
-  redirect_uri: 'vamobile://login-success'
-  enable_anti_csrf: false
+  cookies_secure: false
+  info_cookie_domain: localhost
+  client_redirect_uris:
+    mobile: 'vamobile://login-success'
+    web: 'http://localhost:3001/auth/login/callback'
+    web_logout: 'http://localhost:3001'
+    mobile_test: 'http://localhost:4001/auth/sis/login-success'
 
 lockbox:
   master_key: "0d78eaf0e90d4e7b8910c9112e16e66d8b00ec4054a89aa426e32712a13371e9"
@@ -82,6 +91,14 @@ dmc:
 
 mcp:
   vbs:
+    url: https://fake_url.com:9000
+    host: fake_url.com:9000
+    base_path: /base/path
+    service_name: VBS
+    mock: false
+    mock_vista: false
+    api_key: abcd1234abcd1234abcd1234abcd1234abcd1234
+  vbs_v2:
     url: https://fake_url.com:9000
     host: fake_url.com:9000
     base_path: /base/path
@@ -184,6 +201,16 @@ vet360:
     enabled: true
     timeout: 30
     mock: false
+  demographics:
+    cache_enabled: false
+    enabled: true
+    timeout: 30
+    mock: false
+  military_personnel:
+    cache_enabled: false
+    enabled: true
+    timeout: 30
+    mock: false
   address_validation:
     hostname: "sandbox-api.va.gov"
     api_key: "<AV_KEY>"
@@ -218,6 +245,21 @@ decision_review:
   v1:
     url: https://sandbox-api.va.gov/services/appeals/v2/decision_reviews
 
+# Settings for modules/dhp_connected_devices
+dhp:
+  mock: false
+  fitbit:
+    client_id: ''
+    client_secret: ''
+    redirect_uri: 'http://localhost:3000/dhp_connected_devices/fitbit-callback'
+    scope: 'heartrate activity nutrition sleep'
+    code_challenge: ''
+    code_verifier: ''
+  s3:
+    aws_access_key_id: ''
+    aws_secret_access_key: ''
+    bucket: ''
+    region: 'us-gov-west-1'
 
 # Settings for modules/appeals_api
 modules_appeals_api:
@@ -226,6 +268,10 @@ modules_appeals_api:
     appeals_channel_id: ''
   documentation:
     path_enabled_flag: false
+    wip_docs:
+      # List of flags to indicate parts of documentation that are still WIP and not ready for production.
+      # See the rswag:appeals_api:dev rake task, spec_helper, and DocHelpers#wip_doc_enabled? for usage info to opt-in.
+      # NOTE: Do not remove this key even if it's empty.
   higher_level_review_pii_expunge_enabled: true
   higher_level_review_updater_enabled: true
   legacy_appeals_enabled: false
@@ -302,8 +348,10 @@ modules_appeals_api:
   status_simulation_enabled: false
 
 onsite_notifications:
+  public_key: ~
   template_ids:
-    - "f9947b27-df3b-4b09-875c-7f76594d766d"
+    - "f9947b27-df3b-4b09-875c-7f76594d766d" # staging    - debt notification
+    - "7efc2b8b-e59a-4571-a2ff-0fd70253e973" # production - debt notification
 
 vre_counseling:
   prefill: true
@@ -426,6 +474,10 @@ mhv:
     collection_caching_enabled: true
   account:
     mock: false
+  inherited_proofing:
+    base_path: https://mhv-api.example.com
+    app_token: fake-app-token
+    mock: true
 
 # Settings for alternate MHV integration for mobile app
 mhv_mobile:
@@ -443,7 +495,6 @@ mvi:
   client_key_path: /fake/client/key/path
   pii_logging: false
   vba_orchestration: false
-  edipi_search: false
 
 # Settings for eMIS
 # The certs used here can be obtained from the DevOps team. A different set is required for
@@ -503,12 +554,6 @@ caseflow:
 vic:
   url: https://some.fakesite.com
   signing_key_path: /fake/signing/key/path
-  prefill: true
-  s3:
-    aws_access_key_id: "aws_access_key_id"
-    aws_secret_access_key: "aws_secret_access_key"
-    region: "region"
-    bucket: "bucket"
 
 # Settings for (preneeds) burials.
 preneeds:
@@ -540,8 +585,6 @@ vba_documents:
   slack:
     enabled: false
     default_alert_url:
-    invalid_parts_alert_url:
-    deployment_notification_benefits_url:
     deployment_notification_forms_url:
     in_flight_notification_hung_time_in_days: 14
     renotification_in_minutes: 240
@@ -565,8 +608,7 @@ claims_api:
   schema_dir: config/schemas
   slack:
     webhook_url: https://example.com
-  claims_pending_reporting:
-    threshold: ~
+  claims_error_reporting:
     environment_name: ~
   v2_docs:
     enabled: false
@@ -783,7 +825,6 @@ maintenance:
 betamocks:
   enabled: true
   recording: false
-  cache_dir: /cache
   services_config: config/betamocks/services_config.yml
 
 # Settings for search
@@ -808,8 +849,7 @@ search_click_tracking:
 
 flipper:
   admin_user_emails:
-    - adewitt@thoughtworks.com
-    - aditya.sharma@thoughtworks.com
+    - aditya.sharma@thoughtworks.com # Virtual Agent
     - adrian.rollett@agile6.com # Adrian Rollett (Agile6), Engineer/Product Manager Health Care Experience/Check-In
     - agarcia@clarityinnovates.com
     - alastair@adhocteam.us
@@ -833,27 +873,28 @@ flipper:
     - dror@matal.com
     - eric.boehs@oddball.io
     - erik@adhocteam.us
-    - filip.fafara@gmail.com
+    - ethan.teague@civicactions.com
+    - filip.fafara@gmail.com # Thoughtworks, ex VANotify, supports DHP, CDSP, Virtual Agent
     - fahmed@governmentcio.com
     - ggupta@kindsys.us # Gaurav Gupta (Kindsys), BE Engineer Health Care Experience/Check-In
     - gescobar@governmentcio.com
     - grodriguez@governmentcio.com
-    - hshin@thoughtworks.com
-    - jacob.gacek@thoughtworks.com
+    - jacob.gacek@thoughtworks.com # Virtual Agent
     - james.childers@gcio.com
     - james.adams2@va.gov # Jim Adams designer on GCIO
     - jayson.perkins@adhocteam.us
     - jeff.roof@adhocteam.us
     - jennie.mcgibney@va.gov
+    - jeremy.wu@oddball.io
     - jesse.cohn@adhocteam.us
     - jlinn@governmentcio.com
-    - joe.hall@thoughtworks.com
+    - joe.hall@thoughtworks.com # Virtual Agent
     - joeyn414@gmail.com # Joe Niquette Oddball VSP Identity Team Sr Security Engineer
     - john.bramley@adhocteam.us
     - Josh.Scanish@oddball.io # vsp identity engineer
     - julie.adair@agile6.com # Julie Adair (Agile6), Product Manager Health Care Experience/Check-In
     - jwolf@governmentcio.com # Jason Wolf Product Manager for GCIO
-    - justin.trieu@thoughtworks.com
+    - justin.trieu@thoughtworks.com # Virtual Agent
     - kabrown@thoughtworks.com
     - kadams@governmentcio.com
     - kathleen.crawford@gcio.com
@@ -862,6 +903,7 @@ flipper:
     - kevin.musiorski@gcio.com # Kevin Musiorski (GCIO), Engineer
     - kmircovich@governmentcio.com
     - kris.pethtel@adhocteam.us
+    - kris.pethtel@gmail.com # email tied to production id.me account
     - kyle.woolley@oddball.io # VSP Identity Engineer
     - ksuriyamoorthy@kindsys.us # Kanchana Suriyamoorthy (Kindsys), BE Engineer Health Care Experience/Check-In
     - lauren.alexanderson@va.gov
@@ -870,35 +912,31 @@ flipper:
     - lindsey.hattamer@oddball.io
     - lisa.zapson@adhocteam.us
     - lance.sanchez@gcio.com
-    - ltran@thoughtworks.com
-    - marisa.hoenig@thoughtworks.com
     - mattgardner@navapbc.com
-    - mdewey@governmentcio.com
+    - mark.dewey@va.gov
+    - metrowebz@gmail.com
     - micah@adhocteam.us
     - michel.mcdonald@adhocteam.us
     - michael.chelen@va.gov
     - michael.fleet@oddball.io
     - michael.pelz-sherman@gcio.com
     - michelle.middaugh@adhocteam.us
-    - mnunemak@thoughtworks.com
     - n.ratana@gmail.com
+    - nathaniel.buck@gmail.com # AFS - My Education Benefits
     - narin@adhocteam.us
     - patrick.bateman@va.gov
     - patrick@adhocteam.us
     - patrickryll@yahoo.com
-    - paul.phillips@thoughtworks.com
     - paul.touchton@b3groupinc.com
-    - pherbert@thoughtworks.com
     - regarr@gmail.com # Robin Garrison - AdHoc
     - riley.anderson@oddball.io
     - ryan.leahy@adhocteam.us # Ryan Leahy - Adhoc
     - ryan.thurlwell@va.gov
-    - saman.moshafi@thoughtworks.com
+    - sallymaki@navapbc.com
     - samara.strauss@va.gov
     - sarah.knopp@agile6.com # Sarah Knopp (Agile 6), Scrum Master
     - scott.james@gcio.com
     - scy0846@gmail.com # Taylor Mitchell - GCIO
-    - shefai.nayak@thoughtworks.com
     - ssuddath@governmentcio.com
     - stephen.barrs@gmail.com
     - tim.wright@adhocteam.us
@@ -909,7 +947,7 @@ flipper:
     - yangyang@navapbc.com
     - yoom@navapbc.com
     - zmorel@governmentcio.com
-    - kha.huynh@thoughtworks.com
+    - kha.huynh@thoughtworks.com # Virtual Agent
     - zach.morel@gcio.com
     - abelardo.blanco@va.gov
     - eugenia.gina.ronat@accenturefederal.com
@@ -929,6 +967,25 @@ flipper:
     - brandon.clapp@accenturefederal.com
     - matt.long@adhocteam.us # Matt Long - Staff Software Engineer - Ad Hoc
     - trent.mcdole@gcio.com
+    - simi.adebowale@adhocteam.us
+    - tom.harrison@adhocteam.us
+    - angela.agosto@adhocteam.us # Angela Agosto - Ad Hoc
+    - ryan.koch@agile6.com
+    - wesley.rowe@agile6.com
+    - jill.adams@agile6.com
+    - allison@cityfriends.tech
+    - cnunez@kindsys.us
+    - helene.mccarron@thoughtworks.com # Virtual Agent
+    - ryan.shaw@adhocteam.us
+    - brandyn.sullins@govcio.com # Brandyn Sullins - Front End Engineer - GCIO
+    - andrew.rodiek@gmail.com # Andrew Rodiek - Front End Engineer - GCIO
+    - karan.krishnani@thoughtworks.com # Virtual Agent Chatbot
+    - aherzberg5@gmail.com # email tied to production id.me account
+    - jtmills09@live.com # Josh Mills - Front End Engineer
+    - choi.won@gmail.com # AFS DevOps
+    - andrew.barrett1986@gmail.com # DGIB managed service Operations Lead
+    - erica.sauve@adhocteam.us # Erica Suave - APM Adhoc Auth Exp
+    - ajakabcin@gmail.com # Ana Jakabcin - PM Adhoc Auth Exp
 
 bgs:
   application: ~
@@ -1017,6 +1074,7 @@ lighthouse:
         - "patient/Observation.read"
         - "patient/Practitioner.read"
         - "patient/MedicationRequest.read"
+        - "patient/Condition.read"
       aud_claim_url: "https://deptva-eval.okta.com/oauth2/aus8nm1q0f7VQ0a482p7/v1/token"
       client_id: "0oaaxkp0aeXEJkMFw2p7"
       grant_type: "client_credentials"
@@ -1024,6 +1082,13 @@ lighthouse:
   facilities:
     url: https://sandbox-api.va.gov
     api_key: fake_key
+
+mail_automation:
+  url: https://viccs-api-test.ibm-intelligent-automation.com
+  endpoint: /mas/api/test/masInsertAndInitiateApcasClaimProcessing
+  token_endpoint: /pca/api/test/token
+  client_id: va_gov_test
+  client_secret: fake_key
 
 forms:
   url: https://sandbox-api.va.gov/services/va_forms/v0/
@@ -1050,12 +1115,6 @@ google_analytics:
   url: "https://internal-dsva-vagov-staging-fwdproxy-1821450725.us-gov-west-1.elb.amazonaws.com:4473"
   tracking_id: ~
 
-# Settings for the coronavirus chatbot tokens
-coronavirus_chatbot:
-  app_secret: fake_secret
-  directline_uri: northamerica.directline.botframework.com
-  webchat_secret: fake_secret
-
 covid_vaccine:
   allowed_facilities: [402,405,436,437,438,442,459,460,463,501,502,503,504,506,508,509,512,515,516,517,518,519,520,521,523,526,528,529,531,534,537,538,539,540,541,542,544,546,548,549,550,552,553,554,556,557,558,561,562,564,565,568,570,573,575,578,580,581,583,585,586,589,590,593,595,596,598,600,603,605,607,608,610,612,613,614,618,619,620,621,623,626,629,630,631,632,635,636,637,640,642,644,646,648,649,650,652,653,654,655,656,657,658,659,660,662,663,664,666,667,668,671,672,673,674,675,676,678,679,687,688,689,691,692,693,695,740,756,757]
   enrollment_service:
@@ -1079,9 +1138,16 @@ vanotify:
     va_gov:
       api_key: fake_secret
       template_id:
+        burial_claim_confirmation_email_template_id: burial_claim_confirmation_email_template_id
+        ch31_vbms_form_confirmation_email: ch31_vbms_fake_template_id
+        ch31_central_mail_form_confirmation_email: ch31_central_mail_fake_template_id
         contact_info_change: fake_template_id
         form526_confirmation_email: fake_template_id
         form526_submission_failed_email: fake_template_id
+        form686c_confirmation_email: fake_template_id
+        form686c_reminder_email: fake_template_id
+        form1010ez_reminder_email: fake_template_id
+        in_progress_reminder_email_generic: fake_template_id
         covid_vaccine_registration: fake_template_id
         covid_vaccine_expanded_registration: fake_template_id
         direct_deposit_edu: edu_template_id
@@ -1201,10 +1267,6 @@ veteran_readiness_and_employment:
       - VRE.VBAANC@va.gov
       - VRE.VBAPIT@va.gov
       - VRE-CMS.VBAVACO@va.gov
-      - Jason.Wolf@va.gov
-      - Kathleen.Crawford@va.gov
-      - Kevin.Musiorski@va.gov
-      - Amanda.Leaders@va.gov
 
 # Settings for connecting to the va.gov Google Analytics for the Cypress Viewport Updater
 google_analytics_cvu:
@@ -1226,6 +1288,9 @@ github_cvu:
   private_pem: ~
 
 check_in:
+  authentication:
+    max_auth_retry_limit: 3
+    retry_attempt_expiry: 604800 # 7 Days
   chip_api:
     url: https://vpce-06399548ef94bdb41-lk4qp2nd.execute-api.us-gov-west-1.vpce.amazonaws.com
     base_path: dev
@@ -1279,6 +1344,9 @@ rrd:
   event_tracking:
     recipients:
       - fake_email
+  mas_tracking:
+    recipients:
+      - fake_email
 
 # Settings for Test User Dashboard modules
 test_user_dashboard:
@@ -1316,3 +1384,18 @@ lgy:
   app_id: ~
   api_key: ~
   mock_coe: false
+
+form1095_b:
+  s3:
+    aws_access_key_id: ~
+    aws_secret_access_key: ~
+    bucket: 'bucket'
+    enabled: true
+    region: 'region'
+
+coverband:
+  github_organization: ~
+  github_team: ~
+  github_oauth_key: ~
+  github_oauth_secret: ~
+  github_api_key: ~

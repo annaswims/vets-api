@@ -13,28 +13,30 @@ module AppealsApi
             @supplemental_claim = supplemental_claim
           end
 
-          # rubocop:disable Metrics/MethodLength
           def form_fill
             # Section I: Identifying Information
             # Name, address and email filled out through autosize text box, not pdf fields
             {
-              form_fields.veteran_middle_initial => form_data.veteran_middle_initial,
-              form_fields.ssn_first_three => form_data.ssn_first_three,
-              form_fields.ssn_middle_two => form_data.ssn_middle_two,
-              form_fields.ssn_last_four => form_data.ssn_last_four,
-              form_fields.file_number => form_data.file_number,
+              # Vet's ID
+              # Veteran name is filled out through autosize text box, not pdf fields
+              form_fields.veteran_middle_initial => form_data.veteran.middle_initial,
+              form_fields.veteran_ssn_first_three => form_data.veteran_ssn_first_three,
+              form_fields.veteran_ssn_middle_two => form_data.veteran_ssn_middle_two,
+              form_fields.veteran_ssn_last_four => form_data.veteran_ssn_last_four,
+              form_fields.file_number => form_data.veteran.file_number,
+              form_fields.veteran_service_number => form_data.veteran.service_number,
               form_fields.veteran_dob_month => form_data.veteran_dob_month,
               form_fields.veteran_dob_day => form_data.veteran_dob_day,
               form_fields.veteran_dob_year => form_data.veteran_dob_year,
-              form_fields.veteran_service_number => form_data.veteran_service_number,
-              form_fields.insurance_policy_number => form_data.insurance_policy_number,
+              form_fields.insurance_policy_number => form_data.veteran.insurance_policy_number,
+              form_fields.mailing_address_state => form_data.signing_appellant.state_code,
+              form_fields.mailing_address_country => form_data.signing_appellant.country_code,
 
-              form_fields.claimant_type => 1, # default to check 'veteran' for now
+              # Claimant
+              # Claimant name is filled out through autosize text box, not pdf fields
+              form_fields.claimant_middle_initial => form_data.claimant.middle_initial,
 
-              form_fields.mailing_address_state => form_data.mailing_address_state,
-              form_fields.mailing_address_country => form_data.mailing_address_country,
-              form_fields.zip_code_5 => form_data.zip_code_5,
-              form_fields.phone => form_data.phone,
+              form_fields.claimant_type => form_data.claimant_type,
 
               form_fields.benefit_type => form_data.benefit_type,
 
@@ -53,7 +55,6 @@ module AppealsApi
               form_fields.date_signed => form_data.date_signed
             }
           end
-          # rubocop:enable Metrics/MethodLength
 
           def insert_overlaid_pages(form_fill_path)
             pdftk = PdfForms.new(Settings.binaries.pdftk)
@@ -70,7 +71,7 @@ module AppealsApi
 
             @additional_pages_pdf ||= Prawn::Document.new(skip_page_creation: true)
 
-            SupplementalClaim::Pages::V2::AdditionalPages.new(
+            Pages::AdditionalPages.new(
               @additional_pages_pdf,
               form_data
             ).build!
@@ -87,31 +88,6 @@ module AppealsApi
             '200995'
           end
 
-          def stamp(stamped_pdf_path)
-            stamper = CentralMail::DatestampPdf.new(stamped_pdf_path)
-
-            bottom_stamped_path = stamper.run(
-              text: "API.VA.GOV #{supplemental_claim.created_at.utc.strftime('%Y-%m-%d %H:%M%Z')}",
-              x: 5,
-              y: 775,
-              text_only: true
-            )
-
-            name_stamp_path = "#{Common::FileHelpers.random_file_path}.pdf"
-            Prawn::Document.generate(name_stamp_path, margin: [0, 0]) do |pdf|
-              pdf.text_box form_data.stamp_text,
-                           at: [205, 785],
-                           align: :center,
-                           valign: :center,
-                           overflow: :shrink_to_fit,
-                           min_font_size: 8,
-                           width: 215,
-                           height: 10
-            end
-
-            CentralMail::DatestampPdf.new(nil).stamp(bottom_stamped_path, name_stamp_path)
-          end
-
           private
 
           attr_accessor :supplemental_claim
@@ -123,13 +99,14 @@ module AppealsApi
           end
 
           def form_fields
-            @form_fields ||= SupplementalClaim::V2::FormFields.new
+            @form_fields ||= FormFields.new
           end
 
           def form_data
-            @form_data ||= SupplementalClaim::V2::FormData.new(supplemental_claim)
+            @form_data ||= FormData.new(supplemental_claim)
           end
 
+          # rubocop:disable Metrics/MethodLength
           def fill_autosize_fields
             tmp_path = "/#{::Common::FileHelpers.random_file_path}.pdf"
             Prawn::Document.generate(tmp_path) do |pdf|
@@ -139,24 +116,33 @@ module AppealsApi
 
               fill_text pdf, :veteran_first_name
               fill_text pdf, :veteran_last_name
-              fill_text pdf, :mailing_address_number_and_street
-              fill_text pdf, :email, long_text_override: 'See attached page for veteran email'
+              fill_text pdf, :signing_appellant_number_and_street
+              fill_text pdf, :signing_appellant_city
+              fill_text pdf, :signing_appellant_zip_code
+              fill_text pdf, :signing_appellant_phone
+              fill_text pdf, :signing_appellant_email,
+                        long_text_override: 'See attached page for appellant email'
+
+              fill_text pdf, :claimant_first_name
+              fill_text pdf, :claimant_last_name
+
+              fill_text pdf, :claimant_type_other_text
+
               fill_contestable_issues_text pdf
               pdf.start_new_page
 
               pdf.text_box form_data.signature_of_veteran_claimant_or_rep,
                            default_text_opts.merge(form_fields.boxes[:signature_of_veteran_claimant_or_rep])
-              pdf.text_box form_data.print_name_veteran_claimaint_or_rep,
-                           default_text_opts.merge(form_fields.boxes[:print_name_veteran_claimaint_or_rep])
 
               fill_evidence_name_location_text pdf
               fill_new_evidence_dates pdf
             end
             tmp_path
           end
+          # rubocop:enable Metrics/MethodLength
 
           def additional_pages?
-            additional_issues? || additional_evidence_locations?
+            additional_issues? || additional_evidence_locations? || form_data.long_signature?
           end
 
           def additional_issues?

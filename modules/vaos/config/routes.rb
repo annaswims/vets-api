@@ -43,6 +43,7 @@ VAOS::Engine.routes.draw do
   end
 
   namespace :v2, defaults: { format: :json } do
+    get 'apidocs', to: 'apidocs#index'
     get '/appointments', to: 'appointments#index'
     get '/appointments/:appointment_id', to: 'appointments#show'
     put '/appointments/:id', to: 'appointments#update'
@@ -53,5 +54,6 @@ VAOS::Engine.routes.draw do
     get '/facilities', to: 'facilities#index'
     get '/facilities/:facility_id', to: 'facilities#show'
     post '/appointments', to: 'appointments#create'
+    get '/providers/:id', to: 'providers#show'
   end
 end

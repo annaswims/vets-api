@@ -77,8 +77,6 @@ RSpec.describe V1::SessionsController, type: :controller do
     request.host = request_host
     allow(SAML::SSOeSettingsService).to receive(:saml_settings).and_return(rubysaml_settings)
     allow(SAML::Responses::Login).to receive(:new).and_return(valid_saml_response)
-    Redis.current.set("benchmark_api.auth.login_#{uuid}", Time.now.to_f)
-    Redis.current.set("benchmark_api.auth.logout_#{uuid}", Time.now.to_f)
   end
 
   context 'when not logged in' do
@@ -86,6 +84,9 @@ RSpec.describe V1::SessionsController, type: :controller do
       context 'routes not requiring auth' do
         %w[mhv mhv_verified dslogon dslogon_verified idme idme_verified logingov logingov_verified].each do |type|
           context "routes /sessions/#{type}/new to SessionsController#new with type: #{type}" do
+            let(:expected_force_authn) do
+              %w[mhv_verified dslogon_verified idme_verified logingov_verified].include?(type) ? false : true
+            end
             let(:authn) do
               case type
               when 'mhv'
@@ -108,14 +109,6 @@ RSpec.describe V1::SessionsController, type: :controller do
                 [IAL::LOGIN_GOV_IAL2,
                  AAL::LOGIN_GOV_AAL2,
                  AuthnContext::LOGIN_GOV]
-              end
-            end
-            let(:expected_force_authn) do
-              case type
-              when 'mhv', 'mhv_verified', 'dslogon', 'dslogon_verified'
-                true
-              else
-                false
               end
             end
 

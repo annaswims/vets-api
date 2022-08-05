@@ -7,7 +7,7 @@ require_relative '../../support/swagger_shared_components/v2'
 
 describe 'Veteran Identifier', swagger_doc: 'modules/claims_api/app/swagger/claims_api/v2/swagger.json' do # rubocop:disable RSpec/DescribeClass
   path '/veteran-id:find' do
-    post 'Retrieve id of Veteran.' do
+    post 'Retrieve Veteran ID.' do
       tags 'Veteran Identifier'
       operationId 'postVeteranId'
       security [
@@ -17,7 +17,7 @@ describe 'Veteran Identifier', swagger_doc: 'modules/claims_api/app/swagger/clai
       ]
       consumes 'application/json'
       produces 'application/json'
-      description "Allows authenticated Veterans and Veteran representatives to retrieve a Veteran's id."
+      description "Allows authenticated and authorized users to retrieve a Veteran's ID."
 
       let(:Authorization) { 'Bearer token' }
       parameter SwaggerSharedComponents::V2.body_examples[:veteran_identifier]
@@ -36,7 +36,7 @@ describe 'Veteran Identifier', swagger_doc: 'modules/claims_api/app/swagger/clai
       let(:veteran_mpi_data) { MPIData.new }
 
       describe 'Getting a successful response' do
-        response '200', "Veteran's unique identifier" do
+        response '201', "Veteran's unique identifier" do
           schema JSON.parse(
             File.read(
               Rails.root.join('spec', 'support', 'schemas', 'claims_api', 'veteran_identifier', 'submission.json')
@@ -62,7 +62,7 @@ describe 'Veteran Identifier', swagger_doc: 'modules/claims_api/app/swagger/clai
             }
           end
 
-          it 'returns a valid 200 response' do |example|
+          it 'returns a valid 201 response' do |example|
             assert_response_matches_metadata(example.metadata)
           end
         end
@@ -89,7 +89,7 @@ describe 'Veteran Identifier', swagger_doc: 'modules/claims_api/app/swagger/clai
           response '400', 'Bad Request' do
             schema JSON.parse(
               File.read(
-                Rails.root.join('spec', 'support', 'schemas', 'claims_api', 'errors', 'default.json')
+                Rails.root.join('spec', 'support', 'schemas', 'claims_api', 'v2', 'errors', 'default.json')
               )
             )
 
@@ -118,7 +118,7 @@ describe 'Veteran Identifier', swagger_doc: 'modules/claims_api/app/swagger/clai
         response '401', 'Unauthorized' do
           schema JSON.parse(
             File.read(
-              Rails.root.join('spec', 'support', 'schemas', 'claims_api', 'errors', 'default.json')
+              Rails.root.join('spec', 'support', 'schemas', 'claims_api', 'v2', 'errors', 'default.json')
             )
           )
 
@@ -151,7 +151,7 @@ describe 'Veteran Identifier', swagger_doc: 'modules/claims_api/app/swagger/clai
         response '403', 'Forbidden' do
           schema JSON.parse(
             File.read(
-              Rails.root.join('spec', 'support', 'schemas', 'claims_api', 'errors', 'default.json')
+              Rails.root.join('spec', 'support', 'schemas', 'claims_api', 'v2', 'errors', 'default.json')
             )
           )
 
@@ -183,7 +183,7 @@ describe 'Veteran Identifier', swagger_doc: 'modules/claims_api/app/swagger/clai
         response '404', 'Resource not found' do
           schema JSON.parse(
             File.read(
-              Rails.root.join('spec', 'support', 'schemas', 'claims_api', 'errors', 'default.json')
+              Rails.root.join('spec', 'support', 'schemas', 'claims_api', 'v2', 'errors', 'default.json')
             )
           )
 

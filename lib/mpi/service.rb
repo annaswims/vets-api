@@ -7,9 +7,10 @@ require 'common/client/middleware/response/soap_parser'
 require 'sentry_logging'
 require_relative 'configuration'
 require 'mpi/errors/errors'
-require 'mpi/messages/add_person_message'
+require 'mpi/messages/add_person_proxy_add_message'
+require 'mpi/messages/add_person_implicit_search_message'
 require 'mpi/messages/find_profile_message'
-require 'mpi/messages/find_profile_message_icn'
+require 'mpi/messages/find_profile_message_identifier'
 require 'mpi/messages/find_profile_message_edipi'
 require 'mpi/responses/add_person_response'
 require 'mpi/responses/find_profile_response'
@@ -26,12 +27,12 @@ module MPI
     SERVER_ERROR = 'server_error'
 
     # rubocop:disable Metrics/MethodLength
-    def add_person(user_identity)
+    def add_person_proxy(user_identity)
       with_monitoring do
         measure_info(user_identity) do
           raw_response = perform(
             :post, '',
-            create_add_message(user_identity),
+            create_add_person_proxy_message(user_identity),
             soapaction: MPI::Constants::ADD_PERSON
           )
           MPI::Responses::AddPersonResponse.with_parsed_response(raw_response)
@@ -39,17 +40,46 @@ module MPI
       end
     rescue Breakers::OutageException => e
       Raven.extra_context(breakers_error_message: e.message)
-      log_message_to_sentry('MVI add_person connection failed.', :warn)
+      log_message_to_sentry('MVI add_person_proxy connection failed.', :warn)
       mvi_add_exception_response_for(MPI::Constants::OUTAGE_EXCEPTION, e)
     rescue Faraday::ConnectionFailed => e
-      log_message_to_sentry("MVI add_person connection failed: #{e.message}", :warn)
+      log_message_to_sentry("MVI add_person_proxy connection failed: #{e.message}", :warn)
       mvi_add_exception_response_for(MPI::Constants::CONNECTION_FAILED, e)
     rescue Common::Client::Errors::ClientError, Common::Exceptions::GatewayTimeout => e
-      log_message_to_sentry("MVI add_person error: #{e.message}", :warn)
+      log_message_to_sentry("MVI add_person_proxy error: #{e.message}", :warn)
       mvi_add_exception_response_for(MPI::Constants::CONNECTION_FAILED, e)
     rescue MPI::Errors::Base => e
       key = get_mvi_error_key(e)
-      mvi_error_handler(user_identity, e, 'add_person')
+      mvi_error_handler(user_identity, e, 'add_person_proxy')
+      mvi_add_exception_response_for(key, e)
+    end
+    # rubocop:enable Metrics/MethodLength
+
+    # rubocop:disable Metrics/MethodLength
+    def add_person_implicit_search(user_identity)
+      with_monitoring do
+        measure_info(user_identity) do
+          raw_response = perform(
+            :post, '',
+            create_add_person_implicit_search_message(user_identity),
+            soapaction: MPI::Constants::ADD_PERSON
+          )
+          MPI::Responses::AddPersonResponse.with_parsed_response(raw_response)
+        end
+      end
+    rescue Breakers::OutageException => e
+      Raven.extra_context(breakers_error_message: e.message)
+      log_message_to_sentry('MVI add_person_implicit connection failed.', :warn)
+      mvi_add_exception_response_for(MPI::Constants::OUTAGE_EXCEPTION, e)
+    rescue Faraday::ConnectionFailed => e
+      log_message_to_sentry("MVI add_person_implicit connection failed: #{e.message}", :warn)
+      mvi_add_exception_response_for(MPI::Constants::CONNECTION_FAILED, e)
+    rescue Common::Client::Errors::ClientError, Common::Exceptions::GatewayTimeout => e
+      log_message_to_sentry("MVI add_person_implicit error: #{e.message}", :warn)
+      mvi_add_exception_response_for(MPI::Constants::CONNECTION_FAILED, e)
+    rescue MPI::Errors::Base => e
+      key = get_mvi_error_key(e)
+      mvi_error_handler(user_identity, e, 'add_person_implicit')
       mvi_add_exception_response_for(key, e)
     end
     # rubocop:enable Metrics/MethodLength
@@ -59,8 +89,10 @@ module MPI
     # @param user [UserIdentity] the user to query MVI for
     # @return [MPI::Responses::FindProfileResponse] the parsed response from MVI.
     # rubocop:disable Metrics/MethodLength
-    def find_profile(user_identity, search_type = MPI::Constants::CORRELATION_WITH_RELATIONSHIP_DATA)
-      profile_message = create_profile_message(user_identity, search_type: search_type)
+    def find_profile(user_identity,
+                     search_type: MPI::Constants::CORRELATION_WITH_RELATIONSHIP_DATA,
+                     orch_search: false)
+      profile_message = create_profile_message(user_identity, search_type: search_type, orch_search: orch_search)
       with_monitoring do
         measure_info(user_identity) do
           raw_response = perform(
@@ -159,23 +191,60 @@ module MPI
       }
     end
 
-    def create_add_message(user_identity)
+    def create_add_person_implicit_search_message(user_identity)
       raise Common::Exceptions::ValidationErrors, user_identity unless user_identity.valid?
 
-      MPI::Messages::AddPersonMessage.new(user_identity).to_xml if user_identity.icn_with_aaid.present?
+      MPI::Messages::AddPersonImplicitSearchMessage.new(last_name: user_identity.last_name,
+                                                        ssn: user_identity.ssn,
+                                                        birth_date: user_identity.birth_date,
+                                                        idme_uuid: user_identity.idme_uuid,
+                                                        logingov_uuid: user_identity.logingov_uuid,
+                                                        first_name: user_identity.first_name).to_xml
     end
 
-    def create_profile_message(user_identity, search_type: MPI::Constants::CORRELATION_WITH_RELATIONSHIP_DATA)
-      return message_icn(user_identity, search_type) if user_identity.mhv_icn.present?
-      return message_edipi(user_identity, search_type) if user_identity.edipi.present? && Settings.mvi.edipi_search
+    def create_add_person_proxy_message(user_identity)
       raise Common::Exceptions::ValidationErrors, user_identity unless user_identity.valid?
+
+      MPI::Messages::AddPersonProxyAddMessage.new(user_identity).to_xml if user_identity.icn_with_aaid.present?
+    end
+
+    def create_profile_message(user_identity,
+                               search_type: MPI::Constants::CORRELATION_WITH_RELATIONSHIP_DATA,
+                               orch_search: false)
+      if orch_search == true
+        if user_identity.edipi.blank?
+          raise Common::Exceptions::UnprocessableEntity.new(detail: 'User is missing EDIPI',
+                                                            source: 'MPI Service')
+        end
+
+        return message_user_attributes(user_identity, search_type, orch_search: orch_search)
+      end
+      return message_icn(user_identity, search_type) if user_identity.mhv_icn.present?
+      return message_edipi(user_identity, search_type) if user_identity.edipi.present?
+      if user_identity.logingov_uuid.present?
+        return message_identifier(user_identity.logingov_uuid, 'logingov', search_type)
+      end
+      return message_identifier(user_identity.idme_uuid, 'idme', search_type) if user_identity.idme_uuid.present?
 
       message_user_attributes(user_identity, search_type)
     end
 
     def message_icn(user_identity, search_type)
       Raven.tags_context(mvi_find_profile: 'icn')
-      MPI::Messages::FindProfileMessageIcn.new(user_identity.mhv_icn, search_type: search_type).to_xml
+      MPI::Messages::FindProfileMessageIdentifier.new(user_identity.mhv_icn, search_type: search_type).to_xml
+    end
+
+    def message_identifier(identifier, identifier_type, search_type)
+      Raven.tags_context(mvi_find_profile: identifier_type)
+
+      identifier_constant = case identifier_type
+                            when 'idme'
+                              Constants::IDME_IDENTIFIER
+                            when 'logingov'
+                              Constants::LOGINGOV_IDENTIFIER
+                            end
+      correlation_identifier = "#{identifier}^PN^#{identifier_constant}^USDVA^A"
+      MPI::Messages::FindProfileMessageIdentifier.new(correlation_identifier, search_type: search_type).to_xml
     end
 
     def message_edipi(user_identity, search_type)
@@ -183,7 +252,9 @@ module MPI
       MPI::Messages::FindProfileMessageEdipi.new(user_identity.edipi, search_type: search_type).to_xml
     end
 
-    def message_user_attributes(user_identity, search_type)
+    def message_user_attributes(user_identity, search_type, orch_search: false)
+      raise Common::Exceptions::ValidationErrors, user_identity unless user_identity.valid?
+
       Raven.tags_context(mvi_find_profile: 'user_attributes')
 
       given_names = [user_identity.first_name]
@@ -195,7 +266,12 @@ module MPI
         ssn: user_identity.ssn,
         gender: user_identity.gender
       }
-      MPI::Messages::FindProfileMessage.new(profile, search_type: search_type).to_xml
+      MPI::Messages::FindProfileMessage.new(
+        profile,
+        search_type: search_type,
+        orch_search: orch_search,
+        edipi: orch_search == true ? user_identity.edipi : nil
+      ).to_xml
     end
   end
 end

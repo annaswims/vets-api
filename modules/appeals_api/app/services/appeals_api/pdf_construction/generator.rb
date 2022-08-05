@@ -5,11 +5,11 @@ require 'central_mail/datestamp_pdf'
 module AppealsApi
   module PdfConstruction
     class Generator
-      def initialize(appeal, version: 'V1')
+      def initialize(appeal, pdf_version: 'v1')
         @appeal = appeal
-        appeal.update(pdf_version: version)
+        appeal.update(pdf_version: pdf_version)
         appeal.pdf_output_prep if appeal.respond_to? :pdf_output_prep
-        @structure = appeal.pdf_structure(version)
+        @structure = appeal.pdf_structure(pdf_version)
       end
 
       def generate
@@ -19,10 +19,10 @@ module AppealsApi
         @all_pages_path = insert_additional_pages
         #=> '#{appeal.id}-completed-unstamped-tmp.pdf OR @form_fill_path'
 
-        @unstamped_path = finalize_pages
+        unstamped_path = finalize_pages
         #=> '#{appeal.id}-rebuilt-pages-tmp.pdf OR @all_pages_path'
 
-        stamp
+        AppealsApi::PdfConstruction::Stamper.new(appeal, unstamped_path).call
       end
 
       private
@@ -62,24 +62,6 @@ module AppealsApi
         adjusted_pages_path = "/tmp/#{appeal.id}-rebuilt-pages-tmp.pdf"
         pdftk.cat({ @all_pages_path => structure.final_page_adjustments }, adjusted_pages_path)
         adjusted_pages_path
-      end
-
-      def stamp
-        # TODO: temporary fix below - ticket in backlog to refactor this
-        y_coord = appeal.instance_of?(AppealsApi::NoticeOfDisagreement) && appeal.pdf_version == 'V2' ? 778 : 775
-
-        stamped_pdf_path = CentralMail::DatestampPdf.new(@unstamped_path).run(
-          text: "Submitted by #{appeal.consumer_name} via api.va.gov",
-          x: 429,
-          y: y_coord,
-          text_only: true
-        )
-
-        # This line is due to HLR being live when the updated stamp was added.
-        # Once HLR bumps a version, we should refactor NoD's stamp method to be
-        # generic to HLR/NOD/SC. For now, the HLR#Structure.stamp method will
-        # just return the stamped path.
-        structure.stamp(stamped_pdf_path)
       end
 
       def combine_form_fill_and_additional_pages(additional_pages_added_path)

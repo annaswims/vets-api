@@ -45,6 +45,66 @@ RSpec.describe EVSS::DisabilityCompensationForm::SubmitForm526AllClaim, type: :j
           expect(Form526JobStatus.last.status).to eq 'success'
         end
       end
+
+      context 'with an MAS-related diagnostic code' do
+        let(:submission) do
+          create(:form526_submission,
+                 :non_rrd_with_mas_diagnostic_code,
+                 user_uuid: user.uuid,
+                 auth_headers_json: auth_headers.to_json,
+                 saved_claim_id: saved_claim.id)
+        end
+
+        it 'sends form526 to the MAS endpoint successfully' do
+          VCR.use_cassette('evss/disability_compensation_form/submit_form_v2') do
+            VCR.use_cassette('mail_automation/mas_initiate_apcas_request') do
+              subject.perform_async(submission.id)
+              described_class.drain
+              expect(Form526JobStatus.last.status).to eq 'success'
+              rrd_submission = Form526Submission.find(Form526JobStatus.last.form526_submission_id)
+              expect(rrd_submission.form.dig('rrd_metadata', 'mas_packetId')).to eq '12345'
+            end
+          end
+        end
+
+        it 'sends an email for tracking purposes' do
+          VCR.use_cassette('evss/disability_compensation_form/submit_form_v2') do
+            VCR.use_cassette('mail_automation/mas_initiate_apcas_request') do
+              subject.perform_async(submission.id)
+              described_class.drain
+              expect(ActionMailer::Base.deliveries.last.subject).to eq 'MA claim - 6847'
+            end
+          end
+        end
+
+        it 'handles MAS endpoint handshake failure by sending failure notification' do
+          VCR.use_cassette('evss/disability_compensation_form/submit_form_v2') do
+            VCR.use_cassette('mail_automation/mas_initiate_apcas_request_failure') do
+              subject.perform_async(submission.id)
+              described_class.drain
+              expect(ActionMailer::Base.deliveries.last.subject).to eq "Failure: MA claim - #{submitted_claim_id}"
+            end
+          end
+        end
+      end
+
+      context 'with multiple MAS-related diagnostic codes' do
+        let(:submission) do
+          create(:form526_submission,
+                 :with_multiple_mas_diagnostic_code,
+                 user_uuid: user.uuid,
+                 auth_headers_json: auth_headers.to_json,
+                 saved_claim_id: saved_claim.id)
+        end
+
+        it 'does not send an email' do
+          VCR.use_cassette('evss/disability_compensation_form/submit_form_v2') do
+            subject.perform_async(submission.id)
+            described_class.drain
+            expect(ActionMailer::Base.deliveries.length).to eq 0
+          end
+        end
+      end
     end
 
     context 'when retrying a job' do
@@ -236,6 +296,25 @@ RSpec.describe EVSS::DisabilityCompensationForm::SubmitForm526AllClaim, type: :j
         subject.perform_async(submission.id)
         described_class.drain
         expect(Form526JobStatus.last.status).to eq Form526JobStatus::STATUS[:non_retryable_error]
+      end
+    end
+
+    context 'with an RRD claim' do
+      before do
+        allow_any_instance_of(RapidReadyForDecision::SidekiqJobSelector).to receive(:rrd_applicable?).and_return(true)
+      end
+
+      context 'with a non-retryable (unexpected) error' do
+        before do
+          allow_any_instance_of(Faraday::Connection).to receive(:post).and_raise(StandardError.new('foo'))
+        end
+
+        it 'sends a "non-retryable" RRD alert' do
+          expect_any_instance_of(described_class).to receive(:send_rrd_alert).with(anything, anything, 'non-retryable')
+          subject.perform_async(submission.id)
+          described_class.drain
+          expect(Form526JobStatus.last.status).to eq Form526JobStatus::STATUS[:non_retryable_error]
+        end
       end
     end
   end

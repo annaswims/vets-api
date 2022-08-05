@@ -7,11 +7,11 @@ describe AppealsApi::HigherLevelReview, type: :model do
   include FixtureHelpers
 
   let(:higher_level_review) { default_higher_level_review }
-  let(:default_higher_level_review) { create :higher_level_review, :status_received }
+  let(:default_higher_level_review) { create :higher_level_review_v2, status: 'pending' }
   let(:auth_headers) { default_auth_headers }
-  let(:default_auth_headers) { fixture_as_json 'valid_200996_headers.json', version: 'v1' }
+  let(:default_auth_headers) { fixture_as_json 'valid_200996_headers.json', version: 'v2' }
   let(:form_data) { default_form_data }
-  let(:default_form_data) { fixture_as_json 'valid_200996.json', version: 'v1' }
+  let(:default_form_data) { fixture_as_json 'valid_200996.json', version: 'v2' }
   let(:form_data_attributes) { form_data.dig('data', 'attributes') }
 
   describe '#first_name' do
@@ -73,6 +73,16 @@ describe AppealsApi::HigherLevelReview, type: :model do
     end
   end
 
+  describe '#stamp_text' do
+    it { expect(higher_level_review.stamp_text).to eq('Doé - 6789') }
+
+    it 'truncates the last name if too long' do
+      full_last_name = 'AAAAAAAAAAbbbbbbbbbbCCCCCCCCCCdddddddddd'
+      higher_level_review.auth_headers['X-VA-Last-Name'] = full_last_name
+      expect(higher_level_review.stamp_text).to eq 'AAAAAAAAAAbbbbbbbbbbCCCCCCCCCCdd... - 6789'
+    end
+  end
+
   describe '#ssn' do
     subject { higher_level_review.ssn }
 
@@ -85,20 +95,20 @@ describe AppealsApi::HigherLevelReview, type: :model do
     it('matches header') { is_expected.to eq auth_headers['X-VA-File-Number'] }
   end
 
-  describe '#birth_mm' do
-    subject { higher_level_review.birth_mm }
+  describe '#veteran_birth_mm' do
+    subject { higher_level_review.veteran_birth_mm }
 
     it('matches header') { is_expected.to eq auth_headers['X-VA-Birth-Date'][5..6] }
   end
 
-  describe '#birth_dd' do
-    subject { higher_level_review.birth_dd }
+  describe '#veteran_birth_dd' do
+    subject { higher_level_review.veteran_birth_dd }
 
     it('matches header') { is_expected.to eq auth_headers['X-VA-Birth-Date'][8..9] }
   end
 
-  describe '#birth_yyyy' do
-    subject { higher_level_review.birth_yyyy }
+  describe '#veteran_birth_yyyy' do
+    subject { higher_level_review.veteran_birth_yyyy }
 
     it('matches header') { is_expected.to eq auth_headers['X-VA-Birth-Date'][0..3] }
   end
@@ -124,13 +134,21 @@ describe AppealsApi::HigherLevelReview, type: :model do
   describe '#veteran_phone_number' do
     subject { higher_level_review.veteran_phone_number }
 
+    before do
+      data = higher_level_review.form_data
+      phone_data = data.dig(*%w[data attributes veteran phone])
+      phone_data['countryCode'] = '34'
+      phone_data['phoneNumberExt'] = '2'
+      higher_level_review.form_data = data
+    end
+
     it('matches json') { is_expected.to eq '+34-555-800-1111 ex2' }
   end
 
   describe '#email' do
     subject { higher_level_review.email }
 
-    it('matches json') { is_expected.to eq form_data_attributes['veteran']['emailAddressText'] }
+    it('matches json') { is_expected.to eq form_data_attributes['veteran']['email'] }
   end
 
   describe '#benefit_type' do
@@ -139,22 +157,10 @@ describe AppealsApi::HigherLevelReview, type: :model do
     it('matches json') { is_expected.to eq form_data_attributes['benefitType'] }
   end
 
-  describe '#same_office' do
-    subject { higher_level_review.same_office }
-
-    it('matches json') { is_expected.to eq form_data_attributes['sameOffice'] }
-  end
-
   describe '#informal_conference' do
     subject { higher_level_review.informal_conference }
 
     it('matches json') { is_expected.to eq form_data_attributes['informalConference'] }
-  end
-
-  describe '#informal_conference_times' do
-    subject { higher_level_review.informal_conference_times }
-
-    it('matches json') { is_expected.to eq form_data_attributes['informalConferenceTimes'] }
   end
 
   describe '#contestable_issues' do
@@ -178,65 +184,18 @@ describe AppealsApi::HigherLevelReview, type: :model do
   end
 
   context 'validations' do
-    let(:higher_level_review) { described_class.new(form_data: form_data, auth_headers: auth_headers) }
-
-    context 'birth date isn\'t a date' do
-      let(:auth_headers) { default_auth_headers.merge 'X-VA-Birth-Date' => 'apricot' }
-
-      it 'using a birth date that isn\'t a date creates an invalid record' do
-        expect(higher_level_review.valid?).to be false
-        expect(higher_level_review.errors.to_a.length).to eq 1
-        expect(higher_level_review.errors.to_a.first.downcase).to include 'isn\'t a date'
-      end
+    # V1 has been deprecated, so no need to check validations of records we've effectively archived
+    let(:appeal) do # appeal is used here since the shared example expects it
+      described_class.new(form_data: form_data, auth_headers: auth_headers, api_version: 'V2')
     end
+    let(:auth_headers) { fixture_as_json 'valid_200996_headers_extra.json', version: 'v2' }
+    let(:form_data) { fixture_as_json 'valid_200996_extra.json', version: 'v2' }
 
-    context 'birth date isn\'t in the past' do
-      let(:auth_headers) { default_auth_headers.merge 'X-VA-Birth-Date' => (Time.zone.today + 2).to_s }
-
-      it 'using a birth date /not/ in the past creates an invalid record' do
-        expect(higher_level_review.valid?).to be false
-        expect(higher_level_review.errors.to_a.length).to eq 1
-        expect(higher_level_review.errors.to_a.first.downcase).to include 'past'
-      end
-    end
-
-    context 'bad contestable issue dates' do
-      let(:form_data) do
-        {
-          'data' => default_form_data['data'],
-          'included' => [
-            {
-              'type' => 'contestableIssue',
-              'attributes' => {
-                'issue' => 'tinnitus',
-                'decisionDate' => 'banana'
-              }
-            },
-            {
-              'type' => 'contestableIssue',
-              'attributes' => {
-                'issue' => 'PTSD',
-                'decisionDate' => (Time.zone.today + 2).to_s
-              }
-            },
-            {
-              'type' => 'contestableIssue',
-              'attributes' => {
-                'issue' => 'right knee',
-                'decisionDate' => '1901-01-31'
-              }
-            }
-          ]
-        }
-      end
-
-      it 'bad decision dates will create an invalid record' do
-        expect(higher_level_review.valid?).to be false
-        expect(higher_level_review.errors.to_a.length).to eq 2
-        expect(higher_level_review.errors.to_a.first).to include 'decisionDate'
-        expect(higher_level_review.errors.to_a.second).to include 'decisionDate'
-      end
-    end
+    it_behaves_like 'shared model validations', validations: %i[veteran_birth_date_is_in_the_past
+                                                                contestable_issue_dates_are_in_the_past
+                                                                required_claimant_data_is_present
+                                                                claimant_birth_date_is_in_the_past],
+                                                required_claimant_headers: described_class.required_nvc_headers
   end
 
   describe '#update_status!' do
@@ -261,57 +220,72 @@ describe AppealsApi::HigherLevelReview, type: :model do
                          'Validation failed: Status is not included in the list')
     end
 
-    it 'emits an event' do
-      handler = instance_double(AppealsApi::Events::Handler)
-      allow(AppealsApi::Events::Handler).to receive(:new).and_return(handler)
-      allow(handler).to receive(:handle!)
+    context 'status updated job' do
+      context 'when incoming and current statuses are different' do
+        it 'enqueues the status updated job' do
+          expect(AppealsApi::StatusUpdatedJob.jobs.size).to eq 0
+          higher_level_review.update_status!(status: 'submitted')
+          expect(AppealsApi::StatusUpdatedJob.jobs.size).to eq 1
+        end
+      end
 
-      higher_level_review.update_status!(status: 'pending')
-
-      expect(handler).to have_received(:handle!)
+      context 'when incoming and current statuses are the same' do
+        it 'does not enqueues the status updated job' do
+          expect(AppealsApi::StatusUpdatedJob.jobs.size).to eq 0
+          higher_level_review.update_status!(status: 'pending')
+          expect(AppealsApi::StatusUpdatedJob.jobs.size).to eq 0
+        end
+      end
     end
 
-    it 'does not emit event when to and from statuses are the same' do
-      handler = instance_double(AppealsApi::Events::Handler)
-      allow(AppealsApi::Events::Handler).to receive(:new).and_return(handler)
-      allow(handler).to receive(:handle!)
+    context 'appeal received job' do
+      context "when status is 'submitted' and claimant or veteran email data present" do
+        it 'enqueues the appeal received job' do
+          expect(AppealsApi::AppealReceivedJob.jobs.size).to eq 0
+          higher_level_review.update_status!(status: 'submitted')
+          expect(AppealsApi::AppealReceivedJob.jobs.size).to eq 1
+        end
+      end
 
-      higher_level_review.update_status!(status: higher_level_review.status)
+      context "when status is not 'submitted' but claimant or veteran email data present" do
+        it 'does not enqueue the appeal received job' do
+          expect(AppealsApi::AppealReceivedJob.jobs.size).to eq 0
+          higher_level_review.update_status!(status: 'pending')
+          expect(AppealsApi::AppealReceivedJob.jobs.size).to eq 0
+        end
+      end
 
-      expect(handler).not_to have_received(:handle!)
-    end
+      context 'when veteran appellant without email provided' do
+        it 'gets the ICN and enqueues the appeal received job' do
+          hlr = described_class.create!(
+            auth_headers: auth_headers,
+            api_version: 'V2',
+            form_data: form_data.deep_merge(
+              { 'data' => { 'attributes' => { 'veteran' => { 'email' => nil } } } }
+            )
+          )
 
-    it 'successfully gets the ICN when email isn\'t present' do
-      higher_level_review = described_class.create!(
-        auth_headers: auth_headers,
-        form_data: default_form_data.deep_merge({
-                                                  'data' => {
-                                                    'attributes' => {
-                                                      'veteran' => {
-                                                        'emailAddressText' => nil
-                                                      }
-                                                    }
-                                                  }
-                                                })
-      )
+          expect(AppealsApi::AppealReceivedJob.jobs.size).to eq 0
+          hlr.update_status!(status: 'submitted')
+          expect(AppealsApi::AppealReceivedJob.jobs.size).to eq 1
 
-      params = { event_type: :hlr_received, opts: {
-        email_identifier: { id_value: '1013062086V794840', id_type: 'ICN' },
-        first_name: higher_level_review.first_name,
-        date_submitted: higher_level_review.date_signed,
-        guid: higher_level_review.id
-      } }
+          email_identifier = AppealsApi::AppealReceivedJob.jobs.last['args'].first['email_identifier']
+          expect(email_identifier.values).to include 'ICN'
+        end
+      end
 
-      stub_mpi
+      context 'when auth_headers are blank' do
+        before do
+          higher_level_review.update_columns form_data_ciphertext: nil, auth_headers_ciphertext: nil # rubocop:disable Rails/SkipsModelValidations
+          higher_level_review.reload
+        end
 
-      handler = instance_double(AppealsApi::Events::Handler)
-      allow(AppealsApi::Events::Handler).to receive(:new).and_call_original
-      allow(AppealsApi::Events::Handler).to receive(:new).with(params).and_return(handler)
-      allow(handler).to receive(:handle!)
-
-      higher_level_review.update_status!(status: 'submitted')
-
-      expect(AppealsApi::Events::Handler).to have_received(:new).exactly(2).times
+        it 'does not enqueue the appeal received job' do
+          expect(AppealsApi::AppealReceivedJob.jobs.size).to eq 0
+          higher_level_review.update_status!(status: 'submitted')
+          expect(AppealsApi::AppealReceivedJob.jobs.size).to eq 0
+        end
+      end
     end
   end
 
@@ -403,8 +377,8 @@ describe AppealsApi::HigherLevelReview, type: :model do
     describe '#pdf_output_prep' do
       it 'clears memoized values' do
         expected = 'Smartquotes: “”‘’'
-        higher_level_review.form_data['included'][0]['attributes']['issue'] = expected
         expect(higher_level_review.contestable_issues[0].text).to eq 'tinnitus'
+        higher_level_review.form_data['included'][0]['attributes']['issue'] = expected
         higher_level_review.pdf_output_prep
         expect(higher_level_review.contestable_issues[0].text).to eq expected
       end

@@ -36,7 +36,8 @@ module ClaimsApi
               auth_headers: auth_headers,
               form_data: form_attributes,
               current_poa: current_poa_code,
-              header_md5: header_md5
+              header_md5: header_md5,
+              cid: token.payload['cid']
             }
             attributes.merge!({ source_data: source_data }) unless token.client_credentials_token?
 
@@ -46,6 +47,7 @@ module ClaimsApi
             end
 
             power_of_attorney.save!
+            ClaimsApi::Logger.log('poa', poa_id: power_of_attorney.id, detail: 'Created in Lighthouse')
           end
 
           data = power_of_attorney.form_data
@@ -64,6 +66,7 @@ module ClaimsApi
         #
         # @return [JSON] Claim record
         def upload
+          validate_document_provided
           validate_documents_content_type
           validate_documents_page_size
           find_poa_by_id
@@ -225,8 +228,9 @@ module ClaimsApi
           begin
             response = bgs_service.people.find_by_ssn(ssn) # rubocop:disable Rails/DynamicFindBy
             unless response && response[:file_nbr].present?
-              error_message = 'Unable to locate Veteran file number for eFolder. '\
-                              'Please contact the Digital Transformation Center (DTC) at 202-921-0911 for assistance.'
+              error_message = "Unable to locate Veteran's File Number in Master Person Index (MPI)." \
+                              'Please submit an issue at ask.va.gov ' \
+                              'or call 1-800-MyVA411 (800-698-2411) for assistance.'
               raise ::Common::Exceptions::UnprocessableEntity.new(detail: error_message)
             end
           rescue BGS::ShareError => e

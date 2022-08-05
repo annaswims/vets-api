@@ -1,9 +1,9 @@
 {
   "openapi": "3.0.1",
   "info": {
-    "title": "API V2",
+    "title": "Benefits Claims",
     "version": "v2",
-    "description": "## Background\nVersion 2 of the Benefits Claims API supports the ability to retrieve existing claim information by claim ID for internal consumers.\nPlease see [version 1](https://developer.va.gov/explore/benefits/docs/claims?version=current) for external facing services which include the following capabilities:\n\n - Automatic claim and POA establishment\n - Direct establishment of disability compensation claims in Veterans Benefits Management System (VBMS) to avoid unnecessary manual processing and entry by Veteran Service Representatives (VSRs)\n - Faster claims processing by several days\n - End-to-end claims status and result tracking by claim ID\n\nForms not supported by the Benefits Claims API are submitted using the [Benefits Intake API](https://developer.va.gov/explore/benefits/docs/benefits?version=current), which places uploaded PDFs into the Centralized Mail Portal to be manually processed.\n\n## Technical Overview\nThis API accepts a payload of requests and responses on a per-form basis, with the payload identifying the form and Veteran. Trackable responses provide a unique ID which is used with the appropriate GET endpoint to track a submission’s processing status.\n\n### Authentication and authorization\nTo make an API request, follow our [authentication process](https://developer.va.gov/explore/authorization?api=claims) to receive an [OAuth token](https://oauth.net/2/).\n\n#### Representative authorization\nAccredited representatives may make requests to the Claims API on behalf of Veterans that they represent. To make API requests on behalf of a Veteran, representatives must:\n - be [accredited with the VA Office of the General Counsel](https://www.va.gov/ogc/apps/accreditation/index.asp)\n - be [authenticated](https://developer.va.gov/explore/authorization?api=claims) using an identity-proofed account\n - be the current Power of Attorney (POA) on record for the Veteran (accredited representatives can use the ‘/veterans/{veteranId}/power-of-attorney’ endpoint to check a Veteran’s current POA)\n\n#### Finding a Veteran's unique VA ID\nThe Claims API uses a unique Veteran identifier to identify the subject of each API request. This Veteran identifier can be retrieved by an authenticated Veteran or an accredited representative by passing name, DOB, and SSN to the ‘/veteran-id’ endpoint. This identifier should then be used as the Veteran ID parameter in request URLs.\n\n*Note: though Veteran identifiers are typically static, they may change over time. If a specific Veteran ID suddenly responds with a ‘404 not found’ error, the identifier may have changed. It’s a good idea to retrieve the current identifier for each Veteran periodically.*\n\n### Test data for sandbox environment use\n[Test data](https://github.com/department-of-veterans-affairs/vets-api-clients/blob/master/test_accounts.md) is used for all forms in the sandbox environment and for 21-526 submissions in the staging environment.\n"
+    "description": "## Background\n\nThe Benefits Claims API Version 2 offers internal consumers the ability to retrieve existing claim information, including status, by claim ID. Additional functionality will be added over time. \n\nYou should use the [Benefits Claims API Version 1](https://developer.va.gov/explore/benefits/docs/claims?version=current) if: \n\n-   You are not an internal consumer, and/or\n-   You want automatic establishment of disability compensation claims in Veterans Benefits Management System (VBMS) or power of attorney (POA)\n    \n## Technical Overview\n\nThis API accepts a payload of requests and responses with the payload identifying the claim and Veteran. Responses provide the submission’s processing status. Responses also provide a unique ID which can be used with the appropriate GET endpoint to return detailed, end-to-end claims status tracking. \n\nEnd-to-end claims tracking provides the status of claims as they move through the submission process, but does not return whether the claim was approved or denied. \n\n### Claim statuses\n\nWhen the claim is successfully submitted to Lighthouse, the status is Pending. Other statuses this API returns align with the [VA.gov claim status descriptions](https://www.va.gov/resources/what-your-claim-status-means/), which are: \n\n-   Claim received\n-   Initial review\n-   Evidence gathering, review, and decision\n-   Preparation for notification\n-   Complete\n\n### Finding a Veteran's unique VA ID\n\nThis API uses a unique Veteran identifier to identify the subject of each API request. This Veteran identifier can be retrieved by passing the Veteran’s first name, last name, DOB, and SSN to the ‘/veteran-id’ endpoint. This identifier should then be used as the Veteran ID parameter in request URLs.\n\nNote: though Veteran identifiers are typically static, they may change over time. If a specific Veteran ID suddenly responds with a ‘404 not found’ error, the identifier may have changed. It’s a good idea to periodically check the identifier for each Veteran.\n\n### Authentication and authorization\n\nTo make an API request, use our [client credentials grant](https://developer.va.gov/explore/authorization/docs/client-credentials?api=claims) to receive an [OAuth token](https://oauth.net/2/). \n\n### Test data for sandbox environment use\n\nWe use mock [test data in the sandbox environment](https://github.com/department-of-veterans-affairs/vets-api-clients/blob/master/test_accounts.md). Sandbox test data and test users for the Benefits Claims API are valid for all versions of the API.\n"
   },
   "tags": [
     {
@@ -19,16 +19,43 @@
     "securitySchemes": {
       "bearer_token": {
         "type": "http",
-        "name": "token",
         "scheme": "bearer",
-        "bearer_format": "JWT"
+        "bearerFormat": "JWT"
+      },
+      "productionOauth": {
+        "type": "oauth2",
+        "description": "This API uses OAuth 2 with the authorization code grant flow. [More info](https://developer.va.gov/explore/authorization?api=claims)",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://api.va.gov/oauth2/authorization",
+            "tokenUrl": "https://api.va.gov/oauth2/token",
+            "scopes": {
+              "claim.read": "Retrieve claim data",
+              "claim.write": "Submit claim data"
+            }
+          }
+        }
+      },
+      "sandboxOauth": {
+        "type": "oauth2",
+        "description": "This API uses OAuth 2 with the authorization code grant flow. [More info](https://developer.va.gov/explore/authorization?api=claims)",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://sandbox-api.va.gov/oauth2/authorization",
+            "tokenUrl": "https://sandbox-api.va.gov/oauth2/token",
+            "scopes": {
+              "claim.read": "Retrieve claim data",
+              "claim.write": "Submit claim data"
+            }
+          }
+        }
       }
     }
   },
   "paths": {
     "/veteran-id:find": {
       "post": {
-        "summary": "Retrieve id of Veteran.",
+        "summary": "Retrieve Veteran ID.",
         "tags": [
           "Veteran Identifier"
         ],
@@ -50,12 +77,12 @@
             ]
           }
         ],
-        "description": "Allows authenticated Veterans and Veteran representatives to retrieve a Veteran's id.",
+        "description": "Allows authenticated and authorized users to retrieve a Veteran's ID.",
         "parameters": [
 
         ],
         "responses": {
-          "200": {
+          "201": {
             "description": "Veteran's unique identifier",
             "content": {
               "application/json": {
@@ -81,13 +108,8 @@
                 "example": {
                   "errors": [
                     {
-                      "title": "invalid value for ssn",
-                      "detail": "blank is not valid for ssn",
-                      "code": "100",
-                      "source": {
-                        "pointer": "ssn"
-                      },
-                      "status": "400"
+                      "title": "invalid value for SSN",
+                      "detail": "blank is not valid for SSN"
                     }
                   ]
                 },
@@ -102,9 +124,7 @@
                         "additionalProperties": false,
                         "required": [
                           "title",
-                          "detail",
-                          "code",
-                          "status"
+                          "detail"
                         ],
                         "properties": {
                           "title": {
@@ -114,14 +134,6 @@
                           "detail": {
                             "type": "string",
                             "description": "HTTP error detail"
-                          },
-                          "code": {
-                            "type": "string",
-                            "description": "HTTP error code"
-                          },
-                          "status": {
-                            "type": "string",
-                            "description": "HTTP error code"
                           },
                           "source": {
                             "type": "object",
@@ -150,9 +162,7 @@
                   "errors": [
                     {
                       "title": "Not authorized",
-                      "detail": "Not authorized",
-                      "code": "401",
-                      "status": "401"
+                      "detail": "Not authorized"
                     }
                   ]
                 },
@@ -167,9 +177,7 @@
                         "additionalProperties": false,
                         "required": [
                           "title",
-                          "detail",
-                          "code",
-                          "status"
+                          "detail"
                         ],
                         "properties": {
                           "title": {
@@ -179,14 +187,6 @@
                           "detail": {
                             "type": "string",
                             "description": "HTTP error detail"
-                          },
-                          "code": {
-                            "type": "string",
-                            "description": "HTTP error code"
-                          },
-                          "status": {
-                            "type": "string",
-                            "description": "HTTP error code"
                           },
                           "source": {
                             "type": "object",
@@ -215,9 +215,7 @@
                   "errors": [
                     {
                       "title": "Forbidden",
-                      "detail": "Forbidden",
-                      "code": "403",
-                      "status": "403"
+                      "detail": "Forbidden"
                     }
                   ]
                 },
@@ -232,9 +230,7 @@
                         "additionalProperties": false,
                         "required": [
                           "title",
-                          "detail",
-                          "code",
-                          "status"
+                          "detail"
                         ],
                         "properties": {
                           "title": {
@@ -244,14 +240,6 @@
                           "detail": {
                             "type": "string",
                             "description": "HTTP error detail"
-                          },
-                          "code": {
-                            "type": "string",
-                            "description": "HTTP error code"
-                          },
-                          "status": {
-                            "type": "string",
-                            "description": "HTTP error code"
                           },
                           "source": {
                             "type": "object",
@@ -280,9 +268,7 @@
                   "errors": [
                     {
                       "title": "Resource not found",
-                      "detail": "Resource not found",
-                      "code": "404",
-                      "status": "404"
+                      "detail": "Resource not found"
                     }
                   ]
                 },
@@ -297,9 +283,7 @@
                         "additionalProperties": false,
                         "required": [
                           "title",
-                          "detail",
-                          "code",
-                          "status"
+                          "detail"
                         ],
                         "properties": {
                           "title": {
@@ -309,14 +293,6 @@
                           "detail": {
                             "type": "string",
                             "description": "HTTP error detail"
-                          },
-                          "code": {
-                            "type": "string",
-                            "description": "HTTP error code"
-                          },
-                          "status": {
-                            "type": "string",
-                            "description": "HTTP error code"
                           },
                           "source": {
                             "type": "object",
@@ -358,18 +334,24 @@
                   "firstName": {
                     "type": "string",
                     "example": "Tamara",
-                    "description": "First Name of Veteran being represented"
+                    "description": "First name of Veteran being represented"
                   },
                   "lastName": {
                     "type": "string",
                     "example": "Ellis",
-                    "description": "Last Name of Veteran being represented"
+                    "description": "Last name of Veteran being represented"
                   },
                   "birthdate": {
                     "type": "string",
                     "example": "1967-06-19",
-                    "description": "Date of Birth of Veteran being represented, in iso8601 format"
+                    "description": "Date of birth of Veteran being represented, in iso8601 format"
                   }
+                },
+                "example": {
+                  "ssn": "796130115",
+                  "firstName": "Tamara",
+                  "lastName": "Ellis",
+                  "birthdate": "1967-06-19"
                 }
               }
             }
@@ -408,6 +390,7 @@
             "name": "veteranId",
             "in": "path",
             "required": true,
+            "example": "1012667145V762142",
             "description": "ID of Veteran",
             "schema": {
               "type": "string"
@@ -421,80 +404,89 @@
               "application/json": {
                 "example": [
                   {
-                    "id": "555555555",
-                    "@links": {
-                      "rel": "self",
-                      "type": "GET",
-                      "url": "http://www.example.com/services/benefits/v2/veterans/1013062086V794840/claims/555555555"
-                    },
-                    "date_filed": "05/02/17",
-                    "decision_letter_sent": false,
-                    "development_letter_sent": false,
-                    "documents_needed": false,
-                    "requested_decision": null,
-                    "status": "Complete",
-                    "type": "Compensation"
+                    "5103WaiverSubmitted": false,
+                    "claimDate": "05/02/17",
+                    "claimId": "555555555",
+                    "claimType": "Compensation",
+                    "closeDate": null,
+                    "decisionLetterSent": false,
+                    "developmentLetterSent": false,
+                    "documentsNeeded": false,
+                    "endProductCode": "404",
+                    "lighthouseId": null,
+                    "status": "Complete"
                   }
                 ],
                 "schema": {
-                  "$schema": "http://json-schema.org/draft-04/schema#",
                   "type": "array",
                   "items": {
                     "additionalProperties": false,
-                    "description": "Claim details.",
+                    "description": "Claim details",
                     "properties": {
-                      "id": {
+                      "claimId": {
                         "type": "string",
-                        "description": "Claim ID",
+                        "nullable": true,
+                        "description": "Claim ID in VBMS",
                         "example": "600131328"
                       },
-                      "type": {
+                      "claimType": {
                         "type": "string",
-                        "description": "Name of Claim type",
-                        "example": "Appeals Control"
+                        "description": "Name of claim type",
+                        "example": "Compensation"
                       },
-                      "status": {
-                        "type": "string",
-                        "description": "Status of Claim",
-                        "example": "Complete"
-                      },
-                      "date_filed": {
-                        "type": "string",
+                      "claimDate": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
                         "format": "date",
                         "description": "Date in YYYY-MM-DD the claim was first filed",
                         "example": "2018-06-04"
                       },
-                      "documents_needed": {
-                        "type": "boolean",
-                        "description": "Does the claim require additional documents to be submitted",
-                        "example": "false"
-                      },
-                      "requested_decision": {
+                      "closeDate": {
                         "type": [
-                          "boolean",
+                          "string",
                           "null"
                         ],
-                        "description": "The claim filer has requested a claim decision be made",
-                        "example": "false"
+                        "format": "date",
+                        "description": "Date claim was closed",
+                        "example": "2019-09-04"
                       },
-                      "development_letter_sent": {
+                      "developmentLetterSent": {
                         "type": "boolean",
-                        "description": "Indicates if a Development Letter has been sent to the Claimant regarding a benefit claim",
+                        "description": "If true, a development letter has been sent to the claimant regarding a benefit claim",
                         "example": "false"
                       },
-                      "decision_letter_sent": {
+                      "decisionLetterSent": {
                         "type": "boolean",
-                        "description": "Indicates if a Decision Letter has been sent to the Claimant regarding a benefit claim",
+                        "description": "If true, a decision letter has been sent to the claimant regarding a benefit claim",
                         "example": "false"
                       },
-                      "@links": {
-                        "type": "object",
-                        "description": "HATEOAS links in the HAL standard format",
-                        "example": {
-                          "rel": "self",
-                          "type": "GET",
-                          "url": "https://api.va.gov/services/claims/v2/claims/600131328"
-                        }
+                      "documentsNeeded": {
+                        "type": "boolean",
+                        "description": "If true, the claim requires additional documents to be submitted",
+                        "example": "false"
+                      },
+                      "endProductCode": {
+                        "type": "string",
+                        "description": "End product code of claim"
+                      },
+                      "lighthouseId": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Claim ID in Lighthouse",
+                        "example": "600131328"
+                      },
+                      "status": {
+                        "type": "string",
+                        "description": "Status of claim",
+                        "example": "Complete"
+                      },
+                      "5103WaiverSubmitted": {
+                        "type": "boolean",
+                        "nullable": true,
+                        "description": "If true, indicates a decision has been requested and/or a Waiver 5103 has been submitted",
+                        "example": "false"
                       }
                     }
                   }
@@ -510,9 +502,7 @@
                   "errors": [
                     {
                       "title": "Not authorized",
-                      "detail": "Not authorized",
-                      "code": "401",
-                      "status": "401"
+                      "detail": "Not authorized"
                     }
                   ]
                 },
@@ -527,9 +517,7 @@
                         "additionalProperties": false,
                         "required": [
                           "title",
-                          "detail",
-                          "code",
-                          "status"
+                          "detail"
                         ],
                         "properties": {
                           "title": {
@@ -539,14 +527,6 @@
                           "detail": {
                             "type": "string",
                             "description": "HTTP error detail"
-                          },
-                          "code": {
-                            "type": "string",
-                            "description": "HTTP error code"
-                          },
-                          "status": {
-                            "type": "string",
-                            "description": "HTTP error code"
                           },
                           "source": {
                             "type": "object",
@@ -575,9 +555,7 @@
                   "errors": [
                     {
                       "title": "Forbidden",
-                      "detail": "Forbidden",
-                      "code": "403",
-                      "status": "403"
+                      "detail": "Forbidden"
                     }
                   ]
                 },
@@ -592,9 +570,7 @@
                         "additionalProperties": false,
                         "required": [
                           "title",
-                          "detail",
-                          "code",
-                          "status"
+                          "detail"
                         ],
                         "properties": {
                           "title": {
@@ -604,14 +580,6 @@
                           "detail": {
                             "type": "string",
                             "description": "HTTP error detail"
-                          },
-                          "code": {
-                            "type": "string",
-                            "description": "HTTP error code"
-                          },
-                          "status": {
-                            "type": "string",
-                            "description": "HTTP error code"
                           },
                           "source": {
                             "type": "object",
@@ -659,10 +627,12 @@
             ]
           }
         ],
+        "description": "Retrieves a specific claim for a Veteran",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "example": "1234",
             "description": "The ID of the claim being requested",
             "required": true,
             "schema": {
@@ -673,25 +643,25 @@
             "name": "veteranId",
             "in": "path",
             "required": true,
+            "example": "1012667145V762142",
             "description": "ID of Veteran",
             "schema": {
               "type": "string"
             }
           }
         ],
-        "description": "Retrieves a specific claim for a Veteran",
         "responses": {
           "200": {
             "description": "claim response",
             "content": {
               "application/json": {
                 "example": {
-                  "id": "555555555",
-                  "@links": {
-                    "rel": "self",
-                    "type": "GET",
-                    "url": "http://www.example.com/services/benefits/v2/veterans/1013062086V794840/claims/555555555"
-                  },
+                  "5103WaiverSubmitted": false,
+                  "benefitClaimTypeCode": "400PREDSCHRG",
+                  "claimDate": "05/02/17",
+                  "claimId": "555555555",
+                  "claimType": "Compensation",
+                  "closeDate": null,
                   "contentionList": [
                     "abnormal heart (New)",
                     " abscess kidney (New)",
@@ -702,77 +672,136 @@
                     " groin condition (New)",
                     " metritis (New)"
                   ],
-                  "dateFiled": "05/02/17",
                   "decisionLetterSent": false,
                   "developmentLetterSent": false,
                   "documentsNeeded": false,
                   "endProductCode": "404",
-                  "requestedDecision": null,
+                  "jurisdiction": "National Work Queue",
+                  "lighthouseId": null,
+                  "maxEstClaimDate": null,
+                  "minEstClaimDate": null,
                   "status": "Complete",
+                  "submitterApplicationCode": "EBN",
+                  "submitterRoleCode": "VET",
                   "supportingDocuments": [
 
                   ],
-                  "type": "Compensation",
-                  "vaRepresentative": "Random E Person"
+                  "tempJurisdiction": null
                 },
                 "schema": {
-                  "$schema": "http://json-schema.org/draft-04/schema#",
                   "type": "object",
                   "additionalProperties": false,
                   "properties": {
-                    "id": {
+                    "claimId": {
                       "type": "string",
-                      "description": "Claim ID",
+                      "nullable": true,
+                      "description": "Claim ID in VBMS",
                       "example": "600131328"
                     },
-                    "@links": {
-                      "type": "object",
-                      "description": "HATEOAS links in the HAL standard format",
-                      "example": {
-                        "rel": "self",
-                        "type": "GET",
-                        "url": "https://api.va.gov/services/claims/v2/claims/600131328"
-                      }
+                    "benefitClaimTypeCode": {
+                      "type": "string",
+                      "description": "Type Code of benefit claim",
+                      "example": "400PREDSCHRG"
+                    },
+                    "claimType": {
+                      "type": "string",
+                      "description": "Name of claim type",
+                      "example": "Compensation"
                     },
                     "contentionList": {
                       "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
                       "description": "The contentions being submitted with a claim",
                       "example": [
                         "abnormal heart (New)",
                         "abscess kidney (New)"
                       ]
                     },
-                    "dateFiled": {
-                      "type": "string",
+                    "claimDate": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
                       "description": "The date a claim was filed",
                       "example": "5/17/20"
                     },
+                    "closeDate": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date",
+                      "description": "Date claim was closed",
+                      "example": "2019-09-04"
+                    },
                     "decisionLetterSent": {
                       "type": "boolean",
-                      "description": "Indicates if a Decision Letter has been sent to the Claimant regarding a benefit claim"
+                      "description": "If true, a decision letter has been sent to the claimant regarding a benefit claim"
                     },
                     "developmentLetterSent": {
                       "type": "boolean",
-                      "description": "Indicates if a Development Letter has been sent to the Claimant regarding a benefit claim"
+                      "description": "If true, a development letter has been sent to the claimant regarding a benefit claim"
                     },
                     "documentsNeeded": {
                       "type": "boolean",
-                      "description": "Indicates whether the claim requires additional documents to be submitted"
+                      "description": "If true, the claim requires additional documents to be submitted"
                     },
                     "endProductCode": {
                       "type": "string",
                       "description": "End product code of claim",
                       "example": "930"
                     },
-                    "requestedDecision": {
-                      "type": "boolean",
+                    "lighthouseId": {
+                      "type": "string",
                       "nullable": true,
-                      "description": "Indicates if a decision has been requested and/or if a Waiver 5103 has been submitted"
+                      "description": "Claim ID in Lighthouse",
+                      "example": "600131328"
                     },
                     "status": {
                       "type": "string",
                       "description": "Status of claim",
                       "example": "Complete"
+                    },
+                    "submitterApplicationCode": {
+                      "type": "string",
+                      "description": "Application Code of benefit claim submitter",
+                      "example": "EBN"
+                    },
+                    "submitterRoleCode": {
+                      "type": "string",
+                      "description": "Role Code of benefit claim submitter",
+                      "example": "VET"
+                    },
+                    "jurisdiction": {
+                      "type": "string",
+                      "description": "Jurisdiction of claim"
+                    },
+                    "tempJurisdiction": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Temporary jurisdiction of claim"
+                    },
+                    "minEstClaimDate": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date",
+                      "description": "Minimum Estimated Claim Completion Date",
+                      "example": "2019-06-04"
+                    },
+                    "maxEstClaimDate": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date",
+                      "description": "Maximum Estimated Claim Completion Date",
+                      "example": "2019-09-04"
                     },
                     "supportingDocuments": {
                       "type": "array",
@@ -791,7 +820,7 @@
                             "type": "string",
                             "description": "Name of document"
                           },
-                          "uploaded_at": {
+                          "uploadedAt": {
                             "type": "string",
                             "format": "date",
                             "description": "Date and time document was uploaded"
@@ -799,15 +828,11 @@
                         }
                       }
                     },
-                    "type": {
-                      "type": "string",
-                      "description": "Name of claim type",
-                      "example": "Appeals Control"
-                    },
-                    "vaRepresentative": {
-                      "type": "string",
-                      "description": "The current organization or individual representing the Veteran on a claim",
-                      "example": "American Legion"
+                    "5103WaiverSubmitted": {
+                      "type": "boolean",
+                      "nullable": true,
+                      "description": "If true, indicates a decision has been requested and/or a Waiver 5103 has been submitted",
+                      "example": "false"
                     }
                   }
                 }
@@ -822,9 +847,7 @@
                   "errors": [
                     {
                       "title": "Not authorized",
-                      "detail": "Not authorized",
-                      "code": "401",
-                      "status": "401"
+                      "detail": "Not authorized"
                     }
                   ]
                 },
@@ -839,9 +862,7 @@
                         "additionalProperties": false,
                         "required": [
                           "title",
-                          "detail",
-                          "code",
-                          "status"
+                          "detail"
                         ],
                         "properties": {
                           "title": {
@@ -851,14 +872,6 @@
                           "detail": {
                             "type": "string",
                             "description": "HTTP error detail"
-                          },
-                          "code": {
-                            "type": "string",
-                            "description": "HTTP error code"
-                          },
-                          "status": {
-                            "type": "string",
-                            "description": "HTTP error code"
                           },
                           "source": {
                             "type": "object",
@@ -887,9 +900,7 @@
                   "errors": [
                     {
                       "title": "Forbidden",
-                      "detail": "Forbidden",
-                      "code": "403",
-                      "status": "403"
+                      "detail": "Forbidden"
                     }
                   ]
                 },
@@ -904,9 +915,7 @@
                         "additionalProperties": false,
                         "required": [
                           "title",
-                          "detail",
-                          "code",
-                          "status"
+                          "detail"
                         ],
                         "properties": {
                           "title": {
@@ -916,14 +925,6 @@
                           "detail": {
                             "type": "string",
                             "description": "HTTP error detail"
-                          },
-                          "code": {
-                            "type": "string",
-                            "description": "HTTP error code"
-                          },
-                          "status": {
-                            "type": "string",
-                            "description": "HTTP error code"
                           },
                           "source": {
                             "type": "object",
@@ -952,9 +953,7 @@
                   "errors": [
                     {
                       "title": "Resource not found",
-                      "detail": "Claim not found",
-                      "code": "404",
-                      "status": "404"
+                      "detail": "Claim not found"
                     }
                   ]
                 },
@@ -969,9 +968,7 @@
                         "additionalProperties": false,
                         "required": [
                           "title",
-                          "detail",
-                          "code",
-                          "status"
+                          "detail"
                         ],
                         "properties": {
                           "title": {
@@ -981,14 +978,6 @@
                           "detail": {
                             "type": "string",
                             "description": "HTTP error detail"
-                          },
-                          "code": {
-                            "type": "string",
-                            "description": "HTTP error code"
-                          },
-                          "status": {
-                            "type": "string",
-                            "description": "HTTP error code"
                           },
                           "source": {
                             "type": "object",
@@ -1013,11 +1002,19 @@
       }
     }
   },
-  "basePath": "/services/benefits/v2",
   "servers": [
     {
-      "url": "https://dev-api.va.gov/services/benefits/{version}",
-      "description": "VA.gov API development environment",
+      "url": "https://sandbox-api.va.gov/services/claims/{version}",
+      "description": "VA.gov API sandbox environment",
+      "variables": {
+        "version": {
+          "default": "v2"
+        }
+      }
+    },
+    {
+      "url": "https://api.va.gov/services/claims/{version}",
+      "description": "VA.gov API production environment",
       "variables": {
         "version": {
           "default": "v2"

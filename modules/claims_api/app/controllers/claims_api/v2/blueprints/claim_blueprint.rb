@@ -4,24 +4,24 @@ module ClaimsApi
   module V2
     module Blueprints
       class ClaimBlueprint < Blueprinter::Base
-        identifier :id
-
-        field :@links do |claim, options|
-          {
-            rel: 'self',
-            type: 'GET',
-            url: "#{options[:base_url]}/services/benefits/v2/veterans/#{options[:veteran_id]}/claims/#{claim[:id]}"
-          }
-        end
-
+        field :benefit_claim_type_code
+        field :claim_id
+        field :claim_type
         field :contention_list
-        field :date_filed
+        field :claim_date
+        field :close_date
         field :decision_letter_sent
         field :development_letter_sent
         field :documents_needed
         field :end_product_code
-        field :requested_decision
+        field :jurisdiction
+        field :lighthouse_id
+        field :max_est_claim_date
+        field :min_est_claim_date
         field :status
+        field :submitter_application_code
+        field :submitter_role_code
+        field :temp_jurisdiction
         field :supporting_documents do |claim, _options|
           auto_established_claim = ClaimsApi::AutoEstablishedClaim.find_by evss_id: claim[:id]
           if auto_established_claim.present?
@@ -41,17 +41,24 @@ module ClaimsApi
             []
           end
         end
-        field :type
-        field :va_representative
-
-        view :list do
-          exclude :contention_list
-          exclude :end_product_code
-          exclude :supporting_documents
-          exclude :va_representative
-        end
+        field '5103_waiver_submitted'.to_sym
 
         transform ClaimsApi::V2::Blueprints::Transformers::LowerCamelTransformer
+
+        view :list do
+          exclude :benefit_claim_type_code
+          exclude :contention_list
+          exclude :jurisdiction
+          exclude :max_est_claim_date
+          exclude :min_est_claim_date
+          exclude :status_type
+          exclude :submitter_application_code
+          exclude :submitter_role_code
+          exclude :supporting_documents
+          exclude :temp_jurisdiction
+
+          transform ClaimsApi::V2::Blueprints::Transformers::LowerCamelTransformer
+        end
       end
     end
   end

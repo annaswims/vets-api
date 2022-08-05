@@ -15,6 +15,24 @@ module Mobile
           @user = user
         end
 
+        def fetch_facilities_from_appointments(appointments)
+          facility_ids = appointments.map(&:id_for_address).uniq
+
+          return nil unless facility_ids.any?
+
+          fetch_facilities_from_ids(facility_ids, nil)
+        end
+
+        def fetch_facilities_from_ids(facility_ids, include_children)
+          facility_ids = facility_ids.map { |facility| Mobile::V0::Appointment.convert_non_prod_id!(facility) }.uniq
+
+          if Flipper.enabled?(:mobile_appointment_use_VAOS_MFS)
+            new_fetch_facilities(facility_ids, include_children)
+          else
+            legacy_fetch_facilities(facility_ids)
+          end
+        end
+
         def get_appointments(start_date:, end_date:)
           if Flipper.enabled?(:mobile_appointment_requests)
             responses = fetch_appointments(start_date, end_date)
@@ -25,7 +43,7 @@ module Mobile
         end
 
         def put_cancel_appointment(params)
-          facility_id = Mobile::V0::Appointment.toggle_non_prod_id!(params[:facilityId])
+          facility_id = Mobile::V0::Appointment.convert_non_prod_id!(params[:facilityId])
 
           cancel_reasons = get_facility_cancel_reasons(facility_id)
           cancel_reason = extract_valid_reason(cancel_reasons.map(&:number))
@@ -74,7 +92,7 @@ module Mobile
             appointment.start_date_utc.between?(start_date, end_date)
           end
 
-          facilities = fetch_facilities(va_appointments + va_appointment_requests)
+          facilities = fetch_facilities_from_appointments(va_appointments + va_appointment_requests)
           va_appointments = backfill_appointments_with_facilities(va_appointments, facilities)
           va_appointment_requests = backfill_appointments_with_facilities(va_appointment_requests, facilities)
 
@@ -84,21 +102,22 @@ module Mobile
 
         def legacy_fetch_appointments(start_date, end_date)
           va_response, cc_response = Parallel.map(
-            [
-              fetch_va_appointments(start_date, end_date),
-              fetch_cc_appointments(start_date, end_date)
-            ], in_threads: 2, &:call
+            [fetch_va_appointments(start_date, end_date), fetch_cc_appointments(start_date, end_date)],
+            in_threads: 2, &:call
           )
 
           errors = [va_response[:error], cc_response[:error]].compact
 
-          raise Common::Exceptions::BackendServiceException, 'MOBL_502_upstream_error' if errors.size.positive?
+          if errors.size.positive?
+            Rails.logger.error('Mobile Legacy Appointments Error: ', errors: errors)
+            raise Common::Exceptions::BackendServiceException, 'MOBL_502_upstream_error'
+          end
 
           va_appointments = va_appointments_adapter.parse(va_response[:response].body)
           cc_appointments = cc_appointments_adapter.parse(cc_response[:response].body)
 
           if va_appointments.any?
-            facilities = fetch_facilities(va_appointments)
+            facilities = fetch_facilities_from_appointments(va_appointments)
             va_appointments = backfill_appointments_with_facilities(va_appointments, facilities)
           end
 
@@ -122,20 +141,29 @@ module Mobile
 
           # appointment requests are fetched by a service that raises on error
           errors = [va_response[:error], cc_response[:error]].compact
-          raise Common::Exceptions::BackendServiceException, 'MOBL_502_upstream_error' if errors.size.positive?
+          if errors.size.positive?
+            Rails.logger.error('Mobile Appointments w/ Requests Error: ', errors: errors)
+            raise Common::Exceptions::BackendServiceException, 'MOBL_502_upstream_error'
+          end
 
           { va: va_response, cc: cc_response, requests: requests_response }
         end
 
-        def fetch_facilities(appointments)
-          facility_ids = appointments.map(&:id_for_address).uniq
-
-          return nil unless facility_ids.any?
+        def new_fetch_facilities(facility_ids, include_children)
+          ids = facility_ids.join(',')
 
           facility_ids.each do |facility_id|
             Rails.logger.info('metric.mobile.appointment.facility', facility_id: facility_id)
           end
-          Mobile::FacilitiesHelper.get_facilities(facility_ids)
+          vaos_facilities = vaos_mobile_facility_service.get_facilities(ids: ids, children: include_children, type: nil)
+          vaos_facilities[:data]
+        end
+
+        def legacy_fetch_facilities(ids)
+          ids.each do |facility_id|
+            Rails.logger.info('metric.mobile.appointment.facility', facility_id: facility_id)
+          end
+          Mobile::FacilitiesHelper.get_facilities(ids)
         end
 
         def backfill_appointments_with_facilities(appointments, facilities)
@@ -204,6 +232,10 @@ module Mobile
 
         def vaos_appointment_requests_service
           VAOS::AppointmentRequestsService.new(@user)
+        end
+
+        def vaos_mobile_facility_service
+          VAOS::V2::MobileFacilityService.new(@user)
         end
 
         def vaos_systems_service

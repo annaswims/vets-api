@@ -119,6 +119,7 @@ Lint/MissingSuper:
     - 'lib/forms/client.rb'
     - 'lib/forms/responses/response.rb'
     - 'lib/hca/service.rb'
+    - 'lib/inherited_proofing/mhv/service.rb'
     - 'lib/ihub/service.rb'
     - 'lib/json_schema/json_api_missing_attribute.rb'
     - 'lib/json_schema/missing_schema.rb'
@@ -153,6 +154,7 @@ Lint/MissingSuper:
     - 'modules/vaos/app/services/vaos/session_service.rb'
     - 'modules/veteran/app/models/veteran/user.rb'
     - 'spec/lib/carma/models/base_spec.rb'
+    - 'lib/mail_automation/client.rb'
 
 # Offense count: 569
 # Configuration parameters: IgnoredMethods, CountRepeatedAttributes.

@@ -1,0 +1,14 @@
+type: object
+required:
+  - city
+  - state
+properties:
+  city:
+    maxLength: 64
+    type: string
+    example: 'Helena'
+  state:
+    maxLength: 32
+    type: string
+    example: 'MT'
+description: The location that the veteran requested the appointment to be scheduled in.

@@ -9,7 +9,7 @@ class AppealsApi::V2::DecisionReviews::SupplementalClaimsController < AppealsApi
 
   skip_before_action :authenticate
   before_action :validate_json_format, if: -> { request.post? }
-  before_action :validate_json_schema, only: %i[create]
+  before_action :validate_json_schema, only: %i[create validate]
 
   FORM_NUMBER = '200995'
   MODEL_ERROR_STATUS = 422
@@ -33,18 +33,25 @@ class AppealsApi::V2::DecisionReviews::SupplementalClaimsController < AppealsApi
 
     sc.save
 
-    AppealsApi::PdfSubmitJob.perform_async(sc.id, 'AppealsApi::SupplementalClaim', 'V2')
+    pdf_version = 'v2'
+    AppealsApi::PdfSubmitJob.perform_async(sc.id, 'AppealsApi::SupplementalClaim', pdf_version)
 
     render json: AppealsApi::SupplementalClaimSerializer.new(sc).serializable_hash
   end
 
+  def validate
+    render json: validation_success
+  end
+
   def schema
-    render json: AppealsApi::JsonSchemaToSwaggerConverter.remove_comments(
+    response = AppealsApi::JsonSchemaToSwaggerConverter.remove_comments(
       AppealsApi::FormSchemas.new(
         SCHEMA_ERROR_TYPE,
         schema_version: 'v2'
-      ).schema(FORM_NUMBER)
+      ).schema(self.class::FORM_NUMBER)
     )
+
+    render json: response
   end
 
   def show
@@ -78,20 +85,23 @@ class AppealsApi::V2::DecisionReviews::SupplementalClaimsController < AppealsApi
     ).validate!(self.class::FORM_NUMBER, @json_body)
   end
 
+  def validation_success
+    {
+      data: {
+        type: 'supplementalClaimValidation',
+        attributes: {
+          status: 'valid'
+        }
+      }
+    }
+  end
+
   def request_headers
     HEADERS.index_with { |key| request.headers[key] }.compact
   end
 
   def render_model_errors(model)
     render json: model_errors_to_json_api(model), status: MODEL_ERROR_STATUS
-  end
-
-  def model_errors_to_json_api(model)
-    errors = model.errors.to_a.map do |error|
-      { status: MODEL_ERROR_STATUS, detail: error }
-    end
-
-    { errors: errors }
   end
 
   def render_supplemental_claim_not_found(id)

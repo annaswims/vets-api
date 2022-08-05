@@ -3,6 +3,8 @@
     "type": "supplementalClaim",
     "attributes": {
       "benefitType": "compensation",
+      "claimantType": "other",
+      "claimantTypeOtherValue": "Veteran Attorney",
       "veteran": {
         "address": {
           "addressLine1": "123 Main St",
@@ -20,6 +22,25 @@
         },
         "email": "bobsemail@bobbytablesemail.com",
         "timezone": "America/Chicago"
+      },
+      "claimant": {
+        "address": {
+          "addressLine1": "456 First St",
+          "addressLine2": "Apt 5",
+          "addressLine3": "Box 1",
+          "city": "Montreal",
+          "countryCodeISO2": "CA",
+          "zipCode5": "00000",
+          "internationalPostalCode": "A9999AAA"
+        },
+        "phone": {
+          "countryCode": "1",
+          "areaCode": "555",
+          "phoneNumber": "8111100",
+          "phoneNumberExt": "4"
+        },
+        "email": "joe@email.com",
+        "timezone": "America/Detroit"
       },
       "socOptIn": true,
       "form5103Acknowledged": true,

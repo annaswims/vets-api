@@ -28,7 +28,10 @@ class AppealsApi::V1::DecisionReviews::NoticeOfDisagreementsController < Appeals
     deprecate_headers
 
     @notice_of_disagreement.save
-    AppealsApi::PdfSubmitJob.perform_async(@notice_of_disagreement.id, 'AppealsApi::NoticeOfDisagreement', api_version)
+
+    # PDF and API versioning are not 1:1, but are closely coupled and in this case are the same
+    pdf_version = api_version
+    AppealsApi::PdfSubmitJob.perform_async(@notice_of_disagreement.id, 'AppealsApi::NoticeOfDisagreement', pdf_version)
     render_notice_of_disagreement
   end
 
@@ -106,16 +109,7 @@ class AppealsApi::V1::DecisionReviews::NoticeOfDisagreementsController < Appeals
 
   # Follows JSON API v1.0 error object standard (https://jsonapi.org/format/1.0/#error-objects)
   def render_model_errors
-    render json: model_errors_to_json_api, status: MODEL_ERROR_STATUS
-  end
-
-  def model_errors_to_json_api
-    errors = @notice_of_disagreement.errors.map do |error|
-      data = I18n.t('common.exceptions.validation_errors').deep_merge error.options
-      data[:source] = { pointer: error.attribute.to_s }
-      data
-    end
-    { errors: errors }
+    render json: model_errors_to_json_api(@notice_of_disagreement), status: MODEL_ERROR_STATUS
   end
 
   def find_notice_of_disagreement
@@ -140,11 +134,7 @@ class AppealsApi::V1::DecisionReviews::NoticeOfDisagreementsController < Appeals
     render json: AppealsApi::NoticeOfDisagreementSerializer.new(@notice_of_disagreement).serializable_hash
   end
 
-  def sunset_date
-    Date.new(2024, 6, 30)
-  end
-
   def deprecate_headers
-    deprecate(response: response, sunset: sunset_date)
+    deprecate(response: response)
   end
 end

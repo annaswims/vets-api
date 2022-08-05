@@ -2,7 +2,8 @@
 
 require 'common/client/base'
 require 'dgi/enrollment/configuration'
-require 'dgi/enrollment/response'
+require 'dgi/enrollment/enrollment_response'
+require 'dgi/enrollment/submit_enrollment_response'
 require 'dgi/service'
 require 'authentication_token_service'
 
@@ -29,7 +30,7 @@ module MebApi
             options = { timeout: 60 }
             response = perform(:post, submit_enrollment_url, format_params(params), headers, options)
 
-            MebApi::DGI::Enrollment::Response.new(response)
+            MebApi::DGI::SubmitEnrollment::Response.new(response)
           end
         end
 
@@ -40,7 +41,7 @@ module MebApi
         end
 
         def submit_enrollment_url
-          'enrollmentverification'
+          'enrollment-verification'
         end
 
         def request_headers
@@ -55,7 +56,9 @@ module MebApi
         end
 
         def camelize_keys_for_java_service(params)
-          params.permit!.to_h.deep_transform_keys do |key|
+          local_params = params[0] || params
+
+          local_params.permit!.to_h.deep_transform_keys do |key|
             if key.include?('_')
               split_keys = key.split('_')
               split_keys.collect { |key_part| split_keys[0] == key_part ? key_part : key_part.capitalize }.join

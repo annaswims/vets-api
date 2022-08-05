@@ -159,9 +159,9 @@ describe LGY::Service do
       it 'returns a valid application response' do
         VCR.use_cassette 'lgy/application_put' do
           response = subject.put_application(payload: coe_claim)
-          expect(response.status).to eq 200
-          expect(response.body).to include('id')
-          expect(response.body).to include('create_date')
+          expect(response).to include('reference_number')
+          expect(response).to include('id')
+          expect(response).to include('create_date')
         end
       end
     end
@@ -170,9 +170,9 @@ describe LGY::Service do
       it 'returns a valid application response with prior loan data' do
         VCR.use_cassette 'lgy/application_put' do
           response = subject.put_application(payload: coe_claim)
-          expect(response.status).to eq 200
-          expect(response.body).to include('status')
-          expect(response.body['relevant_prior_loans']).not_to be_empty
+          expect(response).to include('reference_number')
+          expect(response).to include('status')
+          expect(response['relevant_prior_loans']).not_to be_empty
         end
       end
     end
@@ -212,6 +212,27 @@ describe LGY::Service do
           expect(response.body).to include(include('id'))
           expect(response.body).to include(include('create_date'))
           expect(response.body).to include(include('description'))
+        end
+      end
+    end
+  end
+
+  describe '#get_document' do
+    context 'when downloading an available document from LGY' do
+      it 'returns the document' do
+        VCR.use_cassette 'lgy/document_download' do
+          response = subject.get_document(id: '123456789')
+          expect(response.status).to eq 200
+        end
+      end
+    end
+
+    context 'when the document is not available' do
+      it 'returns a 404 not found' do
+        VCR.use_cassette 'lgy/document_download_not_found' do
+          response = subject.get_document(id: '234567890')
+          puts response
+          expect(response.status).to eq 404
         end
       end
     end

@@ -3,7 +3,9 @@
 require 'json_marshal/marshaller'
 require 'claims_api/special_issue_mappers/evss'
 require 'claims_api/homelessness_situation_type_mapper'
+require 'claims_api/homelessness_risk_situation_type_mapper'
 require 'claims_api/service_branch_mapper'
+require 'claims_api/claim_logger'
 
 module ClaimsApi
   class AutoEstablishedClaim < ApplicationRecord
@@ -14,8 +16,8 @@ module ClaimsApi
     serialize :form_data, JsonMarshal::Marshaller
     serialize :evss_response, JsonMarshal::Marshaller
     has_kms_key
-    encrypts :auth_headers, :bgs_flash_responses, :bgs_special_issue_responses, :evss_response, :form_data,
-             key: :kms_key, **lockbox_options
+    has_encrypted :auth_headers, :bgs_flash_responses, :bgs_special_issue_responses, :evss_response, :form_data,
+                  key: :kms_key, **lockbox_options
 
     validate :validate_service_dates
     before_validation :set_md5
@@ -54,10 +56,11 @@ module ClaimsApi
 
     def to_internal
       form_data['applicationExpirationDate'] ||= build_application_expiration
-      form_data['claimDate'] ||= (persisted? ? created_at.to_date.to_s : Time.zone.today.to_s)
-      form_data['claimSubmissionSource'] = 'Lighthouse'
-      form_data['bddQualified'] = bdd_qualified?
+      form_data['claimDate'] ||= persisted? ? created_at.iso8601 : Time.zone.now.iso8601
+      cast_claim_date!
+      form_data['claimSubmissionSource'] = 'LH-B'
       form_data['servicePay']['separationPay']['receivedDate'] = transform_separation_pay_received_date if separation_pay_received_date? # rubocop:disable Layout/LineLength
+      form_data['veteran']['changeOfAddress'] = transform_change_of_address_type_case if change_of_address_provided?
       form_data['veteran']['changeOfAddress'] = transform_change_of_address_ending_date if invalid_change_of_address_ending_date? # rubocop:disable Layout/LineLength
       form_data['disabilites'] = transform_disability_approximate_begin_dates
       form_data['disabilites'] = massage_invalid_disability_names
@@ -67,6 +70,7 @@ module ClaimsApi
 
       resolve_special_issue_mappings!
       resolve_homelessness_situation_type_mappings!
+      resolve_homelessness_risk_situation_type_mappings!
 
       {
         form526: form_data
@@ -107,50 +111,6 @@ module ClaimsApi
     end
 
     private
-
-    EVSS_TZ = 'Central Time (US & Canada)'
-
-    def recent_service_periods_end_dates
-      end_dates = form_data.dig('serviceInformation', 'servicePeriods').map do |service_period|
-        unless service_period['serviceBranch'].include?('Reserve') ||
-               service_period['serviceBranch'].include?('National Guard')
-          service_period['activeDutyEndDate']
-        end
-      end
-
-      end_dates.compact
-    end
-
-    def user_supplied_rad_date
-      end_dates = recent_service_periods_end_dates
-      end_dates << form_data.dig('serviceInformation',
-                                 'reservesNationalGuardService',
-                                 'title10Activation',
-                                 'anticipatedSeparationDate')
-      end_dates.compact!
-      return nil if end_dates.blank?
-
-      end_dates.max.in_time_zone(EVSS_TZ).to_date
-    end
-
-    def days_until_release
-      return 0 if user_supplied_rad_date.blank?
-
-      form_submission_date = created_at.presence || Time.now.in_time_zone(EVSS_TZ)
-      @days_until_release ||= user_supplied_rad_date - form_submission_date.to_date
-    end
-
-    def bdd_qualified?
-      if days_until_release > 180
-        return false if (recent_service_periods_end_dates - [user_supplied_rad_date.to_s]).any?
-
-        raise ::Common::Exceptions::UnprocessableEntity.new(
-          detail: 'User may not submit BDD more than 180 days prior to RAD date'
-        )
-      end
-
-      days_until_release >= 90
-    end
 
     def separation_pay_received_date?
       form_data.dig('servicePay', 'separationPay', 'receivedDate').present?
@@ -205,7 +165,39 @@ module ClaimsApi
 
       mapper = ClaimsApi::HomelessnessSituationTypeMapper.new
       name = form_data['veteran']['homelessness']['currentlyHomeless']['homelessSituationType']
+      # previous documentation has a default example value of "OTHER", so make sure that that value is case-insensitive
+      name = name.downcase if name.downcase == 'other'
+
       form_data['veteran']['homelessness']['currentlyHomeless']['homelessSituationType'] = mapper.code_from_name(name)
+
+      if mapper.code_from_name(name) == 'OTHER' &&
+         form_data['veteran']['homelessness']['currentlyHomeless']['otherLivingSituation'].blank?
+        # Transform to meet EVSS requirements of minLength 1
+        form_data['veteran']['homelessness']['currentlyHomeless']['otherLivingSituation'] = ' '
+      end
+    end
+
+    def resolve_homelessness_risk_situation_type_mappings!
+      return if form_data['veteran']['homelessness'].blank?
+      return if form_data['veteran']['homelessness']['homelessnessRisk'].blank?
+
+      mapper = ClaimsApi::HomelessnessRiskSituationTypeMapper.new
+      name = form_data['veteran']['homelessness']['homelessnessRisk']['homelessnessRiskSituationType']
+      # previous documentation has a default example value of "OTHER", so make sure that that value is case-insensitive
+      name = name.downcase if name.downcase == 'other'
+
+      form_data['veteran']['homelessness']['homelessnessRisk']['homelessnessRiskSituationType'] =
+        mapper.code_from_name(name)
+
+      if mapper.code_from_name(name) == 'OTHER' &&
+         form_data['veteran']['homelessness']['homelessnessRisk']['otherLivingSituation'].blank?
+        # Transform to meet EVSS requirements of minLength 1
+        form_data['veteran']['homelessness']['homelessnessRisk']['otherLivingSituation'] = ' '
+      end
+    end
+
+    def cast_claim_date!
+      form_data['claimDate'] = DateTime.parse(form_data['claimDate']).iso8601
     end
 
     def log_flashes
@@ -235,12 +227,12 @@ module ClaimsApi
       end
     end
 
+    # do not clear out 'auth_headers' or 'file_data' attributes
+    # 'auth_headers' is required to make calls to EVSS for uploading docs
+    # 'file_data' is required to know what doc to upload to EVSS
+    # See API-14303
     def remove_encrypted_fields
-      if status == ESTABLISHED
-        self.form_data = {}
-        self.auth_headers = {}
-        self.file_data = nil
-      end
+      self.form_data = {} if status == ESTABLISHED
     end
 
     def treatments?
@@ -370,6 +362,9 @@ module ClaimsApi
 
       transformed_service_periods = received_service_periods.map do |period|
         name = period['serviceBranch']
+
+        ClaimsApi::Logger.log('526',
+                              detail: "'serviceBranch' value received is :: #{name}")
         period['serviceBranch'] = ClaimsApi::ServiceBranchMapper.new(name).value
 
         period
@@ -395,6 +390,19 @@ module ClaimsApi
           secondary
         end
       end
+    end
+
+    def change_of_address_provided?
+      form_data['veteran']['changeOfAddress'].present?
+    end
+
+    # EVSS requires that the value of 'form526.veteran.changeOfAddress.addressChangeType' be uppercase
+    def transform_change_of_address_type_case
+      change_of_address = form_data['veteran']['changeOfAddress']
+      change_of_address_type = change_of_address['addressChangeType']
+      change_of_address['addressChangeType'] = change_of_address_type.upcase
+
+      change_of_address
     end
   end
 end

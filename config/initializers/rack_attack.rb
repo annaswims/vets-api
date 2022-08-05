@@ -19,7 +19,7 @@ class Rack::Attack
   # Rate-limit PPMS lookup, in order to bore abusers.
   # See https://github.com/department-of-veterans-affairs/va.gov-team-sensitive/blob/master/Postmortems/2021-08-16-facility-locator-possible-DOS.md
   # for details.
-  throttle('facility_locator/ip', limit: 3, period: 1.minute) do |req|
+  throttle('facility_locator/ip', limit: 8, period: 1.minute) do |req|
     req.remote_ip if req.path == '/facilities_api/v1/ccp/provider'
   end
 
@@ -53,6 +53,18 @@ class Rack::Attack
 
   throttle('medical_copays/ip', limit: 20, period: 1.minute) do |req|
     req.remote_ip if req.path.starts_with?('/v0/medical_copays') && req.get?
+  end
+
+  # Always allow requests from below IP addresses for load testing
+  # `100.103.248.0 - 100.103.248.255`
+  # `100.103.251.128 - 100.103.251.255`
+  # `10.247.104.` - tevi-dev-load-testing host IPs
+  # (blocklist & throttles are skipped)
+  Rack::Attack.safelist('allow requests from loadtest host') do |req|
+    # Requests are allowed if the return value is truthy
+    req.ip.match?(/100.103.248.(\b[0-9]\b|\b[1-9][0-9]\b|1[0-9]{2}|2[0-4][0-9]|25[0-5])
+                  |100.103.251.(12[8-9]|1[3-9]\d|2[0-4]\d|25[0-5])
+                  |10.247.104./)
   end
 
   # Source: https://github.com/kickstarter/rack-attack#x-ratelimit-headers-for-well-behaved-clients

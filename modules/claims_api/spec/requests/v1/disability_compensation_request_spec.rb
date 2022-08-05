@@ -225,18 +225,59 @@ RSpec.describe 'Disability Claims ', type: :request do
         end
       end
 
-      describe "'treatment.treatedDisabilityNames' validations" do
+      describe "'treatments' validations" do
         let(:treatments) do
           [
             {
               center: {
-                name: 'Some Treatment Center',
+                name: 'Some Treatment Center, with commas and  double spaces',
                 country: 'United States of America'
               },
               treatedDisabilityNames: treated_disability_names,
               startDate: '1985-01-01'
             }
           ]
+        end
+
+        context "when 'treatments[].center.country' is an empty string'" do
+          let(:treated_disability_names) { ['PTSD (post traumatic stress disorder)'] }
+
+          it 'returns a bad request' do
+            with_okta_user(scopes) do |auth_header|
+              VCR.use_cassette('evss/claims/claims') do
+                VCR.use_cassette('evss/reference_data/get_intake_sites') do
+                  json_data = JSON.parse data
+                  params = json_data
+                  params['data']['attributes']['treatments'] = treatments
+                  params['data']['attributes']['treatments'][0][:center][:country] = ''
+
+                  post path, params: params.to_json, headers: headers.merge(auth_header)
+                  expect(response.status).to eq(422)
+                end
+              end
+            end
+          end
+        end
+
+        context "when 'treatments[].center.country' is too long'" do
+          let(:treated_disability_names) { ['PTSD (post traumatic stress disorder)'] }
+
+          it 'returns a bad request' do
+            with_okta_user(scopes) do |auth_header|
+              VCR.use_cassette('evss/claims/claims') do
+                VCR.use_cassette('evss/reference_data/get_intake_sites') do
+                  json_data = JSON.parse data
+                  params = json_data
+                  params['data']['attributes']['treatments'] = treatments
+                  params['data']['attributes']['treatments'][0][:center][:country] =
+                    'Here\'s a country that has a very very very long name'
+
+                  post path, params: params.to_json, headers: headers.merge(auth_header)
+                  expect(response.status).to eq(422)
+                end
+              end
+            end
+          end
         end
 
         context "when 'treatment.treatedDisabilityNames' includes value that does not match 'disability'" do
@@ -395,6 +436,33 @@ RSpec.describe 'Disability Claims ', type: :request do
         end
       end
 
+      it "assigns a 'cid' (OKTA client_id)" do
+        with_okta_user(scopes) do |auth_header|
+          VCR.use_cassette('evss/claims/claims') do
+            VCR.use_cassette('evss/reference_data/get_intake_sites') do
+              jwt_payload = {
+                'ver' => 1,
+                'jti' => 'AT.04f_GBSkMkWYbLgG5joGNlApqUthsZnYXhiyPc_5KZ0',
+                'iss' => 'https://example.com/oauth2/default',
+                'aud' => 'api://default',
+                'iat' => Time.current.utc.to_i,
+                'exp' => Time.current.utc.to_i + 3600,
+                'cid' => '0oa1c01m77heEXUZt2p7',
+                'uid' => '00u1zlqhuo3yLa2Xs2p7',
+                'scp' => %w[claim.write],
+                'sub' => 'ae9ff5f4e4b741389904087d94cd19b2'
+              }
+              allow_any_instance_of(Token).to receive(:payload).and_return(jwt_payload)
+
+              post path, params: data, headers: headers.merge(auth_header)
+              token = JSON.parse(response.body)['data']['attributes']['token']
+              aec = ClaimsApi::AutoEstablishedClaim.find(token)
+              expect(aec.cid).to eq(jwt_payload['cid'])
+            end
+          end
+        end
+      end
+
       it 'sets the flashes' do
         with_okta_user(scopes) do |auth_header|
           VCR.use_cassette('evss/claims/claims') do
@@ -439,29 +507,16 @@ RSpec.describe 'Disability Claims ', type: :request do
       context 'when changeOfAddress information is submitted' do
         let(:json_data) { JSON.parse data }
 
-        context 'when addressChangeType is TEMPORARY' do
-          let(:change_of_address) do
-            {
-              beginningDate: (Time.zone.now + 1.month).to_date.to_s,
-              addressChangeType: 'TEMPORARY',
-              addressLine1: '1234 Couch Street',
-              city: 'New York City',
-              state: 'NY',
-              type: 'DOMESTIC',
-              zipFirstFive: '12345',
-              country: 'USA'
-            }
-          end
-
-          context 'when beginningDate is in the past' do
-            let(:json_data) { JSON.parse data }
-
-            context 'when addressChangeType is TEMPORARY' do
+        values = %w[TEMPORARY Temporary temporary]
+        values.each do |value|
+          context "when addressChangeType is #{value}" do
+            context 'when beginningDate is in the past' do
+              let(:json_data) { JSON.parse data }
               let(:change_of_address) do
                 {
                   beginningDate: (Time.zone.now - 1.month).to_date.to_s,
                   endingDate: (Time.zone.now + 1.month).to_date.to_s,
-                  addressChangeType: 'TEMPORARY',
+                  addressChangeType: value,
                   addressLine1: '1234 Couch Street',
                   city: 'New York City',
                   state: 'NY',
@@ -525,6 +580,7 @@ RSpec.describe 'Disability Claims ', type: :request do
       context 'when reservesNationalGuardService information is submitted' do
         let(:json_data) { JSON.parse data }
         let(:title10_activation_date) { (Time.zone.now - 1.day).to_date.to_s }
+        let(:anticipated_separation_date) { (Time.zone.now + 1.year).to_date.to_s }
         let(:reserves_national_guard_service) do
           {
             obligationTermOfServiceFromDate: (Time.zone.now - 1.year).to_date.to_s,
@@ -536,57 +592,162 @@ RSpec.describe 'Disability Claims ', type: :request do
             },
             receivingInactiveDutyTrainingPay: true,
             title10Activation: {
-              anticipatedSeparationDate: (Time.zone.now + 1.year).to_date.to_s,
+              anticipatedSeparationDate: anticipated_separation_date,
               title10ActivationDate: title10_activation_date
             }
           }
         end
 
-        context 'when title10ActivationDate is in the future' do
-          let(:title10_activation_date) { (Time.zone.now + 1.year).to_date.to_s }
+        context "'title10ActivationDate' validations" do
+          context 'when title10ActivationDate is prior to earliest servicePeriod.activeDutyBeginDate' do
+            let(:title10_activation_date) { '1980-02-04' }
 
-          it 'raises an exception that title10ActivationDate is invalid' do
-            with_okta_user(scopes) do |auth_header|
-              VCR.use_cassette('evss/claims/claims') do
-                VCR.use_cassette('evss/reference_data/get_intake_sites') do
-                  par = json_data
-                  par['data']['attributes']['serviceInformation']['reservesNationalGuardService'] =
-                    reserves_national_guard_service
+            it 'raises an exception that title10ActivationDate is invalid' do
+              with_okta_user(scopes) do |auth_header|
+                VCR.use_cassette('evss/claims/claims') do
+                  VCR.use_cassette('evss/reference_data/get_intake_sites') do
+                    par = json_data
+                    par['data']['attributes']['serviceInformation']['reservesNationalGuardService'] =
+                      reserves_national_guard_service
 
-                  post path, params: par.to_json, headers: headers.merge(auth_header)
-                  expect(response.status).to eq(400)
+                    post path, params: par.to_json, headers: headers.merge(auth_header)
+                    expect(response.status).to eq(400)
+                  end
+                end
+              end
+            end
+          end
+
+          context 'when title10ActivationDate is same day as earliest servicePeriod.activeDutyBeginDate' do
+            let(:title10_activation_date) { '1980-02-05' }
+
+            it 'raises an exception that title10ActivationDate is invalid' do
+              with_okta_user(scopes) do |auth_header|
+                VCR.use_cassette('evss/claims/claims') do
+                  VCR.use_cassette('evss/reference_data/get_intake_sites') do
+                    par = json_data
+                    par['data']['attributes']['serviceInformation']['reservesNationalGuardService'] =
+                      reserves_national_guard_service
+
+                    post path, params: par.to_json, headers: headers.merge(auth_header)
+                    expect(response.status).to eq(400)
+                  end
+                end
+              end
+            end
+          end
+
+          context 'when title10ActivationDate is after earliest servicePeriod.activeDutyBeginDate but before today' do
+            let(:title10_activation_date) { '1980-02-06' }
+
+            it 'returns a successful response' do
+              with_okta_user(scopes) do |auth_header|
+                VCR.use_cassette('evss/claims/claims') do
+                  VCR.use_cassette('evss/reference_data/get_intake_sites') do
+                    par = json_data
+                    par['data']['attributes']['serviceInformation']['reservesNationalGuardService'] =
+                      reserves_national_guard_service
+
+                    post path, params: par.to_json, headers: headers.merge(auth_header)
+                    expect(response.status).to eq(200)
+                  end
+                end
+              end
+            end
+          end
+
+          context 'when title10ActivationDate is today' do
+            let(:title10_activation_date) { Time.zone.now.to_date.to_s }
+
+            it 'returns a successful response' do
+              with_okta_user(scopes) do |auth_header|
+                VCR.use_cassette('evss/claims/claims') do
+                  VCR.use_cassette('evss/reference_data/get_intake_sites') do
+                    par = json_data
+                    par['data']['attributes']['serviceInformation']['reservesNationalGuardService'] =
+                      reserves_national_guard_service
+
+                    post path, params: par.to_json, headers: headers.merge(auth_header)
+                    expect(response.status).to eq(200)
+                  end
+                end
+              end
+            end
+          end
+
+          context 'when title10ActivationDate is tomorrow' do
+            let(:title10_activation_date) { (Time.zone.now + 1.day).to_date.to_s }
+
+            it 'raises an exception that title10ActivationDate is invalid' do
+              with_okta_user(scopes) do |auth_header|
+                VCR.use_cassette('evss/claims/claims') do
+                  VCR.use_cassette('evss/reference_data/get_intake_sites') do
+                    par = json_data
+                    par['data']['attributes']['serviceInformation']['reservesNationalGuardService'] =
+                      reserves_national_guard_service
+
+                    post path, params: par.to_json, headers: headers.merge(auth_header)
+                    expect(response.status).to eq(400)
+                  end
                 end
               end
             end
           end
         end
 
-        context 'when title10ActivationDate is older than all service period end dates' do
-          let(:title10_activation_date) { '1980-01-01' }
+        context "'anticipatedSeparationDate' validations" do
+          context "when 'anticipatedSeparationDate' is in the past" do
+            let(:anticipated_separation_date) { (Time.zone.now - 1.day).to_date.to_s }
 
-          it 'raises an exception that title10ActivationDate is invalid' do
-            with_okta_user(scopes) do |auth_header|
-              VCR.use_cassette('evss/claims/claims') do
-                VCR.use_cassette('evss/reference_data/get_intake_sites') do
-                  par = json_data
-                  par['data']['attributes']['serviceInformation']['reservesNationalGuardService'] =
-                    reserves_national_guard_service
+            it "raises an exception that 'anticipatedSeparationDate' is invalid" do
+              with_okta_user(scopes) do |auth_header|
+                VCR.use_cassette('evss/claims/claims') do
+                  VCR.use_cassette('evss/reference_data/get_intake_sites') do
+                    par = json_data
+                    par['data']['attributes']['serviceInformation']['reservesNationalGuardService'] =
+                      reserves_national_guard_service
 
-                  post path, params: par.to_json, headers: headers.merge(auth_header)
-                  expect(response.status).to eq(400)
+                    post path, params: par.to_json, headers: headers.merge(auth_header)
+                    expect(response.status).to eq(400)
+                  end
                 end
               end
             end
           end
-        end
 
-        context 'when title10ActivationDate is valid' do
-          it 'returns a successful response' do
-            with_okta_user(scopes) do |auth_header|
-              VCR.use_cassette('evss/claims/claims') do
-                VCR.use_cassette('evss/reference_data/get_intake_sites') do
-                  post path, params: data, headers: headers.merge(auth_header)
-                  expect(response.status).to eq(200)
+          context "when 'anticipatedSeparationDate' is today" do
+            let(:anticipated_separation_date) { (Time.zone.now - 1.hour).to_date.to_s }
+
+            it "raises an exception that 'anticipatedSeparationDate' is invalid" do
+              with_okta_user(scopes) do |auth_header|
+                VCR.use_cassette('evss/claims/claims') do
+                  VCR.use_cassette('evss/reference_data/get_intake_sites') do
+                    par = json_data
+                    par['data']['attributes']['serviceInformation']['reservesNationalGuardService'] =
+                      reserves_national_guard_service
+
+                    post path, params: par.to_json, headers: headers.merge(auth_header)
+                    expect(response.status).to eq(400)
+                  end
+                end
+              end
+            end
+          end
+
+          context "when 'anticipatedSeparationDate' is in the future" do
+            let(:anticipated_separation_date) { (Time.zone.now + 1.day).to_date.to_s }
+
+            it 'returns a successful response' do
+              with_okta_user(scopes) do |auth_header|
+                VCR.use_cassette('evss/claims/claims') do
+                  VCR.use_cassette('evss/reference_data/get_intake_sites') do
+                    par = json_data
+                    par['data']['attributes']['serviceInformation']['reservesNationalGuardService'] =
+                      reserves_national_guard_service
+
+                    post path, params: par.to_json, headers: headers.merge(auth_header)
+                    expect(response.status).to eq(200)
+                  end
                 end
               end
             end
@@ -651,24 +812,26 @@ RSpec.describe 'Disability Claims ', type: :request do
         end
 
         it 'requires homelessness homelessnessRisk subfields' do
-          with_okta_user(scopes) do |auth_header|
-            par = json_data
-            par['data']['attributes']['veteran']['homelessness'] = {
-              pointOfContact: {
-                pointOfContactName: 'John Doe',
-                primaryPhone: {
-                  areaCode: '555',
-                  phoneNumber: '555-5555'
+          VCR.use_cassette('evss/claims/claims') do
+            with_okta_user(scopes) do |auth_header|
+              par = json_data
+              par['data']['attributes']['veteran']['homelessness'] = {
+                pointOfContact: {
+                  pointOfContactName: 'John Doe',
+                  primaryPhone: {
+                    areaCode: '555',
+                    phoneNumber: '555-5555'
+                  }
+                },
+                homelessnessRisk: {
+                  homelessnessRiskSituationType: 'NOT_A_RISK_TYPE',
+                  otherLivingSituation: 'other living situations'
                 }
-              },
-              homelessnessRisk: {
-                homelessnessRiskSituationType: 'NOT_RISK_TYPE',
-                otherLivingSituation: 'other living situations'
               }
-            }
-            post path, params: par.to_json, headers: headers.merge(auth_header)
-            expect(response.status).to eq(422)
-            expect(JSON.parse(response.body)['errors'].size).to eq(1)
+              post path, params: par.to_json, headers: headers.merge(auth_header)
+              expect(response.status).to eq(422)
+              expect(JSON.parse(response.body)['errors'].size).to eq(1)
+            end
           end
         end
 
@@ -924,14 +1087,38 @@ RSpec.describe 'Disability Claims ', type: :request do
       end
 
       context 'when consumer is Veteran' do
+        let(:mvi_codes) do
+          {
+            birls_id: '111985523',
+            participant_id: '32397028'
+          }
+        end
+        let(:mvi_profile) { build(:mvi_profile) }
+        let(:mvi_profile_response) do
+          MPI::Responses::FindProfileResponse.new(
+            status: MPI::Responses::FindProfileResponse::RESPONSE_STATUS[:ok],
+            profile: mvi_profile
+          )
+        end
+        let(:add_response) do
+          MPI::Responses::AddPersonResponse.new(
+            status: MPI::Responses::AddPersonResponse::RESPONSE_STATUS[:ok],
+            mvi_codes: mvi_codes
+          )
+        end
+
         it 'adds person to MPI' do
           with_okta_user(scopes) do |auth_header|
             VCR.use_cassette('evss/claims/claims') do
               VCR.use_cassette('evss/reference_data/get_intake_sites') do
                 VCR.use_cassette('mpi/add_person/add_person_success') do
                   VCR.use_cassette('mpi/find_candidate/orch_search_with_attributes') do
-                    expect_any_instance_of(MPIData).to receive(:add_person).once.and_call_original
+                    expect_any_instance_of(MPIData).to receive(:add_person_proxy).once.and_call_original
+                    expect_any_instance_of(MPI::Service).to receive(:add_person_proxy).and_return(add_response)
+                    allow_any_instance_of(MPI::Service).to receive(:find_profile).and_return(mvi_profile_response)
+
                     post path, params: data, headers: auth_header
+                    expect(response.status).to eq(200)
                   end
                 end
               end
@@ -960,14 +1147,193 @@ RSpec.describe 'Disability Claims ', type: :request do
       end
     end
 
-    context 'when submitted claim_date is in the future' do
-      let(:claim_date) { (Time.zone.today + 1.day).to_s }
+    # real world example happened in API-15575
+    describe "'claim_date' difference between Lighthouse (UTC) and EVSS (Central Time)" do
+      context 'when UTC is currently a day ahead of the US Central Time Zone' do
+        before do
+          Timecop.freeze(Time.parse('2022-05-01 04:46:31 UTC'))
+        end
 
-      it 'responds with bad request' do
-        with_okta_user(scopes) do |auth_header|
-          VCR.use_cassette('evss/claims/claims') do
-            post path, params: data, headers: headers.merge(auth_header)
-            expect(response.status).to eq(400)
+        after do
+          Timecop.return
+        end
+
+        context "and 'claim_date' is same as the Central Time Zone day" do
+          let(:claim_date) { (Time.zone.today - 1.day).to_s }
+
+          it 'responds with a 200' do
+            with_okta_user(scopes) do |auth_header|
+              VCR.use_cassette('evss/claims/claims') do
+                post path, params: data, headers: headers.merge(auth_header)
+                expect(response.status).to eq(200)
+              end
+            end
+          end
+        end
+
+        context "and 'claim_date' is earlier than the Central Time Zone day" do
+          let(:claim_date) { (Time.zone.today - 7.days).to_s }
+
+          it 'responds with a 200' do
+            with_okta_user(scopes) do |auth_header|
+              VCR.use_cassette('evss/claims/claims') do
+                post path, params: data, headers: headers.merge(auth_header)
+                expect(response.status).to eq(200)
+              end
+            end
+          end
+        end
+
+        context "and 'claim_date' is later than both the Central Time Zone day and UTC day" do
+          let(:claim_date) { (Time.zone.today + 7.days).to_s }
+
+          it 'responds with a bad request' do
+            with_okta_user(scopes) do |auth_header|
+              VCR.use_cassette('evss/claims/claims') do
+                post path, params: data, headers: headers.merge(auth_header)
+                expect(response.status).to eq(400)
+              end
+            end
+          end
+        end
+      end
+
+      context 'when UTC is same day as the US Central Time Zone day' do
+        before do
+          Timecop.freeze(Time.parse('2022-05-01 12:00:00 UTC'))
+        end
+
+        after do
+          Timecop.return
+        end
+
+        context "and 'claim_date' is the current day" do
+          let(:claim_date) { Time.zone.today.to_s }
+
+          it 'responds with a 200' do
+            with_okta_user(scopes) do |auth_header|
+              VCR.use_cassette('evss/claims/claims') do
+                post path, params: data, headers: headers.merge(auth_header)
+                expect(response.status).to eq(200)
+              end
+            end
+          end
+        end
+
+        context "and 'claim_date' is in the past" do
+          let(:claim_date) { (Time.zone.today - 1.day).to_s }
+
+          it 'responds with a 200' do
+            with_okta_user(scopes) do |auth_header|
+              VCR.use_cassette('evss/claims/claims') do
+                post path, params: data, headers: headers.merge(auth_header)
+                expect(response.status).to eq(200)
+              end
+            end
+          end
+        end
+
+        context "and 'claim_date' is in the future" do
+          let(:claim_date) { (Time.zone.today + 1.day).to_s }
+
+          it 'responds with bad request' do
+            with_okta_user(scopes) do |auth_header|
+              VCR.use_cassette('evss/claims/claims') do
+                post path, params: data, headers: headers.merge(auth_header)
+                expect(response.status).to eq(400)
+              end
+            end
+          end
+        end
+
+        context "and 'claim_date' has timezone (iso w/Z)" do
+          let(:claim_date) { (Time.zone.now - 1.day).iso8601 }
+
+          it 'responds with a 200' do
+            with_okta_user(scopes) do |auth_header|
+              VCR.use_cassette('evss/claims/claims') do
+                post path, params: data, headers: headers.merge(auth_header)
+                expect(response.status).to eq(200)
+              end
+            end
+          end
+        end
+
+        context "and 'claim_date' has timezone (iso wo/Z)" do
+          let(:claim_date) { (Time.zone.now - 1.day).iso8601.sub('Z', '-00:00') }
+
+          it 'responds with a 200' do
+            with_okta_user(scopes) do |auth_header|
+              VCR.use_cassette('evss/claims/claims') do
+                post path, params: data, headers: headers.merge(auth_header)
+                expect(response.status).to eq(200)
+              end
+            end
+          end
+        end
+
+        context "and 'claim_date' has timezone (iso w/out zone)" do
+          let(:claim_date) { (Time.zone.now - 1.day).iso8601.sub('Z', '') }
+
+          it 'responds with a bad request' do
+            with_okta_user(scopes) do |auth_header|
+              VCR.use_cassette('evss/claims/claims') do
+                post path, params: data, headers: headers.merge(auth_header)
+                expect(response.status).to eq(422)
+              end
+            end
+          end
+        end
+
+        context "and 'claim_date' has timezone (TZ String)" do
+          let(:claim_date) { (Time.zone.now - 1.day).to_s }
+
+          it 'responds with a 422' do
+            with_okta_user(scopes) do |auth_header|
+              VCR.use_cassette('evss/claims/claims') do
+                post path, params: data, headers: headers.merge(auth_header)
+                expect(response.status).to eq(422)
+              end
+            end
+          end
+        end
+
+        context "and 'claim_date' has timezone (w/out T)" do
+          let(:claim_date) { (Time.zone.now - 1.day).iso8601.sub('T', ' ') }
+
+          it 'responds with a 422' do
+            with_okta_user(scopes) do |auth_header|
+              VCR.use_cassette('evss/claims/claims') do
+                post path, params: data, headers: headers.merge(auth_header)
+                expect(response.status).to eq(422)
+              end
+            end
+          end
+        end
+
+        context "and 'claim_date' improperly formatted (hello world)" do
+          let(:claim_date) { 'hello world' }
+
+          it 'responds with bad request' do
+            with_okta_user(scopes) do |auth_header|
+              VCR.use_cassette('evss/claims/claims') do
+                post path, params: data, headers: headers.merge(auth_header)
+                expect(response.status).to eq(422)
+              end
+            end
+          end
+        end
+
+        context "and 'claim_date' improperly formatted (empty string)" do
+          let(:claim_date) { '' }
+
+          it 'responds with bad request' do
+            with_okta_user(scopes) do |auth_header|
+              VCR.use_cassette('evss/claims/claims') do
+                post path, params: data, headers: headers.merge(auth_header)
+                expect(response.status).to eq(422)
+              end
+            end
           end
         end
       end
@@ -1085,31 +1451,33 @@ RSpec.describe 'Disability Claims ', type: :request do
 
     describe 'Veteran homelessness validations' do
       context "when 'currentlyHomeless' and 'homelessnessRisk' are both provided" do
-        it 'responds with a bad request' do
+        it 'responds with a 422' do
           with_okta_user(scopes) do |auth_header|
-            VCR.use_cassette('evss/claims/claims') do
-              VCR.use_cassette('evss/reference_data/get_intake_sites') do
-                json_data = JSON.parse data
-                params = json_data
-                params['data']['attributes']['veteran']['homelessness']['currentlyHomeless'] = {
-                  homelessSituationType: 'fleeing',
-                  otherLivingSituation: 'community help center'
-                }
-                params['data']['attributes']['veteran']['homelessness']['homelessnessRisk'] = {
-                  homelessnessRiskSituationType: 'losingHousing',
-                  otherLivingSituation: 'community help center'
-                }
-                post path, params: params.to_json, headers: headers.merge(auth_header)
-                expect(response.status).to eq(400)
-              end
-            end
+            json_data = JSON.parse data
+            params = json_data
+            params['data']['attributes']['veteran']['homelessness']['currentlyHomeless'] = {
+              homelessSituationType: 'fleeing',
+              otherLivingSituation: 'community help center'
+            }
+            params['data']['attributes']['veteran']['homelessness']['homelessnessRisk'] = {
+              homelessnessRiskSituationType: 'losingHousing',
+              otherLivingSituation: 'community help center'
+            }
+            post path, params: params.to_json, headers: headers.merge(auth_header)
+            expect(response.status).to eq(422)
+            response_body = JSON.parse(response.body)
+            expect(response_body['errors'].length).to eq(1)
+            expect(response_body['errors'][0]['detail']).to eq(
+              "Must define only one of 'veteran.homelessness.currentlyHomeless' or "\
+              "'veteran.homelessness.homelessnessRisk'"
+            )
           end
         end
       end
 
       context "when neither 'currentlyHomeless' nor 'homelessnessRisk' is provided" do
         context "when 'pointOfContact' is provided" do
-          it 'responds with a bad request' do
+          it 'responds with a 422' do
             with_okta_user(scopes) do |auth_header|
               VCR.use_cassette('evss/claims/claims') do
                 VCR.use_cassette('evss/reference_data/get_intake_sites') do
@@ -1124,23 +1492,42 @@ RSpec.describe 'Disability Claims ', type: :request do
                     }
                   }
                   post path, params: params.to_json, headers: headers.merge(auth_header)
-                  expect(response.status).to eq(400)
+                  expect(response.status).to eq(422)
+                  response_body = JSON.parse(response.body)
+                  expect(response_body['errors'].length).to eq(1)
+                  expect(response_body['errors'][0]['detail']).to eq(
+                    "If 'veteran.homelessness.pointOfContact' is defined, then one of "\
+                    "'veteran.homelessness.currentlyHomeless' or 'veteran.homelessness.homelessnessRisk'"\
+                    ' is required'
+                  )
                 end
               end
             end
           end
         end
+      end
 
+      context "when either 'currentlyHomeless' or 'homelessnessRisk' is provided" do
         context "when 'pointOfContact' is not provided" do
-          it 'responds with a 200' do
+          it 'responds with a 422' do
             with_okta_user(scopes) do |auth_header|
               VCR.use_cassette('evss/claims/claims') do
                 VCR.use_cassette('evss/reference_data/get_intake_sites') do
                   json_data = JSON.parse data
                   params = json_data
-                  params['data']['attributes']['veteran']['homelessness'] = {}
+                  params['data']['attributes']['veteran']['homelessness']['currentlyHomeless'] = {
+                    homelessSituationType: 'fleeing',
+                    otherLivingSituation: 'community help center'
+                  }
+                  params['data']['attributes']['veteran']['homelessness'].delete('pointOfContact')
                   post path, params: params.to_json, headers: headers.merge(auth_header)
-                  expect(response.status).to eq(200)
+                  expect(response.status).to eq(422)
+                  response_body = JSON.parse(response.body)
+                  expect(response_body['errors'].length).to eq(1)
+                  expect(response_body['errors'][0]['detail']).to eq(
+                    "If one of 'veteran.homelessness.currentlyHomeless' or 'veteran.homelessness.homelessnessRisk' is"\
+                    " defined, then 'veteran.homelessness.pointOfContact' is required"
+                  )
                 end
               end
             end
@@ -2353,6 +2740,37 @@ RSpec.describe 'Disability Claims ', type: :request do
     end
   end
 
+  describe '#526 without flashes or special issues' do
+    let(:claim_date) { (Time.zone.today - 1.day).to_s }
+    let(:auto_cest_pdf_generation_disabled) { false }
+    let(:data_no_flashes) do
+      temp = File.read(Rails.root.join('modules', 'claims_api', 'spec', 'fixtures',
+                                       'form_526_no_flashes_no_special_issues.json'))
+      temp = JSON.parse(temp)
+      temp['data']['attributes']['autoCestPDFGenerationDisabled'] = auto_cest_pdf_generation_disabled
+      temp['data']['attributes']['claimDate'] = claim_date
+      temp['data']['attributes']['applicationExpirationDate'] = (Time.zone.today + 1.day).to_s
+
+      temp.to_json
+    end
+    let(:path) { '/services/claims/v1/forms/526' }
+    let(:schema) { File.read(Rails.root.join('modules', 'claims_api', 'config', 'schemas', '526.json')) }
+
+    it 'sets the flashes and special_issues' do
+      with_okta_user(scopes) do |auth_header|
+        VCR.use_cassette('evss/claims/claims') do
+          VCR.use_cassette('evss/reference_data/get_intake_sites') do
+            post path, params: data_no_flashes, headers: headers.merge(auth_header)
+            token = JSON.parse(response.body)['data']['attributes']['token']
+            aec = ClaimsApi::AutoEstablishedClaim.find(token)
+            expect(aec.flashes).to eq(%w[])
+            expect(aec.special_issues).to eq(%w[])
+          end
+        end
+      end
+    end
+  end
+
   describe '#upload_documents' do
     let(:auto_claim) { create(:auto_established_claim) }
     let(:non_auto_claim) { create(:auto_established_claim, :autoCestPDFGeneration_disabled) }
@@ -2363,6 +2781,17 @@ RSpec.describe 'Disability Claims ', type: :request do
     let(:base64_params) do
       { attachment1: File.read("#{::Rails.root}/modules/claims_api/spec/fixtures/base64pdf"),
         attachment2: File.read("#{::Rails.root}/modules/claims_api/spec/fixtures/base64pdf") }
+    end
+
+    context 'when no attachment is provided to the PUT endpoint' do
+      it 'rejects the request for missing param' do
+        with_okta_user(scopes) do |auth_header|
+          put("/services/claims/v1/forms/526/#{auto_claim.id}", headers: headers.merge(auth_header))
+          expect(response.status).to eq(400)
+          expect(response.parsed_body['errors'][0]['title']).to eq('Missing parameter')
+          expect(response.parsed_body['errors'][0]['detail']).to eq('Must include attachment')
+        end
+      end
     end
 
     it 'upload 526 binary form through PUT' do

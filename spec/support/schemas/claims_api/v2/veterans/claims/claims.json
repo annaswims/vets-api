@@ -1,59 +1,67 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "array",
   "items": {
     "additionalProperties": false,
-    "description": "Claim details.",
+    "description": "Claim details",
     "properties": {
-      "id": {
+      "claimId": {
         "type": "string",
-        "description": "Claim ID",
+        "nullable": true,
+        "description": "Claim ID in VBMS",
         "example": "600131328"
       },
-      "type": {
+      "claimType": {
         "type": "string",
-        "description": "Name of Claim type",
-        "example": "Appeals Control"
+        "description": "Name of claim type",
+        "example": "Compensation"
       },
-      "status": {
-        "type": "string",
-        "description": "Status of Claim",
-        "example": "Complete"
-      },
-      "date_filed": {
-        "type": "string",
+      "claimDate": {
+        "type": ["string", "null"],
         "format": "date",
         "description": "Date in YYYY-MM-DD the claim was first filed",
         "example": "2018-06-04"
       },
-      "documents_needed": {
+      "closeDate": {
+        "type": ["string", "null"],
+        "format": "date",
+        "description": "Date claim was closed",
+        "example": "2019-09-04"
+      },
+      "developmentLetterSent": {
         "type": "boolean",
-        "description": "Does the claim require additional documents to be submitted",
+        "description": "If true, a development letter has been sent to the claimant regarding a benefit claim",
         "example": "false"
       },
-      "requested_decision": {
-        "type": ["boolean", "null"],
-        "description": "The claim filer has requested a claim decision be made",
-        "example": "false"
-      },
-      "development_letter_sent": {
+      "decisionLetterSent": {
         "type": "boolean",
-        "description": "Indicates if a Development Letter has been sent to the Claimant regarding a benefit claim",
+        "description": "If true, a decision letter has been sent to the claimant regarding a benefit claim",
         "example": "false"
       },
-      "decision_letter_sent": {
+      "documentsNeeded": {
         "type": "boolean",
-        "description": "Indicates if a Decision Letter has been sent to the Claimant regarding a benefit claim",
+        "description": "If true, the claim requires additional documents to be submitted",
         "example": "false"
       },
-      "@links": {
-        "type": "object",
-        "description": "HATEOAS links in the HAL standard format",
-        "example": {
-          "rel": "self",
-          "type": "GET",
-          "url": "https://api.va.gov/services/claims/v2/claims/600131328"
-        }
+      "endProductCode": {
+        "type": "string",
+        "description": "End product code of claim"
+      },
+      "lighthouseId": {
+        "type": "string",
+        "nullable": true,
+        "description": "Claim ID in Lighthouse",
+        "example": "600131328"
+      },
+      "status": {
+        "type": "string",
+        "description": "Status of claim",
+        "example": "Complete"
+      },
+      "5103WaiverSubmitted": {
+        "type": "boolean",
+        "nullable": true,
+        "description": "If true, indicates a decision has been requested and/or a Waiver 5103 has been submitted",
+        "example": "false"
       }
     }
   }

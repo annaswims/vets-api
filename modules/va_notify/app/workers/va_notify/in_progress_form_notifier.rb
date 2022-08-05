@@ -5,6 +5,7 @@ require 'sidekiq'
 module VANotify
   class InProgressFormNotifier
     class MissingICN < StandardError; end
+    class UnsupportedForm < StandardError; end
     include Sidekiq::Worker
     include SentryLogging
 
@@ -16,14 +17,13 @@ module VANotify
     def perform(in_progress_form_ids)
       return unless enabled?
 
-      in_progress_forms = InProgressForm.where(id: in_progress_form_ids)
-      first_form = in_progress_forms.first
-
+      # currently only supports notifying about one in progress form
+      in_progress_form = InProgressForm.where(id: in_progress_form_ids).first
       notify_client = VaNotify::Service.new(Settings.vanotify.services.va_gov.api_key)
-      template_id = 'template_id'
-      veteran = User.find(string_to_uuid(first_form.user_uuid))
+      template_id = Settings.vanotify.services.va_gov.template_id.form686c_reminder_email
+      veteran = veteran_data(in_progress_form)
 
-      raise MissingICN, "ICN not found for InProgressForm: #{first_form.id}" if veteran&.icn.blank?
+      raise MissingICN, "ICN not found for InProgressForm: #{in_progress_form.id}" if veteran.icn.blank?
 
       notify_client.send_email(
         recipient_identifier: {
@@ -31,7 +31,7 @@ module VANotify
           id_type: 'ICN'
         },
         template_id: template_id,
-        personalisation: personalisation_details(in_progress_forms, veteran.first_name.capitalize)
+        personalisation: personalisation_details(in_progress_form, veteran.first_name.upcase)
       )
       StatsD.increment(STATSD_SUCCESS_NAME)
     rescue => e
@@ -52,19 +52,26 @@ module VANotify
       raise
     end
 
-    def personalisation_details(in_progress_forms, first_name)
-      personalisation = in_progress_forms.flat_map.with_index do |form, i|
-        [
-          ["form_#{i}_name", form.form_id.upcase],
-          ["form_#{i}_expiration", form.expires_at.strftime('%B %d, %Y')]
-        ]
-      end.to_h
-      personalisation['first_name'] = first_name
-      personalisation
+    def personalisation_details(in_progress_form, first_name)
+      {
+        'first_name' => first_name,
+        'date' => in_progress_form.expires_at.strftime('%B %d, %Y')
+      }
     end
 
-    def string_to_uuid(string)
-      string.insert(8, '-').insert(13, '-').insert(18, '-').insert(23, '-')
+    def veteran_data(in_progress_form)
+      data = case in_progress_form.form_id
+             when '686C-674'
+               InProgressForm686c.new(in_progress_form.form_data)
+             else
+               raise UnsupportedForm,
+                     "Unsupported form: #{in_progress_form.form_id} - InProgressForm: #{in_progress_form.id}"
+             end
+
+      VANotify::Veteran.new(
+        first_name: data.first_name,
+        user_uuid: in_progress_form.user_uuid
+      )
     end
   end
 end

@@ -12,6 +12,7 @@ RSpec.describe 'appointments', type: :request do
     iam_sign_in(build(:iam_user))
     allow_any_instance_of(VAOS::UserService).to receive(:session).and_return('stubbed_token')
     Flipper.disable(:mobile_appointment_requests)
+    Flipper.disable(:mobile_appointment_use_VAOS_MFS)
   end
 
   before(:all) do
@@ -139,6 +140,24 @@ RSpec.describe 'appointments', type: :request do
       end
     end
 
+    context 'when the MFS flag is enabled' do
+      before { Flipper.enable(:mobile_appointment_use_VAOS_MFS) }
+
+      after { Flipper.disable(:mobile_appointment_use_VAOS_MFS) }
+
+      it 'returns facility details' do
+        VCR.use_cassette('appointments/get_mfs_facilities', match_requests_on: %i[method uri]) do
+          VCR.use_cassette('appointments/get_cc_appointments_default', match_requests_on: %i[method uri]) do
+            VCR.use_cassette('appointments/get_appointments_default', match_requests_on: %i[method uri]) do
+              get '/mobile/v0/appointments', headers: iam_headers, params: nil
+              expect(response).to have_http_status(:ok)
+              expect(JSON.parse(response.body)['data'].size).to eq(10)
+            end
+          end
+        end
+      end
+    end
+
     context 'with a missing params' do
       before do
         VCR.use_cassette('appointments/get_facilities', match_requests_on: %i[method uri]) do
@@ -233,11 +252,11 @@ RSpec.describe 'appointments', type: :request do
           it 'has the correct links with no prev' do
             expect(response.parsed_body['links']).to eq(
               {
-                'self' => 'http://www.example.com/mobile/v0/appointments?startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00&useCache=true&page[size]=5&page[number]=1',
-                'first' => 'http://www.example.com/mobile/v0/appointments?startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00&useCache=true&page[size]=5&page[number]=1',
+                'self' => 'http://www.example.com/mobile/v0/appointments?page[size]=5&page[number]=1&useCache=true&startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00',
+                'first' => 'http://www.example.com/mobile/v0/appointments?page[size]=5&page[number]=1&useCache=true&startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00',
                 'prev' => nil,
-                'next' => 'http://www.example.com/mobile/v0/appointments?startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00&useCache=true&page[size]=5&page[number]=2',
-                'last' => 'http://www.example.com/mobile/v0/appointments?startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00&useCache=true&page[size]=5&page[number]=5'
+                'next' => 'http://www.example.com/mobile/v0/appointments?page[size]=5&page[number]=2&useCache=true&startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00',
+                'last' => 'http://www.example.com/mobile/v0/appointments?page[size]=5&page[number]=5&useCache=true&startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00'
               }
             )
           end
@@ -266,11 +285,11 @@ RSpec.describe 'appointments', type: :request do
           it 'has the correct links both prev and next' do
             expect(response.parsed_body['links']).to eq(
               {
-                'self' => 'http://www.example.com/mobile/v0/appointments?startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00&useCache=true&page[size]=5&page[number]=2',
-                'first' => 'http://www.example.com/mobile/v0/appointments?startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00&useCache=true&page[size]=5&page[number]=1',
-                'prev' => 'http://www.example.com/mobile/v0/appointments?startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00&useCache=true&page[size]=5&page[number]=1',
-                'next' => 'http://www.example.com/mobile/v0/appointments?startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00&useCache=true&page[size]=5&page[number]=3',
-                'last' => 'http://www.example.com/mobile/v0/appointments?startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00&useCache=true&page[size]=5&page[number]=5'
+                'self' => 'http://www.example.com/mobile/v0/appointments?page[size]=5&page[number]=2&useCache=true&startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00',
+                'first' => 'http://www.example.com/mobile/v0/appointments?page[size]=5&page[number]=1&useCache=true&startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00',
+                'prev' => 'http://www.example.com/mobile/v0/appointments?page[size]=5&page[number]=1&useCache=true&startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00',
+                'next' => 'http://www.example.com/mobile/v0/appointments?page[size]=5&page[number]=3&useCache=true&startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00',
+                'last' => 'http://www.example.com/mobile/v0/appointments?page[size]=5&page[number]=5&useCache=true&startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00'
               }
             )
           end
@@ -299,11 +318,11 @@ RSpec.describe 'appointments', type: :request do
           it 'has the correct links with no next' do
             expect(response.parsed_body['links']).to eq(
               {
-                'self' => 'http://www.example.com/mobile/v0/appointments?startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00&useCache=true&page[size]=5&page[number]=5',
-                'first' => 'http://www.example.com/mobile/v0/appointments?startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00&useCache=true&page[size]=5&page[number]=1',
-                'prev' => 'http://www.example.com/mobile/v0/appointments?startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00&useCache=true&page[size]=5&page[number]=4',
+                'self' => 'http://www.example.com/mobile/v0/appointments?page[size]=5&page[number]=5&useCache=true&startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00',
+                'first' => 'http://www.example.com/mobile/v0/appointments?page[size]=5&page[number]=1&useCache=true&startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00',
+                'prev' => 'http://www.example.com/mobile/v0/appointments?page[size]=5&page[number]=4&useCache=true&startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00',
                 'next' => nil,
-                'last' => 'http://www.example.com/mobile/v0/appointments?startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00&useCache=true&page[size]=5&page[number]=5'
+                'last' => 'http://www.example.com/mobile/v0/appointments?page[size]=5&page[number]=5&useCache=true&startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00'
               }
             )
           end
@@ -334,11 +353,11 @@ RSpec.describe 'appointments', type: :request do
           it 'has the correct links with no next' do
             expect(response.parsed_body['links']).to eq(
               {
-                'self' => 'http://www.example.com/mobile/v0/appointments?startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00&useCache=true&page[size]=5&page[number]=99',
-                'first' => 'http://www.example.com/mobile/v0/appointments?startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00&useCache=true&page[size]=5&page[number]=1',
-                'prev' => 'http://www.example.com/mobile/v0/appointments?startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00&useCache=true&page[size]=5&page[number]=5',
+                'self' => 'http://www.example.com/mobile/v0/appointments?page[size]=5&page[number]=99&useCache=true&startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00',
+                'first' => 'http://www.example.com/mobile/v0/appointments?page[size]=5&page[number]=1&useCache=true&startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00',
+                'prev' => 'http://www.example.com/mobile/v0/appointments?page[size]=5&page[number]=5&useCache=true&startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00',
                 'next' => nil,
-                'last' => 'http://www.example.com/mobile/v0/appointments?startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00&useCache=true&page[size]=5&page[number]=5'
+                'last' => 'http://www.example.com/mobile/v0/appointments?page[size]=5&page[number]=5&useCache=true&startDate=2019-01-01T00:00:00+00:00&endDate=2021-02-01T10:30:00+00:00'
               }
             )
           end
@@ -1081,7 +1100,7 @@ RSpec.describe 'appointments', type: :request do
       context 'with feature flag off' do
         let(:params) do
           {
-            included: ['pending'],
+            include: ['pending'],
             page: { number: 1, size: 100 },
             startDate: start_date,
             endDate: end_date
@@ -1125,7 +1144,7 @@ RSpec.describe 'appointments', type: :request do
         context 'when pending appointments are included in the query params' do
           let(:params) do
             {
-              included: ['pending'],
+              include: ['pending'],
               page: { number: 1, size: 100 },
               startDate: start_date,
               endDate: end_date
@@ -1296,20 +1315,41 @@ RSpec.describe 'appointments', type: :request do
             get_appointments
             expect(response.parsed_body['links']).to eq(
               {
-                'self' => 'http://www.example.com/mobile/v0/appointments?startDate=2020-08-01T10:30:00+00:00&endDate=2021-02-01T10:30:00+00:00&useCache=true&page[size]=100&page[number]=1&included[]=pending',
-                'first' => 'http://www.example.com/mobile/v0/appointments?startDate=2020-08-01T10:30:00+00:00&endDate=2021-02-01T10:30:00+00:00&useCache=true&page[size]=100&page[number]=1&included[]=pending',
+                'self' => 'http://www.example.com/mobile/v0/appointments?page[size]=100&page[number]=1&useCache=true&include[]=pending&startDate=2020-08-01T10:30:00+00:00&endDate=2021-02-01T10:30:00+00:00',
+                'first' => 'http://www.example.com/mobile/v0/appointments?page[size]=100&page[number]=1&useCache=true&include[]=pending&startDate=2020-08-01T10:30:00+00:00&endDate=2021-02-01T10:30:00+00:00',
                 'prev' => nil,
                 'next' => nil,
-                'last' => 'http://www.example.com/mobile/v0/appointments?startDate=2020-08-01T10:30:00+00:00&endDate=2021-02-01T10:30:00+00:00&useCache=true&page[size]=100&page[number]=1&included[]=pending'
+                'last' => 'http://www.example.com/mobile/v0/appointments?page[size]=100&page[number]=1&useCache=true&include[]=pending&startDate=2020-08-01T10:30:00+00:00&endDate=2021-02-01T10:30:00+00:00'
               }
             )
+          end
+
+          context 'if the param is named included' do
+            let(:params) do
+              {
+                included: ['pending'],
+                page: { number: 1, size: 100 },
+                startDate: start_date,
+                endDate: end_date
+              }
+            end
+
+            before { get_appointments }
+
+            it 'returns a 200' do
+              expect(response).to have_http_status(:ok)
+            end
+
+            it 'still returns pending appointments' do
+              expect(response.parsed_body['data'].first['attributes']).to include({ 'isPending' => true })
+            end
           end
         end
 
         context 'when the appointments request service fails' do
           let(:params) do
             {
-              included: ['pending'],
+              include: ['pending'],
               page: { number: 1, size: 100 },
               startDate: start_date,
               endDate: end_date

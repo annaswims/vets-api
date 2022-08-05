@@ -23,16 +23,6 @@ FactoryBot.define do
     trait :status_submitted do
       status { 'submitted' }
     end
-
-    trait :completed_a_day_ago do
-      updated_at { 1.day.ago }
-      status { 'success' }
-    end
-
-    trait :completed_a_week_ago do
-      updated_at { 8.days.ago }
-      status { 'success' }
-    end
   end
 
   factory :extra_supplemental_claim, class: 'AppealsApi::SupplementalClaim' do
@@ -44,6 +34,17 @@ FactoryBot.define do
     end
     form_data do
       JSON.parse File.read "#{::Rails.root}/modules/appeals_api/spec/fixtures/v2/valid_200995_extra.json"
+    end
+  end
+
+  factory :minimal_supplemental_claim, class: 'AppealsApi::SupplementalClaim' do
+    id { SecureRandom.uuid }
+    api_version { 'V2' }
+    auth_headers do
+      JSON.parse File.read "#{::Rails.root}/modules/appeals_api/spec/fixtures/v2/valid_200995_headers_minimum.json"
+    end
+    form_data do
+      JSON.parse File.read "#{::Rails.root}/modules/appeals_api/spec/fixtures/v2/valid_200995.json"
     end
   end
 end

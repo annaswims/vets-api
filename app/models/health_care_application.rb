@@ -20,6 +20,8 @@ class HealthCareApplication < ApplicationRecord
   validates(:state, presence: true, inclusion: %w[success error failed pending])
   validates(:form_submission_id_string, :timestamp, presence: true, if: :success?)
 
+  validate(:long_form_required_fields, on: :create)
+
   after_save(:send_failure_mail, if: proc do |hca|
     hca.saved_change_to_attribute?(:state) && hca.failed? && hca.form.present? && hca.parsed_form['email']
   end)
@@ -47,6 +49,10 @@ class HealthCareApplication < ApplicationRecord
     state == 'failed'
   end
 
+  def short_form?
+    form.present? && parsed_form['lastServiceBranch'].blank?
+  end
+
   def submit_sync
     result = begin
       HCA::Service.new(user).submit_form(parsed_form)
@@ -72,6 +78,18 @@ class HealthCareApplication < ApplicationRecord
 
     unless valid?
       StatsD.increment("#{HCA::Service::STATSD_KEY_PREFIX}.validation_error")
+
+      StatsD.increment("#{HCA::Service::STATSD_KEY_PREFIX}.validation_error_short_form") if short_form?
+
+      Raven.extra_context(
+        user_loa: user&.loa
+      )
+
+      PersonalInformationLog.create(
+        data: parsed_form,
+        error_class: 'HealthCareApplication ValidationError'
+      )
+
       raise(Common::Exceptions::ValidationErrors, self)
     end
 
@@ -167,6 +185,20 @@ class HealthCareApplication < ApplicationRecord
 
   private
 
+  def long_form_required_fields
+    return if form.blank? || parsed_form['vaCompensationType'] == 'highDisability'
+
+    %w[
+      maritalStatus
+      isEnrolledMedicarePartA
+      lastServiceBranch
+      lastEntryDate
+      lastDischargeDate
+    ].each do |attr|
+      errors.add(:form, "#{attr} can't be null") if parsed_form[attr].nil?
+    end
+  end
+
   def prefill_compensation_type
     auth_headers = EVSS::DisabilityCompensationAuthHeaders.new(user).add_headers(EVSS::AuthHeaders.new(user).to_h)
     rating_info_service = EVSS::CommonService.new(auth_headers)
@@ -180,9 +212,11 @@ class HealthCareApplication < ApplicationRecord
   def prefill_fields
     return if user.blank? || !user.loa3?
 
-    parsed_form['veteranFullName'] = user.full_name_normalized.compact.stringify_keys
-    parsed_form['veteranDateOfBirth'] = user.birth_date
-    parsed_form['veteranSocialSecurityNumber'] = user.ssn_normalized
+    parsed_form.merge!({
+      'veteranFullName' => user.full_name_normalized.compact.stringify_keys,
+      'veteranDateOfBirth' => user.birth_date,
+      'veteranSocialSecurityNumber' => user.ssn_normalized
+    }.compact)
 
     prefill_compensation_type
   end
@@ -203,6 +237,7 @@ class HealthCareApplication < ApplicationRecord
 
   def log_submission_failure
     StatsD.increment("#{HCA::Service::STATSD_KEY_PREFIX}.failed_wont_retry")
+    StatsD.increment("#{HCA::Service::STATSD_KEY_PREFIX}.failed_wont_retry_short_form") if short_form?
   end
 
   def send_failure_mail

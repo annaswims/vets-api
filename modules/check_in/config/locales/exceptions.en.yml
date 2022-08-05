@@ -20,9 +20,15 @@ en:
         title: 'Operation failed' # To be used when no external minor code is mappable
         code: 'VA900'
         status: 400
-      LOROTA-MAPPED-API_401:
+      LOROTA-API_401:
         <<: *external_defaults
         title: Authentication Error
         code: 'LOROTA-API_401'
         detail: 'Authentication Error'
         status: 401
+      CHIP-MAPPED-API_504:
+        <<: *external_defaults
+        title: Timeout Error
+        code: 'CHIP-API_504'
+        detail: 'Request timed out'
+        status: 504

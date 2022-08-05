@@ -22,6 +22,26 @@ RSpec.describe ClaimsApi::AutoEstablishedClaim, type: :model do
     pending_record
   end
 
+  it 'writes flashes and special issues to the DB on create' do
+    pending_record.status = 'submitted'
+    expected_claims = ClaimsApi::AutoEstablishedClaim.all
+    expect(expected_claims.first.id).to eq(pending_record.id)
+    expect(expected_claims.first.special_issues).to eq(pending_record.special_issues)
+    expect(expected_claims.first.flashes).to eq(%w[Hardship Homeless])
+    expect(expected_claims.first.special_issues.first['special_issues']).to eq(['FDC', 'PTSD/2'])
+  end
+
+  describe "persisting 'cid' (OKTA client_id)" do
+    it "stores 'cid' in the DB upon creation" do
+      auto_form.cid = 'ABC123'
+      auto_form.save!
+
+      claim = ClaimsApi::AutoEstablishedClaim.first
+
+      expect(claim.cid).to eq('ABC123')
+    end
+  end
+
   describe 'validate_service_dates' do
     context 'when activeDutyEndDate is before activeDutyBeginDate' do
       it 'throws an error' do
@@ -78,18 +98,24 @@ RSpec.describe ClaimsApi::AutoEstablishedClaim, type: :model do
   describe 'translate form_data' do
     it 'checks an active claim date' do
       payload = JSON.parse(pending_record.to_internal)
-      expect(payload['form526']['claimDate']).to eq('1990-01-03')
+      expect(payload['form526']['claimDate']).to eq('1990-01-03T00:00:00+00:00')
     end
 
     it 'adds an active claim date' do
       pending_record.form_data.delete('claimDate')
       payload = JSON.parse(pending_record.to_internal)
-      expect(payload['form526']['claimDate']).to eq(pending_record.created_at.to_date.to_s)
+      expect(payload['form526']['claimDate']).to eq(DateTime.parse(pending_record.created_at.iso8601).iso8601)
+    end
+
+    it 'converts a claim date to UTC' do
+      pending_record.form_data['claimDate'] = '1990-01-03'
+      payload = JSON.parse(pending_record.to_internal)
+      expect(payload['form526']['claimDate']).to eq('1990-01-03T00:00:00+00:00')
     end
 
     it 'adds an identifier for Lighthouse submissions' do
       payload = JSON.parse(pending_record.to_internal)
-      expect(payload['form526']['claimSubmissionSource']).to eq('Lighthouse')
+      expect(payload['form526']['claimSubmissionSource']).to eq('LH-B')
     end
 
     it 'converts special issues to EVSS codes' do
@@ -103,86 +129,72 @@ RSpec.describe ClaimsApi::AutoEstablishedClaim, type: :model do
       expect(actual).to eq('FLEEING_CURRENT_RESIDENCE')
     end
 
-    describe 'when days until release is between 90 and 180 days' do
-      it 'sets bddQualified to true' do
+    it 'converts homelessness risk situation type to EVSS code' do
+      temp_form_data = pending_record.form_data
+      temp_form_data['veteran']['homelessness'].delete('currentlyHomeless')
+      temp_form_data['veteran']['homelessness']['homelessnessRisk'] = {
+        'homelessnessRiskSituationType' => 'losingHousing',
+        'otherLivingSituation' => 'something'
+      }
+      pending_record.form_data = temp_form_data
+      payload = JSON.parse(pending_record.to_internal)
+      actual = payload['form526']['veteran']['homelessness']['homelessnessRisk']['homelessnessRiskSituationType']
+      expect(actual).to eq('HOUSING_WILL_BE_LOST_IN_30_DAYS')
+    end
+
+    context 'when homelessness risk situation type is "other" and "otherLivingSituation" is not provided' do
+      it 'tranforms "otherLivingSituation" to a string with a single whitespace to pass EVSS validations' do
         temp_form_data = pending_record.form_data
-        temp_form_data['serviceInformation'] = {
-          'servicePeriods' => [
-            {
-              'serviceBranch' => 'Air Force',
-              'activeDutyBeginDate' => '1991-05-02',
-              'activeDutyEndDate' => (Time.zone.now.to_date + 100.days).to_s
-            }
-          ]
+        temp_form_data['veteran']['homelessness'].delete('currentlyHomeless')
+        temp_form_data['veteran']['homelessness']['homelessnessRisk'] = {
+          'homelessnessRiskSituationType' => 'other'
         }
         pending_record.form_data = temp_form_data
-
         payload = JSON.parse(pending_record.to_internal)
-        expect(payload['form526']['bddQualified']).to eq(true)
+        homelessness_risk = payload['form526']['veteran']['homelessness']['homelessnessRisk']
+        expect(homelessness_risk['homelessnessRiskSituationType']).to eq('OTHER')
+        expect(homelessness_risk['otherLivingSituation']).to eq(' ')
       end
     end
 
-    describe 'when days until release is less than 90 days' do
-      it 'sets bddQualified to false' do
+    context 'when homelessness risk situation type is "other" and "otherLivingSituation" is an empty string' do
+      it 'tranforms "otherLivingSituation" to a string with a single whitespace to pass EVSS validations' do
         temp_form_data = pending_record.form_data
-        temp_form_data['serviceInformation'] = {
-          'servicePeriods' => [
-            {
-              'serviceBranch' => 'Air Force',
-              'activeDutyBeginDate' => '1991-05-02',
-              'activeDutyEndDate' => (Time.zone.now.to_date + 80.days).to_s
-            }
-          ]
+        temp_form_data['veteran']['homelessness'].delete('currentlyHomeless')
+        temp_form_data['veteran']['homelessness']['homelessnessRisk'] = {
+          'homelessnessRiskSituationType' => 'other',
+          'otherLivingSituation' => ''
         }
         pending_record.form_data = temp_form_data
-
         payload = JSON.parse(pending_record.to_internal)
-        expect(payload['form526']['bddQualified']).to eq(false)
+        homelessness_risk = payload['form526']['veteran']['homelessness']['homelessnessRisk']
+        expect(homelessness_risk['homelessnessRiskSituationType']).to eq('OTHER')
+        expect(homelessness_risk['otherLivingSituation']).to eq(' ')
       end
     end
 
-    describe 'when days until release is greater than 180 days' do
-      describe 'when Veteran has previous service period' do
-        it 'sets bddQualified to false' do
-          temp_form_data = pending_record.form_data
-          temp_form_data['serviceInformation'] = {
-            'servicePeriods' => [
-              {
-                'serviceBranch' => 'Air Force',
-                'activeDutyBeginDate' => '1991-05-02',
-                'activeDutyEndDate' => (Time.zone.now.to_date + 190.days).to_s
-              },
-              {
-                'serviceBranch' => 'Army',
-                'activeDutyBeginDate' => '1991-05-02',
-                'activeDutyEndDate' => (Time.zone.now.to_date - 1.day).to_s
-              }
-            ]
-          }
-          pending_record.form_data = temp_form_data
+    it 'is case insensitive when the homelessnessRiskSituationType is "OTHER"' do
+      temp_form_data = pending_record.form_data
+      temp_form_data['veteran']['homelessness'].delete('currentlyHomeless')
+      temp_form_data['veteran']['homelessness']['homelessnessRisk'] = {
+        'homelessnessRiskSituationType' => 'OTHER'
+      }
+      pending_record.form_data = temp_form_data
+      payload = JSON.parse(pending_record.to_internal)
+      homelessness_risk = payload['form526']['veteran']['homelessness']['homelessnessRisk']
+      expect(homelessness_risk['homelessnessRiskSituationType']).to eq('OTHER')
+      expect(homelessness_risk['otherLivingSituation']).to eq(' ')
+    end
 
-          payload = JSON.parse(pending_record.to_internal)
-          expect(payload['form526']['bddQualified']).to eq(false)
-        end
-      end
+    it 'is case insensitive when the homelessSituationType is "OTHER"' do
+      temp_form_data = pending_record.form_data
+      temp_form_data['veteran']['homelessness']['currentlyHomeless']['homelessSituationType'] = 'OTHER'
 
-      describe 'when Veteran does not have previous service period' do
-        it 'raises an exception' do
-          temp_form_data = pending_record.form_data
-          temp_form_data['serviceInformation'] = {
-            'servicePeriods' => [
-              {
-                'serviceBranch' => 'Air Force',
-                'activeDutyBeginDate' => '1991-05-02',
-                'activeDutyEndDate' => (Time.zone.now.to_date + 190.days).to_s
-              }
-            ]
-          }
-          pending_record.form_data = temp_form_data
+      pending_record.form_data = temp_form_data
+      payload = JSON.parse(pending_record.to_internal)
+      currently_homeless = payload['form526']['veteran']['homelessness']['currentlyHomeless']
 
-          expect { pending_record.to_internal }.to raise_error(::Common::Exceptions::UnprocessableEntity)
-        end
-      end
+      expect(currently_homeless['homelessSituationType']).to eq('OTHER')
     end
 
     describe "breaking out 'separationPay.receivedDate'" do
@@ -274,6 +286,21 @@ RSpec.describe ClaimsApi::AutoEstablishedClaim, type: :model do
               expect(untouched_ending_date).to eq(ending_date)
             end
           end
+
+          context "when 'changeOfAddress.addressChangeType' is not uppercased" do
+            let(:address_change_type) { 'temporary' }
+
+            it "transforms 'changeOfAddress.addressChangeType' to uppercase" do
+              pending_record.form_data['veteran']['changeOfAddress'] = change_of_address
+              original_value = pending_record.form_data['veteran']['changeOfAddress']['addressChangeType']
+              expect(original_value).to eq('temporary')
+
+              payload = JSON.parse(pending_record.to_internal)
+              transformed_value = payload['form526']['veteran']['changeOfAddress']['addressChangeType']
+
+              expect(transformed_value).to eq('TEMPORARY')
+            end
+          end
         end
 
         context "when 'changeOfAddress.addressChangeType' is 'PERMANENT'" do
@@ -303,204 +330,57 @@ RSpec.describe ClaimsApi::AutoEstablishedClaim, type: :model do
               expect(untouched_ending_date).to eq(nil)
             end
           end
+
+          context "when 'changeOfAddress.addressChangeType' is not uppercased" do
+            let(:address_change_type) { 'permanent' }
+
+            it "transforms 'changeOfAddress.addressChangeType' to uppercase" do
+              pending_record.form_data['veteran']['changeOfAddress'] = change_of_address
+              original_value = pending_record.form_data['veteran']['changeOfAddress']['addressChangeType']
+              expect(original_value).to eq('permanent')
+
+              payload = JSON.parse(pending_record.to_internal)
+              transformed_value = payload['form526']['veteran']['changeOfAddress']['addressChangeType']
+
+              expect(transformed_value).to eq('PERMANENT')
+            end
+          end
         end
       end
     end
 
-    describe "handling an old 'serviceBranch' value" do
-      context "when 'serviceBranch' is 'Air Force Academy'" do
-        let(:old_value) { 'Air Force Academy' }
+    describe "scrubbing 'specialIssues' on 'secondaryDisabilities'" do
+      context "when a 'secondaryDisability' has 'specialIssues'" do
+        it "removes the 'specialIssues' attribute" do
+          pending_record.form_data['disabilities'].first['secondaryDisabilities'].first['specialIssues'] = []
+          pending_record.form_data['disabilities'].first['secondaryDisabilities'].first['specialIssues'] << 'ALS'
 
-        it 'maps to a value accepted by EVSS' do
-          pending_record.form_data['serviceInformation']['servicePeriods'].first['serviceBranch'] = old_value
           payload = JSON.parse(pending_record.to_internal)
-          expect(payload['form526']['serviceInformation']['servicePeriods'].first['serviceBranch']).to eq('Air Force')
+          special_issues = payload['form526']['disabilities'].first['secondaryDisabilities'].first['specialIssues']
+
+          expect(special_issues).to be_nil
         end
       end
 
-      context "when 'serviceBranch' is 'Air Force Reserves'" do
-        let(:old_value) { 'Air Force Reserves' }
-
-        it 'maps to a value accepted by EVSS' do
-          pending_record.form_data['serviceInformation']['servicePeriods'].first['serviceBranch'] = old_value
+      context "when a 'secondaryDisability' does not have 'specialIssues'" do
+        it 'does not change anything' do
+          pre_processed_disabilities = pending_record.form_data['disabilities']
           payload = JSON.parse(pending_record.to_internal)
-          expect(payload['form526']['serviceInformation']['servicePeriods'].first['serviceBranch']).to eq('Air Force')
+          post_processed_disabilities = payload['form526']['disabilities']
+
+          expect(pre_processed_disabilities).eql?(post_processed_disabilities)
         end
       end
 
-      context "when 'serviceBranch' is 'Army Reserves'" do
-        let(:old_value) { 'Army Reserves' }
+      context "when a 'secondaryDisability' does not exist" do
+        it 'does not change anything' do
+          pending_record.form_data['disabilities'].first.delete('secondaryDisabilities')
 
-        it 'maps to a value accepted by EVSS' do
-          pending_record.form_data['serviceInformation']['servicePeriods'].first['serviceBranch'] = old_value
+          pre_processed_disabilities = pending_record.form_data['disabilities']
           payload = JSON.parse(pending_record.to_internal)
-          expect(payload['form526']['serviceInformation']['servicePeriods'].first['serviceBranch']).to eq('Army')
-        end
-      end
+          post_processed_disabilities = payload['form526']['disabilities']
 
-      context "when 'serviceBranch' is 'Army Air Corps or Army Air Force'" do
-        let(:old_value) { 'Army Air Corps or Army Air Force' }
-
-        it 'maps to a value accepted by EVSS' do
-          pending_record.form_data['serviceInformation']['servicePeriods'].first['serviceBranch'] = old_value
-          payload = JSON.parse(pending_record.to_internal)
-          expect(payload['form526']['serviceInformation']['servicePeriods'].first['serviceBranch']).to eq('Army')
-        end
-      end
-
-      context "when 'serviceBranch' is 'Army Nurse Corps'" do
-        let(:old_value) { 'Army Nurse Corps' }
-
-        it 'maps to a value accepted by EVSS' do
-          pending_record.form_data['serviceInformation']['servicePeriods'].first['serviceBranch'] = old_value
-          payload = JSON.parse(pending_record.to_internal)
-          expect(payload['form526']['serviceInformation']['servicePeriods'].first['serviceBranch']).to eq('Army')
-        end
-      end
-
-      context "when 'serviceBranch' is 'Women's Army Corps'" do
-        let(:old_value) { "Women's Army Corps" }
-
-        it 'maps to a value accepted by EVSS' do
-          pending_record.form_data['serviceInformation']['servicePeriods'].first['serviceBranch'] = old_value
-          payload = JSON.parse(pending_record.to_internal)
-          expect(payload['form526']['serviceInformation']['servicePeriods'].first['serviceBranch']).to eq('Army')
-        end
-      end
-
-      context "when 'serviceBranch' is 'US Military Academy'" do
-        let(:old_value) { 'US Military Academy' }
-
-        it 'maps to a value accepted by EVSS' do
-          pending_record.form_data['serviceInformation']['servicePeriods'].first['serviceBranch'] = old_value
-          payload = JSON.parse(pending_record.to_internal)
-          expect(payload['form526']['serviceInformation']['servicePeriods'].first['serviceBranch']).to eq('Army')
-        end
-      end
-
-      context "when 'serviceBranch' is 'Coast Guard Reserves'" do
-        let(:old_value) { 'Coast Guard Reserves' }
-
-        it 'maps to a value accepted by EVSS' do
-          pending_record.form_data['serviceInformation']['servicePeriods'].first['serviceBranch'] = old_value
-          payload = JSON.parse(pending_record.to_internal)
-          expect(payload['form526']['serviceInformation']['servicePeriods'].first['serviceBranch']).to eq('Coast Guard')
-        end
-      end
-
-      context "when 'serviceBranch' is 'Coast Guard Academy'" do
-        let(:old_value) { 'Coast Guard Academy' }
-
-        it 'maps to a value accepted by EVSS' do
-          pending_record.form_data['serviceInformation']['servicePeriods'].first['serviceBranch'] = old_value
-          payload = JSON.parse(pending_record.to_internal)
-          expect(payload['form526']['serviceInformation']['servicePeriods'].first['serviceBranch']).to eq('Coast Guard')
-        end
-      end
-
-      context "when 'serviceBranch' is 'Marine Corps'" do
-        let(:old_value) { 'Marine Corps' }
-
-        it 'maps to a value accepted by EVSS' do
-          pending_record.form_data['serviceInformation']['servicePeriods'].first['serviceBranch'] = old_value
-          payload = JSON.parse(pending_record.to_internal)
-          expect(payload['form526']['serviceInformation']['servicePeriods'].first['serviceBranch']).to eq('Marine')
-        end
-      end
-
-      context "when 'serviceBranch' is 'Marine Corps Reserves'" do
-        let(:old_value) { 'Marine Corps Reserves' }
-
-        it 'maps to a value accepted by EVSS' do
-          pending_record.form_data['serviceInformation']['servicePeriods'].first['serviceBranch'] = old_value
-          payload = JSON.parse(pending_record.to_internal)
-          expect(payload['form526']['serviceInformation']['servicePeriods'].first['serviceBranch']).to eq('Marine')
-        end
-      end
-
-      context "when 'serviceBranch' is 'Merchant Marine'" do
-        let(:old_value) { 'Merchant Marine' }
-
-        it 'maps to a value accepted by EVSS' do
-          pending_record.form_data['serviceInformation']['servicePeriods'].first['serviceBranch'] = old_value
-          payload = JSON.parse(pending_record.to_internal)
-          expect(payload['form526']['serviceInformation']['servicePeriods'].first['serviceBranch']).to eq('Marine')
-        end
-      end
-
-      context "when 'serviceBranch' is 'Navy Reserves'" do
-        let(:old_value) { 'Navy Reserves' }
-
-        it 'maps to a value accepted by EVSS' do
-          pending_record.form_data['serviceInformation']['servicePeriods'].first['serviceBranch'] = old_value
-          payload = JSON.parse(pending_record.to_internal)
-          expect(payload['form526']['serviceInformation']['servicePeriods'].first['serviceBranch']).to eq('Navy')
-        end
-      end
-
-      context "when 'serviceBranch' is 'Naval Academy'" do
-        let(:old_value) { 'Naval Academy' }
-
-        it 'maps to a value accepted by EVSS' do
-          pending_record.form_data['serviceInformation']['servicePeriods'].first['serviceBranch'] = old_value
-          payload = JSON.parse(pending_record.to_internal)
-          expect(payload['form526']['serviceInformation']['servicePeriods'].first['serviceBranch']).to eq('Navy')
-        end
-      end
-
-      context "when 'serviceBranch' is 'Other'" do
-        let(:old_value) { 'Other' }
-
-        it 'maps to a value accepted by EVSS' do
-          pending_record.form_data['serviceInformation']['servicePeriods'].first['serviceBranch'] = old_value
-          payload = JSON.parse(pending_record.to_internal)
-          expect(payload['form526']['serviceInformation']['servicePeriods'].first['serviceBranch']).to eq('Unknown')
-        end
-      end
-
-      context "when 'serviceBranch' is unmapped" do
-        let(:old_value) { 'Some Random Value' }
-
-        it 'remains unchanged' do
-          pending_record.form_data['serviceInformation']['servicePeriods'].first['serviceBranch'] = old_value
-          payload = JSON.parse(pending_record.to_internal)
-          expect(payload['form526']['serviceInformation']['servicePeriods'].first['serviceBranch']).to eq(old_value)
-        end
-      end
-
-      describe "scrubbing 'specialIssues' on 'secondaryDisabilities'" do
-        context "when a 'secondaryDisability' has 'specialIssues'" do
-          it "removes the 'specialIssues' attribute" do
-            pending_record.form_data['disabilities'].first['secondaryDisabilities'].first['specialIssues'] = []
-            pending_record.form_data['disabilities'].first['secondaryDisabilities'].first['specialIssues'] << 'ALS'
-
-            payload = JSON.parse(pending_record.to_internal)
-            special_issues = payload['form526']['disabilities'].first['secondaryDisabilities'].first['specialIssues']
-
-            expect(special_issues).to be_nil
-          end
-        end
-
-        context "when a 'secondaryDisability' does not have 'specialIssues'" do
-          it 'does not change anything' do
-            pre_processed_disabilities = pending_record.form_data['disabilities']
-            payload = JSON.parse(pending_record.to_internal)
-            post_processed_disabilities = payload['form526']['disabilities']
-
-            expect(pre_processed_disabilities).eql?(post_processed_disabilities)
-          end
-        end
-
-        context "when a 'secondaryDisability' does not exist" do
-          it 'does not change anything' do
-            pending_record.form_data['disabilities'].first.delete('secondaryDisabilities')
-
-            pre_processed_disabilities = pending_record.form_data['disabilities']
-            payload = JSON.parse(pending_record.to_internal)
-            post_processed_disabilities = payload['form526']['disabilities']
-
-            expect(pre_processed_disabilities).eql?(post_processed_disabilities)
-          end
+          expect(pre_processed_disabilities).eql?(post_processed_disabilities)
         end
       end
     end
@@ -730,6 +610,53 @@ RSpec.describe ClaimsApi::AutoEstablishedClaim, type: :model do
           disability_name = payload['form526']['disabilities'].first['name']
 
           expect(name_with_only_valid_characters).to eq(disability_name)
+        end
+      end
+    end
+  end
+
+  describe "'remove_encrypted_fields' callback" do
+    context "when 'status' is 'established'" do
+      let(:auto_form) { create(:auto_established_claim, :status_established, auth_headers: { some: 'data' }) }
+
+      context 'and the record is updated' do
+        it "erases the 'form_data' attribute" do
+          expect(auto_form.form_data).not_to be_empty
+
+          auto_form.auth_headers = { message: 'just need to update something to trigger the callback' }
+          auto_form.save!
+          auto_form.reload
+
+          expect(auto_form.form_data).to be_empty
+        end
+
+        it "does not erase the 'auth_headers' attribute" do
+          expect(auto_form.auth_headers).not_to be_empty
+
+          auto_form.auth_headers = { message: 'just need to update something to trigger the callback' }
+          auto_form.save!
+          auto_form.reload
+
+          expect(auto_form.auth_headers).not_to be_empty
+        end
+
+        it "does not erase the 'file_data' attribute" do
+          auto_form = build(:auto_established_claim, :status_established, auth_headers: { some: 'data' })
+          file = Rack::Test::UploadedFile.new(
+            "#{::Rails.root}/modules/claims_api/spec/fixtures/extras.pdf"
+          )
+
+          auto_form.set_file_data!(file, 'docType')
+          auto_form.save!
+          auto_form.reload
+
+          expect(auto_form.file_data).not_to be_nil
+
+          auto_form.auth_headers = { message: 'just need to update something to trigger the callback' }
+          auto_form.save!
+          auto_form.reload
+
+          expect(auto_form.file_data).not_to be_nil
         end
       end
     end

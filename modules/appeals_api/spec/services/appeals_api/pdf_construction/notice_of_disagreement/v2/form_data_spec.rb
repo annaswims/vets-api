@@ -58,10 +58,6 @@ module AppealsApi
             it { expect(form_data.date_signed).to eq date }
           end
 
-          describe '#stamp_text' do
-            it { expect(form_data.stamp_text).to eq 'Doe - 987654321' }
-          end
-
           context 'when delegating to notice of disagreement' do
             describe '#appellant_local_time' do
               it do
@@ -84,10 +80,10 @@ module AppealsApi
               end
             end
 
-            describe '#extension_request?' do
+            describe '#requesting_extension?' do
               it do
-                expect(notice_of_disagreement).to receive(:extension_request?)
-                form_data.extension_request?
+                expect(notice_of_disagreement).to receive(:requesting_extension?)
+                form_data.requesting_extension?
               end
             end
 

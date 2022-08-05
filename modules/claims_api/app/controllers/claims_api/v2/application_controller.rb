@@ -3,10 +3,15 @@
 require 'evss/disability_compensation_auth_headers'
 require 'evss/auth_headers'
 require 'token_validation/v2/client'
+require 'claims_api/error/error_handler'
+require 'claims_api/claim_logger'
 
 module ClaimsApi
   module V2
     class ApplicationController < ::OpenidApplicationController
+      include ClaimsApi::Error::ErrorHandler
+      include ClaimsApi::CcgTokenValidation
+
       # fetch_audience: defines the audience used for oauth
       # Overrides the default value defined in OpenidApplicationController
       # NOTE: required for Client Credential Grant (CCG) flow
@@ -121,22 +126,6 @@ module ClaimsApi
       end
 
       private
-
-      def validate_ccg_token!
-        client = TokenValidation::V2::Client.new(api_key: Settings.claims_api.token_validation.api_key)
-        root_url = request.base_url == 'http://localhost:3000' ? 'https://sandbox-api.va.gov' : request.base_url
-        claims_audience = "#{root_url}/services/claims"
-        request_method_to_scope = {
-          'GET' => 'claim.read',
-          'PUT' => 'claim.write',
-          'POST' => 'claim.write'
-        }
-
-        @is_valid_ccg_flow ||= client.token_valid?(audience: claims_audience,
-                                                   scope: request_method_to_scope[request.method],
-                                                   token: token)
-        raise ::Common::Exceptions::Forbidden unless @is_valid_ccg_flow
-      end
 
       def build_target_veteran(veteran_id:, loa:)
         target_veteran ||= ClaimsApi::Veteran.new(

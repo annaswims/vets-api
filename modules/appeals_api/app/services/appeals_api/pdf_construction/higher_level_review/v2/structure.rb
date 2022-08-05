@@ -25,10 +25,10 @@ module AppealsApi
             form_fields.ssn_first_three => form_data.veteran_ssn_first_three,
             form_fields.ssn_second_two => form_data.veteran_ssn_second_two,
             form_fields.ssn_last_four => form_data.veteran_ssn_last_four,
-            form_fields.file_number => form_data.veteran.file_number,
-            form_fields.birth_month => form_data.veteran.birth_month,
-            form_fields.birth_day => form_data.veteran.birth_day,
-            form_fields.birth_year => form_data.veteran.birth_year,
+            # Veteran file number is filled out through autosize text box, not pdf fields
+            form_fields.veteran_birth_month => form_data.veteran.birth_month,
+            form_fields.veteran_birth_day => form_data.veteran.birth_day,
+            form_fields.veteran_birth_year => form_data.veteran.birth_year,
             form_fields.insurance_policy_number => form_data.veteran.insurance_policy_number,
             form_fields.mailing_address_state => form_data.veteran.state_code,
             form_fields.mailing_address_country => form_data.veteran.country_code,
@@ -110,8 +110,7 @@ module AppealsApi
           return unless additional_pages?
 
           @additional_pages_pdf ||= Prawn::Document.new(skip_page_creation: true)
-
-          HigherLevelReview::Pages::V2::AdditionalIssues.new(
+          Pages::AdditionalIssues.new(
             @additional_pages_pdf,
             form_data
           ).build!
@@ -127,31 +126,6 @@ module AppealsApi
           '200996_v2'
         end
 
-        def stamp(stamped_pdf_path)
-          stamper = CentralMail::DatestampPdf.new(stamped_pdf_path)
-
-          bottom_stamped_path = stamper.run(
-            text: "API.VA.GOV #{higher_level_review.created_at.utc.strftime('%Y-%m-%d %H:%M%Z')}",
-            x: 5,
-            y: 775,
-            text_only: true
-          )
-
-          name_stamp_path = "#{Common::FileHelpers.random_file_path}.pdf"
-          Prawn::Document.generate(name_stamp_path, margin: [0, 0]) do |pdf|
-            pdf.text_box form_data.stamp_text,
-                         at: [205, 785],
-                         align: :center,
-                         valign: :center,
-                         overflow: :shrink_to_fit,
-                         min_font_size: 8,
-                         width: 215,
-                         height: 10
-          end
-
-          CentralMail::DatestampPdf.new(nil).stamp(bottom_stamped_path, name_stamp_path)
-        end
-
         private
 
         # rubocop:disable Metrics/MethodLength
@@ -162,6 +136,7 @@ module AppealsApi
 
             fill_text pdf, :veteran_first_name
             fill_text pdf, :veteran_last_name
+            fill_text pdf, :veteran_file_number
             fill_text pdf, :veteran_number_and_street
             fill_text pdf, :veteran_city
             fill_text pdf, :veteran_zip_code

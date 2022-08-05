@@ -3,6 +3,7 @@
 FactoryBot.define do
   factory :notice_of_disagreement, class: 'AppealsApi::NoticeOfDisagreement' do
     id { SecureRandom.uuid }
+    api_version { 'V1' }
     auth_headers do
       JSON.parse File.read "#{::Rails.root}/modules/appeals_api/spec/fixtures/v1/valid_10182_headers.json"
     end
@@ -13,20 +14,6 @@ FactoryBot.define do
     trait :status_error do
       status { 'error' }
     end
-    trait :status_received do
-      status { 'submitted' }
-    end
-    trait :status_completed do
-      status { AppealsApi::NoticeOfDisagreement::COMPLETE_STATUSES.sample }
-    end
-    trait :completed_a_day_ago do
-      updated_at { 1.day.ago }
-      status { AppealsApi::NoticeOfDisagreement::COMPLETE_STATUSES.sample }
-    end
-    trait :completed_a_week_ago do
-      updated_at { 8.days.ago }
-      status { AppealsApi::NoticeOfDisagreement::COMPLETE_STATUSES.sample }
-    end
     trait :board_review_hearing do
       board_review_option { 'hearing' }
     end
@@ -34,6 +21,7 @@ FactoryBot.define do
 
   factory :minimal_notice_of_disagreement, class: 'AppealsApi::NoticeOfDisagreement' do
     id { SecureRandom.uuid }
+    api_version { 'V1' }
     auth_headers do
       JSON.parse File.read "#{::Rails.root}/modules/appeals_api/spec/fixtures/v1/valid_10182_headers_minimum.json"
     end

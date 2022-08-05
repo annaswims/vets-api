@@ -12,7 +12,7 @@ module AppealsApi
                  :veteran, :claimant,
                  to: :higher_level_review
 
-        delegate :first_name, :last_name, :phone_data, :number_and_street, :city, :zip_code,
+        delegate :first_name, :last_name, :file_number, :phone_data, :number_and_street, :city, :zip_code,
                  to: :veteran, prefix: true
 
         delegate :first_name, :last_name, :phone_data, :number_and_street, :city, :zip_code, :email,
@@ -202,10 +202,6 @@ module AppealsApi
 
         def date_signed_yyyy
           appellant_local_time.strftime '%Y'
-        end
-
-        def stamp_text
-          "#{veteran.last_name.truncate(35)} - #{veteran.ssn.last(4)}"
         end
 
         private

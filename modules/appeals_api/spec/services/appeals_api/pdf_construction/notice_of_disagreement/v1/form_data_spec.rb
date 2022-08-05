@@ -81,26 +81,20 @@ module AppealsApi
           end
 
           describe '#signature' do
-            describe 'with claimant' do
-              it { expect(form_data.signature).to eq("John A. Doe\n- Signed by digital authentication to api.va.gov") }
-            end
+            let(:notice_of_disagreement) { create(:minimal_notice_of_disagreement) }
 
-            describe 'without claimant' do
-              let(:notice_of_disagreement) { create(:minimal_notice_of_disagreement) }
+            it { expect(form_data.signature).to eq("Jane Doe\n- Signed by digital authentication to api.va.gov") }
 
-              it { expect(form_data.signature).to eq("Jane Doe\n- Signed by digital authentication to api.va.gov") }
+            it 'truncates the signature if name is too long' do
+              full_first_name = Faker::Lorem.characters(number: 99)
+              notice_of_disagreement.auth_headers['X-VA-First-Name'] = full_first_name
+              full_last_name = Faker::Lorem.characters(number: 99)
+              notice_of_disagreement.auth_headers['X-VA-Last-Name'] = full_last_name
 
-              it 'truncates the signature if name is too long' do
-                full_first_name = Faker::Lorem.characters(number: 99)
-                notice_of_disagreement.auth_headers['X-VA-First-Name'] = full_first_name
-                full_last_name = Faker::Lorem.characters(number: 99)
-                notice_of_disagreement.auth_headers['X-VA-Last-Name'] = full_last_name
-
-                full_name = form_data.veteran_name
-                expect(form_data.signature).to eq(
-                  "#{full_name[0...180]}\n- Signed by digital authentication to api.va.gov"
-                )
-              end
+              full_name = form_data.veteran_name
+              expect(form_data.signature).to eq(
+                "#{full_name[0...180]}\n- Signed by digital authentication to api.va.gov"
+              )
             end
           end
 
@@ -116,16 +110,6 @@ module AppealsApi
 
           describe '#contestable_issues' do
             it { expect(form_data.contestable_issues).to eq(notice_of_disagreement.form_data['included']) }
-          end
-
-          describe '#stamp_text' do
-            it { expect(form_data.stamp_text).to eq('Doe - 6789') }
-
-            it 'truncates the last name if too long' do
-              full_last_name = 'AAAAAAAAAAbbbbbbbbbbCCCCCCCCCCdddddddddd'
-              notice_of_disagreement.auth_headers['X-VA-Last-Name'] = full_last_name
-              expect(form_data.stamp_text).to eq 'AAAAAAAAAAbbbbbbbbbbCCCCCCCCCCdd... - 6789'
-            end
           end
 
           describe '#representative_name' do

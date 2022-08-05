@@ -250,6 +250,8 @@ module V0
       Swagger::Schemas::Vet360::Email,
       Swagger::Schemas::Vet360::Telephone,
       Swagger::Schemas::Vet360::Permission,
+      Swagger::Schemas::Vet360::PreferredName,
+      Swagger::Schemas::Vet360::GenderIdentity,
       Swagger::Schemas::Vet360::ContactInformation,
       Swagger::Schemas::Vet360::Countries,
       Swagger::Schemas::Vet360::States,

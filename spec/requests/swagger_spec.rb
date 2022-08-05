@@ -569,6 +569,17 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
           )
         end
       end
+
+      context 'medical copays send_new_statements_notifications' do
+        it 'validates the route' do
+          expect(subject).to validate(
+            :post,
+            '/v0/medical_copays/send_new_statements_notifications',
+            200,
+            headers
+          )
+        end
+      end
     end
 
     context 'eFolder tests' do
@@ -2143,9 +2154,9 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
       let(:private_key) { OpenSSL::PKey::EC.new(File.read('spec/support/certificates/notification-private.pem')) }
 
       before do
-        allow(Settings.notifications).to receive(:public_key).and_return(
-          File.read(
-            'spec/support/certificates/notification-public.pem'
+        allow_any_instance_of(V0::OnsiteNotificationsController).to receive(:public_key).and_return(
+          OpenSSL::PKey::EC.new(
+            File.read('spec/support/certificates/notification-public.pem')
           )
         )
       end
@@ -2211,12 +2222,13 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
       it 'supports creating onsite notifications' do
         expect(subject).to validate(:post, '/v0/onsite_notifications', 403)
 
+        payload = { user: 'va_notify', iat: Time.current.to_i, exp: 1.minute.from_now.to_i }
         expect(subject).to validate(
           :post,
           '/v0/onsite_notifications',
           200,
           '_headers' => {
-            'Authorization' => "Bearer #{JWT.encode({ user: 'va_notify' }, private_key, 'ES256')}"
+            'Authorization' => "Bearer #{JWT.encode(payload, private_key, 'ES256')}"
           },
           '_data' => {
             onsite_notification: {
@@ -2226,12 +2238,13 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
           }
         )
 
+        payload = { user: 'va_notify', iat: Time.current.to_i, exp: 1.minute.from_now.to_i }
         expect(subject).to validate(
           :post,
           '/v0/onsite_notifications',
           422,
           '_headers' => {
-            'Authorization' => "Bearer #{JWT.encode({ user: 'va_notify' }, private_key, 'ES256')}"
+            'Authorization' => "Bearer #{JWT.encode(payload, private_key, 'ES256')}"
           },
           '_data' => {
             onsite_notification: {
@@ -2266,6 +2279,7 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
       end
 
       it 'supports getting service history data' do
+        Flipper.disable(:profile_get_military_info_from_vaprofile)
         expect(subject).to validate(:get, '/v0/profile/service_history', 401)
         VCR.use_cassette('emis/get_military_service_episodes/valid') do
           expect(subject).to validate(:get, '/v0/profile/service_history', 200, headers)
@@ -2275,7 +2289,9 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
       it 'supports getting personal information data' do
         expect(subject).to validate(:get, '/v0/profile/personal_information', 401)
         VCR.use_cassette('mpi/find_candidate/valid') do
-          expect(subject).to validate(:get, '/v0/profile/personal_information', 200, headers)
+          VCR.use_cassette('va_profile/demographics/demographics') do
+            expect(subject).to validate(:get, '/v0/profile/personal_information', 200, headers)
+          end
         end
       end
 
@@ -2453,6 +2469,36 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
         end
       end
 
+      it 'supports putting va_profile preferred-name data' do
+        expect(subject).to validate(:put, '/v0/profile/preferred_names', 401)
+
+        VCR.use_cassette('va_profile/demographics/post_preferred_name_success') do
+          preferred_name = VAProfile::Models::PreferredName.new(text: 'Pat')
+
+          expect(subject).to validate(
+            :put,
+            '/v0/profile/preferred_names',
+            200,
+            headers.merge('_data' => preferred_name.as_json)
+          )
+        end
+      end
+
+      it 'supports putting va_profile gender-identity data' do
+        expect(subject).to validate(:put, '/v0/profile/gender_identities', 401)
+
+        VCR.use_cassette('va_profile/demographics/post_gender_identity_success') do
+          gender_identity = VAProfile::Models::GenderIdentity.new(code: 'F')
+
+          expect(subject).to validate(
+            :put,
+            '/v0/profile/gender_identities',
+            200,
+            headers.merge('_data' => gender_identity.as_json)
+          )
+        end
+      end
+
       context 'communication preferences' do
         before do
           allow_any_instance_of(User).to receive(:vet360_id).and_return('18277')
@@ -2529,7 +2575,7 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
       end
 
       context 'ch33 bank accounts methods' do
-        let(:mhv_user) { FactoryBot.build(:ch33_dd_user) }
+        let(:mhv_user) { FactoryBot.build(:ch33_dd_user, common_name: 'abraham.lincoln@vets.gov') }
 
         it 'supports the update ch33 bank account api 400 response' do
           res = {
@@ -2908,13 +2954,16 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
         allow_any_instance_of(MPI::Models::MviProfile).to receive(:birth_date).and_return(nil)
 
         VCR.use_cassette('mpi/find_candidate/missing_birthday_and_gender') do
-          expect(subject).to validate(:get, '/v0/profile/personal_information', 502, headers)
+          VCR.use_cassette('va_profile/demographics/demographics') do
+            expect(subject).to validate(:get, '/v0/profile/personal_information', 502, headers)
+          end
         end
       end
     end
 
     describe 'when EMIS returns an unexpected response body' do
       it 'supports returning a custom 502 response' do
+        Flipper.disable(:profile_get_military_info_from_vaprofile)
         allow(EMISRedis::MilitaryInformation).to receive_message_chain(:for_user, :service_history) { nil }
 
         expect(subject).to validate(:get, '/v0/profile/service_history', 502, headers)

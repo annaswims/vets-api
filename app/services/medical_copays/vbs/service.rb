@@ -30,7 +30,7 @@ module MedicalCopays
       def initialize(opts)
         @request = MedicalCopays::Request.build
         @user = opts[:user]
-        @request_data = RequestData.build(user: user)
+        @request_data = RequestData.build(user: user) unless user.nil?
       end
 
       ##
@@ -85,8 +85,14 @@ module MedicalCopays
         Base64.decode64(response.body['statement'])
       end
 
+      def send_new_statements_notifications(_statements_json)
+        # Placeholder until we know JSON structure
+
+        { status: 200, message: 'New Statement Notifications Coming Soon' }
+      end
+
       def settings
-        Settings.mcp.vbs
+        Flipper.enabled?(:medical_copays_api_key_change) ? Settings.mcp.vbs_v2 : Settings.mcp.vbs
       end
     end
   end

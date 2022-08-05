@@ -23,13 +23,12 @@ module Users
       @list << BackendServices::MHV_AC if user.authorize :mhv_account_creation, :access?
       @list << BackendServices::EVSS_CLAIMS if user.authorize :evss, :access?
       @list << BackendServices::FORM526 if user.authorize :evss, :access_form526?
-      @list << BackendServices::ADD_PERSON if user.authorize :mpi, :access_add_person?
+      @list << BackendServices::ADD_PERSON_PROXY if user.authorize :mpi, :access_add_person_proxy?
       @list << BackendServices::USER_PROFILE if user.can_access_user_profile?
       @list << BackendServices::APPEALS_STATUS if user.authorize :appeals, :access?
       @list << BackendServices::ID_CARD if user.can_access_id_card?
       @list << BackendServices::IDENTITY_PROOFED if user.identity_proofed?
       @list << BackendServices::VET360 if user.can_access_vet360?
-      @list += BetaRegistration.where(user_uuid: user.uuid).pluck(:feature)
       @list
     end
 

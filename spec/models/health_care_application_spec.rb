@@ -69,6 +69,23 @@ RSpec.describe HealthCareApplication, type: :model do
         context 'with a loa3 user' do
           let(:user) { create(:user, :loa3) }
 
+          context 'with a nil birth_date' do
+            before do
+              health_care_application.parsed_form['veteranDateOfBirth'] = '1923-01-02'
+              expect(user).to receive(:birth_date).and_return(nil)
+            end
+
+            it 'doesnt set a field if the user data is null' do
+              expect(health_care_application).to receive(:prefill_compensation_type)
+
+              health_care_application.send(:prefill_fields)
+
+              parsed_form = health_care_application.parsed_form
+              expect(parsed_form['veteranDateOfBirth']).to eq('1923-01-02')
+              expect(parsed_form['veteranSocialSecurityNumber']).to eq(user.ssn_normalized)
+            end
+          end
+
           it 'sets uneditable fields using user data' do
             expect(health_care_application).to receive(:prefill_compensation_type)
 
@@ -237,6 +254,66 @@ RSpec.describe HealthCareApplication, type: :model do
   end
 
   describe 'validations' do
+    context 'long form validations' do
+      let(:health_care_application) { build(:health_care_application) }
+
+      before do
+        %w[
+          maritalStatus
+          isEnrolledMedicarePartA
+          lastServiceBranch
+          lastEntryDate
+          lastDischargeDate
+        ].each do |attr|
+          health_care_application.parsed_form.delete(attr)
+        end
+      end
+
+      context 'with a va compensation type of highDisability' do
+        before do
+          health_care_application.parsed_form['vaCompensationType'] = 'highDisability'
+        end
+
+        it 'doesnt require the long form fields' do
+          expect(health_care_application.valid?).to eq(true)
+        end
+      end
+
+      context 'with a va compensation type of none' do
+        before do
+          health_care_application.parsed_form['vaCompensationType'] = 'none'
+        end
+
+        it 'allows false for boolean fields' do
+          health_care_application.parsed_form['isEnrolledMedicarePartA'] = false
+
+          health_care_application.valid?
+
+          expect(health_care_application.errors[:form]).to eq(
+            [
+              "maritalStatus can't be null",
+              "lastServiceBranch can't be null",
+              "lastEntryDate can't be null",
+              "lastDischargeDate can't be null"
+            ]
+          )
+        end
+
+        it 'requires the long form fields' do
+          health_care_application.valid?
+          expect(health_care_application.errors[:form]).to eq(
+            [
+              "maritalStatus can't be null",
+              "isEnrolledMedicarePartA can't be null",
+              "lastServiceBranch can't be null",
+              "lastEntryDate can't be null",
+              "lastDischargeDate can't be null"
+            ]
+          )
+        end
+      end
+    end
+
     it 'validates presence of state' do
       health_care_application = described_class.new(state: nil)
       expect_attr_invalid(health_care_application, :state, "can't be blank")
@@ -277,10 +354,36 @@ RSpec.describe HealthCareApplication, type: :model do
     end
 
     context 'with an invalid record' do
+      it 'adds user loa to extra context' do
+        expect(Raven).to receive(:extra_context).with(user_loa: { current: 1, highest: 3 })
+
+        expect do
+          described_class.new(form: {}.to_json, user: build(:user)).process!
+        end.to raise_error(Common::Exceptions::ValidationErrors)
+      end
+
+      it 'creates a PersonalInformationLog' do
+        expect do
+          described_class.new(form: { test: 'test' }.to_json).process!
+        end.to raise_error(Common::Exceptions::ValidationErrors)
+
+        personal_information_log = PersonalInformationLog.last
+        expect(personal_information_log.data).to eq('test' => 'test')
+        expect(personal_information_log.error_class).to eq('HealthCareApplication ValidationError')
+      end
+
       it 'raises a validation error' do
         expect do
           described_class.new(form: {}.to_json).process!
         end.to raise_error(Common::Exceptions::ValidationErrors)
+      end
+
+      it 'triggers short form statsd' do
+        expect do
+          expect do
+            described_class.new(form: { mothersMaidenName: 'm' }.to_json).process!
+          end.to raise_error(Common::Exceptions::ValidationErrors)
+        end.to trigger_statsd_increment('api.1010ez.validation_error_short_form')
       end
 
       it 'triggers statsd' do
@@ -328,6 +431,20 @@ RSpec.describe HealthCareApplication, type: :model do
               end.to raise_error(VCR::Errors::UnhandledHTTPRequestError)
             end.to trigger_statsd_increment('api.1010ez.failed_wont_retry')
           end
+
+          it 'increments short form statsd key if its a short form' do
+            new_form = JSON.parse(health_care_application.form)
+            new_form.delete('lastServiceBranch')
+            new_form['vaCompensationType'] = 'highDisability'
+            health_care_application.form = new_form.to_json
+            health_care_application.instance_variable_set(:@parsed_form, nil)
+
+            expect do
+              expect do
+                health_care_application.process!
+              end.to raise_error(VCR::Errors::UnhandledHTTPRequestError)
+            end.to trigger_statsd_increment('api.1010ez.failed_wont_retry_short_form')
+          end
         end
       end
 
@@ -354,6 +471,18 @@ RSpec.describe HealthCareApplication, type: :model do
       expect do
         health_care_application.update!(state: 'failed')
       end.to trigger_statsd_increment('api.1010ez.failed_wont_retry')
+    end
+
+    it 'triggers short form statsd' do
+      new_form = JSON.parse(health_care_application.form)
+      new_form.delete('lastServiceBranch')
+      new_form['vaCompensationType'] = 'highDisability'
+      health_care_application.form = new_form.to_json
+      health_care_application.instance_variable_set(:@parsed_form, nil)
+
+      expect do
+        health_care_application.update!(state: 'failed')
+      end.to trigger_statsd_increment('api.1010ez.failed_wont_retry_short_form')
     end
   end
 

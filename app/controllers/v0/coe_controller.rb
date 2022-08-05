@@ -24,16 +24,20 @@ module V0
         raise Common::Exceptions::ValidationErrors, claim
       end
 
-      claim.send_to_lgy(edipi: current_user.edipi, icn: current_user.icn)
+      response = claim.send_to_lgy(edipi: current_user.edipi, icn: current_user.icn)
 
       Rails.logger.info "ClaimID=#{claim.confirmation_number} Form=#{claim.class::FORM}"
       clear_saved_form(claim.form_id)
-      render(json: claim)
+      render json: { data: { attributes: { reference_number: response, claim: claim } } }
     end
 
     def documents
       documents = lgy_service.get_coe_documents
-      render json: { data: { attributes: documents.body } }, status: :ok
+
+      # Documents should be sorted from most to least recent
+      sorted = documents.body.sort_by { |doc| doc['create_date'] }.reverse
+
+      render json: { data: { attributes: sorted } }, status: :ok
     end
 
     def document_upload
@@ -58,6 +62,12 @@ module V0
           render(json: response.status)
         end
       end
+    end
+
+    def document_download
+      document_url = lgy_service.get_document_url(params[:id])
+
+      render json: { data: { attributes: { url: document_url } } }, status: :ok
     end
 
     private

@@ -69,6 +69,21 @@ describe HCA::Service do
       end
     end
 
+    context 'with a medicare claim number' do
+      it 'submits successfully to hca', run_at: 'Wed, 27 Jul 2022 23:54:25 GMT' do
+        VCR.use_cassette(
+          'hca/medicare_claim_num',
+          VCR::MATCH_EVERYTHING.merge(erb: true)
+        ) do
+          form = get_fixture('hca/medicare_claim_num')
+          expect(HealthCareApplication.new(form: form.to_json).valid?).to eq(true)
+
+          result = HCA::Service.new.submit_form(form)
+          expect(result[:success]).to eq(true)
+        end
+      end
+    end
+
     context 'submitting short form' do
       it 'works', run_at: 'Wed, 16 Mar 2022 20:01:14 GMT' do
         VCR.use_cassette(
@@ -79,10 +94,22 @@ describe HCA::Service do
           expect(result[:success]).to eq(true)
         end
       end
+
+      it 'increments statsd' do
+        allow(StatsD).to receive(:increment)
+
+        expect(StatsD).to receive(:increment).with('api.1010ez.submit_form_short_form.fail',
+                                                   tags: ['error:VCRErrorsUnhandledHTTPRequestError'])
+        expect(StatsD).to receive(:increment).with('api.1010ez.submit_form_short_form.total')
+
+        expect do
+          HCA::Service.new.submit_form(get_fixture('hca/short_form'))
+        end.to raise_error(StandardError)
+      end
     end
 
     context 'submitting with attachment' do
-      xit 'works', run_at: 'Fri, 11 Jan 2019 04:56:26 GMT' do
+      it 'works', run_at: 'Mon, 28 Mar 2022 20:27:06 GMT' do
         VCR.use_cassette(
           'hca/submit_with_attachment',
           VCR::MATCH_EVERYTHING.merge(erb: true)
@@ -93,7 +120,7 @@ describe HCA::Service do
       end
 
       context 'with a non-pdf attachment' do
-        xit 'works', run_at: 'Fri, 11 Jan 2019 04:56:26 GMT' do
+        it 'works', run_at: 'Mon, 28 Mar 2022 20:43:21 GMT' do
           hca_attachment = build(:hca_attachment)
           hca_attachment.set_file_data!(
             Rack::Test::UploadedFile.new(

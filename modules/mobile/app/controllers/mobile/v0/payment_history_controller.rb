@@ -9,7 +9,6 @@ module Mobile
     class PaymentHistoryController < ApplicationController
       def index
         validated_params = validate_params(params)
-        raise Mobile::V0::Exceptions::ValidationErrors, validated_params if validated_params.failure?
 
         payments = adapter.payments
         available_years = available_years(payments)
@@ -23,7 +22,7 @@ module Mobile
       private
 
       def validate_params(params)
-        Mobile::V0::Contracts::GetPaginatedList.new.call(
+        Mobile::V0::Contracts::PaymentHistory.new.call(
           start_date: params[:startDate],
           end_date: params[:endDate],
           page_number: params.dig(:page, :number),
@@ -55,23 +54,22 @@ module Mobile
 
         unless start_date && end_date
           most_recent_year = available_years.first
+
+          unless most_recent_year.is_a? Numeric
+            Rails.logger.error('Mobile Payment Error Non Numeric Year', { year_in_error: most_recent_year,
+                                                                          available_years: available_years })
+          end
+
           start_date = DateTime.new(most_recent_year).beginning_of_year.utc
           end_date = DateTime.new(most_recent_year).end_of_year.utc
         end
 
-        payments.filter do |payment|
-          next if payment[:date].nil? # filter out future scheduled payments
-
-          payment[:date].between?(start_date, end_date)
-        end
+        payments.filter { |payment| payment[:date].between?(start_date, end_date) }
       end
 
       def paginate(payments, validated_params)
         url = request.base_url + request.path
-        list, meta = Mobile::PaginationHelper.paginate(list: payments, validated_params: validated_params,
-                                                       url: url)
-
-        [list, meta]
+        Mobile::PaginationHelper.paginate(list: payments, validated_params: validated_params, url: url)
       end
     end
   end

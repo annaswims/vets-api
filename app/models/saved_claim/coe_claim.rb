@@ -10,7 +10,7 @@ class SavedClaim::CoeClaim < SavedClaim
   def send_to_lgy(edipi:, icn:)
     @edipi = edipi
     @icn = icn
-    lgy_service.put_application(payload: prepare_form_data)
+    response = lgy_service.put_application(payload: prepare_form_data)
     log_message_to_sentry(
       "COE claim submitted to LGY: #{guid}",
       :warn,
@@ -18,6 +18,7 @@ class SavedClaim::CoeClaim < SavedClaim
       { team: 'vfs-ebenefits' }
     )
     process_attachments!
+    response['reference_number']
   end
 
   def regional_office
@@ -28,6 +29,7 @@ class SavedClaim::CoeClaim < SavedClaim
 
   # rubocop:disable Metrics/MethodLength
   def prepare_form_data
+    postal_code, postal_code_suffix = parsed_form['applicantAddress']['postalCode'].split('-', 2)
     form_copy = {
       'status' => 'SUBMITTED',
       'veteran' => {
@@ -35,18 +37,19 @@ class SavedClaim::CoeClaim < SavedClaim
         'middleName' => parsed_form['fullName']['middle'] || '',
         'lastName' => parsed_form['fullName']['last'],
         'suffixName' => parsed_form['fullName']['suffix'] || '',
+        'dateOfBirth' => parsed_form['dateOfBirth'],
         'vetAddress1' => parsed_form['applicantAddress']['street'],
         'vetAddress2' => parsed_form['applicantAddress']['street2'] || '',
         'vetCity' => parsed_form['applicantAddress']['city'],
         'vetState' => parsed_form['applicantAddress']['state'],
-        'vetZip' => parsed_form['applicantAddress']['postalCode'],
-        'vetZipSuffix' => '',
+        'vetZip' => postal_code,
+        'vetZipSuffix' => postal_code_suffix,
         'mailingAddress1' => parsed_form['applicantAddress']['street'],
         'mailingAddress2' => parsed_form['applicantAddress']['street2'] || '',
         'mailingCity' => parsed_form['applicantAddress']['city'],
         'mailingState' => parsed_form['applicantAddress']['state'],
-        'mailingZip' => parsed_form['applicantAddress']['postalCode'],
-        'mailingZipSuffix' => '',
+        'mailingZip' => postal_code,
+        'mailingZipSuffix' => postal_code_suffix || '',
         'contactPhone' => parsed_form['contactPhone'],
         'contactEmail' => parsed_form['contactEmail'],
         'vaLoanIndicator' => parsed_form['vaLoanIndicator'],
@@ -74,10 +77,11 @@ class SavedClaim::CoeClaim < SavedClaim
   # rubocop:disable Metrics/MethodLength
   def relevant_prior_loans(form_copy)
     parsed_form['relevantPriorLoans'].each do |loan_info|
+      property_zip, property_zip_suffix = loan_info['propertyAddress']['propertyZip'].split('-', 2)
       form_copy['relevantPriorLoans'] << {
-        'vaLoanNumber' => loan_info['vaLoanNumber'],
-        'startDate' => loan_info['dateRange']['startDate'],
-        'paidOffDate' => loan_info['dateRange']['paidOffDate'],
+        'vaLoanNumber' => loan_info['vaLoanNumber'].to_s,
+        'startDate' => loan_info['dateRange']['from'],
+        'paidOffDate' => loan_info['dateRange']['to'],
         'loanAmount' => loan_info['loanAmount'],
         'loanEntitlementCharged' => loan_info['loanEntitlementCharged'],
         'propertyOwned' => loan_info['propertyOwned'] || false,
@@ -92,9 +96,10 @@ class SavedClaim::CoeClaim < SavedClaim
         'propertyAddress2' => loan_info['propertyAddress']['propertyAddress2'] || '',
         'propertyCity' => loan_info['propertyAddress']['propertyCity'],
         'propertyState' => loan_info['propertyAddress']['propertyState'],
-        'propertyCounty' => loan_info['propertyAddress']['propertyCounty'],
-        'propertyZip' => loan_info['propertyAddress']['propertyZip'],
-        'propertyZipSuffix' => loan_info['propertyAddress']['propertyZipSuffix'] || ''
+        # confirmed OK to omit propertyCounty, but LGY still requires a string
+        'propertyCounty' => '',
+        'propertyZip' => property_zip,
+        'propertyZipSuffix' => property_zip_suffix || ''
         # 'willRefinance' => loan_info['propertyAddress']['willRefinance'] || false
       }
     end
@@ -143,6 +148,9 @@ class SavedClaim::CoeClaim < SavedClaim
   def prepare_document_data
     persistent_attachments.each do |attachment|
       file_extension = File.extname(URI.parse(attachment.file.url).path)
+      claim_file_data =
+        parsed_form['files'].find { |f| f['confirmationCode'] == attachment['guid'] } ||
+        { 'attachmentType' => '', 'attachmentDescription' => '' }
 
       if %w[.jpg .jpeg .png .pdf].include? file_extension.downcase
         file_path = Common::FileHelpers.generate_temp_file(attachment.file.read)
@@ -151,8 +159,8 @@ class SavedClaim::CoeClaim < SavedClaim
         file_path = "#{file_path}#{file_extension}"
 
         document_data = {
-          'documentType' => file_extension,
-          'description' => parsed_form['fileType'],
+          'documentType' => claim_file_data['attachmentType'],
+          'description' => claim_file_data['attachmentDescription'],
           'contentsBase64' => Base64.encode64(File.read(file_path)),
           'fileName' => attachment.file.metadata['filename']
         }

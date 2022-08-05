@@ -6,10 +6,6 @@ require 'sidekiq/testing'
 RSpec.describe RapidReadyForDecision::DisabilityCompensationJob, type: :worker do
   subject { described_class }
 
-  before do
-    Sidekiq::Worker.clear_all
-  end
-
   let!(:user) { FactoryBot.create(:disabilities_compensation_user, icn: '2000163') }
   let(:auth_headers) do
     EVSS::DisabilityCompensationAuthHeaders.new(user).add_headers(EVSS::AuthHeaders.new(user).to_h)
@@ -34,6 +30,10 @@ RSpec.describe RapidReadyForDecision::DisabilityCompensationJob, type: :worker d
   end
 
   describe '#perform', :vcr do
+    around do |example|
+      VCR.use_cassette('evss/claims/claims_without_open_compensation_claims', &example)
+    end
+
     context 'success' do
       context 'the claim is NOT for hypertension' do
         let(:icn_for_user_without_bp_reading_within_one_year) { 17_000_151 }
@@ -50,17 +50,25 @@ RSpec.describe RapidReadyForDecision::DisabilityCompensationJob, type: :worker d
 
         it 'returns from the class if the claim observations does NOT include bp readings from the past year' do
           Sidekiq::Testing.inline! do
-            expect(RapidReadyForDecision::HypertensionMedicationRequestData).not_to receive(:new)
+            expect(RapidReadyForDecision::LighthouseMedicationRequestData).not_to receive(:new)
             subject.perform_async(submission_for_user_wo_bp.id)
           end
         end
       end
 
-      context 'the claim IS for hypertension', :vcr do
+      context 'the claim IS for hypertension' do
         before do
           # The bp reading needs to be 1 year or less old so actual API data will not test if this code is working.
-          allow_any_instance_of(RapidReadyForDecision::HypertensionObservationData)
+          allow_any_instance_of(RapidReadyForDecision::LighthouseObservationData)
             .to receive(:transform).and_return(mocked_observation_data)
+        end
+
+        let(:submission) do
+          create(:form526_submission, :with_uploads, :hypertension_claim_for_increase,
+                 user_uuid: user.uuid,
+                 auth_headers_json: auth_headers.to_json,
+                 saved_claim_id: saved_claim.id,
+                 submitted_claim_id: '600130094')
         end
 
         it 'finishes successfully' do
@@ -69,7 +77,7 @@ RSpec.describe RapidReadyForDecision::DisabilityCompensationJob, type: :worker d
               RapidReadyForDecision::DisabilityCompensationJob.perform_async(submission.id)
 
               submission.reload
-              expect(submission.form.dig('rrd_med_stats', 'bp_readings_count')).to eq 1
+              expect(submission.form.dig('rrd_metadata', 'med_stats', 'bp_readings_count')).to eq 1
             end.not_to raise_error
           end
         end
@@ -91,9 +99,7 @@ RSpec.describe RapidReadyForDecision::DisabilityCompensationJob, type: :worker d
 
         context 'failure' do
           before do
-            allow_any_instance_of(
-              RapidReadyForDecision::HypertensionPdfGenerator
-            ).to receive(:generate).and_return(nil)
+            allow_any_instance_of(RapidReadyForDecision::FastTrackPdfGenerator).to receive(:generate).and_return(nil)
           end
 
           it 'raises a helpful error if the failure is after the api call and emails the engineers' do
@@ -122,15 +128,19 @@ RSpec.describe RapidReadyForDecision::DisabilityCompensationJob, type: :worker d
 
     context 'when the user uuid is not associated with an Account AND the edipi auth header is blank' do
       let(:submission_without_account_or_edpid) do
-        create(:form526_submission,
+        auth_headers.delete('va_eauth_dodedipnid')
+
+        create(:form526_submission, :with_uploads,
                user_uuid: 'nonsense',
-               auth_headers_json: auth_headers.delete('va_eauth_dodedipnid').to_json,
+               auth_headers_json: auth_headers.to_json,
                saved_claim_id: saved_claim.id,
                submitted_claim_id: '600130094')
       end
 
       it 'raises an error' do
         Sidekiq::Testing.inline! do
+          expect(submission_without_account_or_edpid.auth_headers['va_eauth_dodedipnid']).to be_blank
+
           expect do
             RapidReadyForDecision::DisabilityCompensationJob.perform_async(submission_without_account_or_edpid.id)
           end.to raise_error RapidReadyForDecision::DisabilityCompensationJob::AccountNotFoundError
@@ -181,6 +191,17 @@ RSpec.describe RapidReadyForDecision::DisabilityCompensationJob, type: :worker d
           expect do
             subject.perform_async(submission.id)
           end.to raise_error(ArgumentError, 'no ICN passed in for LH API request.')
+        end
+      end
+    end
+
+    context 'when there are pending claims, which cause EP 400 errors' do
+      it 'off-ramps to the non-RRD process' do
+        VCR.use_cassette('evss/claims/claims') do
+          Sidekiq::Testing.inline! do
+            expect(Lighthouse::VeteransHealth::Client).not_to receive(:new)
+            subject.perform_async(submission.id)
+          end
         end
       end
     end

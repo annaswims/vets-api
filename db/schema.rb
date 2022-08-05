@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_03_24_182532) do
+ActiveRecord::Schema.define(version: 2022_07_27_124515) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gin"
@@ -100,14 +100,6 @@ ActiveRecord::Schema.define(version: 2022_03_24_182532) do
     t.text "upload_metadata_ciphertext"
     t.text "encrypted_kms_key"
     t.date "verified_decryptable_at"
-  end
-
-  create_table "appeals_api_event_subscriptions", force: :cascade do |t|
-    t.string "topic"
-    t.string "callback"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
-    t.index ["topic", "callback"], name: "index_appeals_api_event_subscriptions_on_topic_and_callback"
   end
 
   create_table "appeals_api_evidence_submissions", force: :cascade do |t|
@@ -265,6 +257,7 @@ ActiveRecord::Schema.define(version: 2022_03_24_182532) do
     t.text "bgs_special_issue_responses_ciphertext"
     t.text "encrypted_kms_key"
     t.date "verified_decryptable_at"
+    t.string "cid"
     t.index ["evss_id"], name: "index_claims_api_auto_established_claims_on_evss_id"
     t.index ["md5"], name: "index_claims_api_auto_established_claims_on_md5"
     t.index ["source"], name: "index_claims_api_auto_established_claims_on_source"
@@ -288,6 +281,7 @@ ActiveRecord::Schema.define(version: 2022_03_24_182532) do
     t.text "source_data_ciphertext"
     t.text "encrypted_kms_key"
     t.date "verified_decryptable_at"
+    t.string "cid"
     t.index ["header_md5"], name: "index_claims_api_power_of_attorneys_on_header_md5"
   end
 
@@ -345,6 +339,14 @@ ActiveRecord::Schema.define(version: 2022_03_24_182532) do
     t.datetime "updated_at", precision: 6, null: false
     t.index ["user_account_id"], name: "index_deprecated_user_accounts_on_user_account_id", unique: true
     t.index ["user_verification_id"], name: "index_deprecated_user_accounts_on_user_verification_id", unique: true
+  end
+
+  create_table "devices", force: :cascade do |t|
+    t.string "key"
+    t.string "name"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["key"], name: "index_devices_on_key", unique: true
   end
 
   create_table "directory_applications", force: :cascade do |t|
@@ -490,6 +492,16 @@ ActiveRecord::Schema.define(version: 2022_03_24_182532) do
     t.index ["claim_guid"], name: "index_form1010cg_submissions_on_claim_guid", unique: true
   end
 
+  create_table "form1095_bs", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "veteran_icn", null: false
+    t.integer "tax_year", null: false
+    t.jsonb "form_data_ciphertext", null: false
+    t.text "encrypted_kms_key"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["veteran_icn", "tax_year"], name: "index_form1095_bs_on_veteran_icn_and_tax_year", unique: true
+  end
+
   create_table "form526_job_statuses", id: :serial, force: :cascade do |t|
     t.integer "form526_submission_id", null: false
     t.string "job_id", null: false
@@ -585,7 +597,9 @@ ActiveRecord::Schema.define(version: 2022_03_24_182532) do
     t.text "form_data_ciphertext"
     t.text "encrypted_kms_key"
     t.date "verified_decryptable_at"
+    t.uuid "user_account_id"
     t.index ["form_id", "user_uuid"], name: "index_in_progress_forms_on_form_id_and_user_uuid", unique: true
+    t.index ["user_account_id"], name: "index_in_progress_forms_on_user_account_id"
     t.index ["user_uuid"], name: "index_in_progress_forms_on_user_uuid"
   end
 
@@ -657,11 +671,15 @@ ActiveRecord::Schema.define(version: 2022_03_24_182532) do
     t.datetime "refresh_creation", null: false
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.bigint "user_verification_id", null: false
+    t.string "credential_email"
+    t.string "client_id", null: false
     t.index ["handle"], name: "index_oauth_sessions_on_handle", unique: true
     t.index ["hashed_refresh_token"], name: "index_oauth_sessions_on_hashed_refresh_token", unique: true
     t.index ["refresh_creation"], name: "index_oauth_sessions_on_refresh_creation"
     t.index ["refresh_expiration"], name: "index_oauth_sessions_on_refresh_expiration"
     t.index ["user_account_id"], name: "index_oauth_sessions_on_user_account_id"
+    t.index ["user_verification_id"], name: "index_oauth_sessions_on_user_verification_id"
   end
 
   create_table "onsite_notifications", force: :cascade do |t|
@@ -816,16 +834,6 @@ ActiveRecord::Schema.define(version: 2022_03_24_182532) do
     t.index ["account_uuid"], name: "tud_account_availability_logs"
   end
 
-  create_table "test_user_dashboard_tud_account_checkouts", force: :cascade do |t|
-    t.string "account_uuid"
-    t.datetime "checkout_time"
-    t.datetime "checkin_time"
-    t.boolean "has_checkin_error"
-    t.boolean "is_manual_checkin"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
-  end
-
   create_table "test_user_dashboard_tud_accounts", force: :cascade do |t|
     t.string "account_uuid"
     t.string "first_name"
@@ -840,8 +848,8 @@ ActiveRecord::Schema.define(version: 2022_03_24_182532) do
     t.datetime "checkout_time"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.text "services"
     t.string "loa"
+    t.text "services"
     t.uuid "idme_uuid"
     t.text "notes"
     t.string "mfa_code"
@@ -941,6 +949,16 @@ ActiveRecord::Schema.define(version: 2022_03_24_182532) do
     t.index ["item_type", "item_id"], name: "index_versions_on_item_type_and_item_id"
   end
 
+  create_table "veteran_device_records", force: :cascade do |t|
+    t.bigint "device_id", null: false
+    t.boolean "active", default: true, null: false
+    t.string "icn", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["device_id"], name: "index_veteran_device_records_on_device_id"
+    t.index ["icn", "device_id"], name: "index_veteran_device_records_on_icn_and_device_id", unique: true
+  end
+
   create_table "veteran_organizations", id: false, force: :cascade do |t|
     t.string "poa", limit: 3
     t.string "name"
@@ -1024,7 +1042,10 @@ ActiveRecord::Schema.define(version: 2022_03_24_182532) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "deprecated_user_accounts", "user_accounts"
   add_foreign_key "deprecated_user_accounts", "user_verifications"
+  add_foreign_key "in_progress_forms", "user_accounts"
   add_foreign_key "inherited_proof_verified_user_accounts", "user_accounts"
   add_foreign_key "oauth_sessions", "user_accounts"
+  add_foreign_key "oauth_sessions", "user_verifications"
   add_foreign_key "user_verifications", "user_accounts"
+  add_foreign_key "veteran_device_records", "devices"
 end

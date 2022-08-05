@@ -43,6 +43,10 @@ Rails.application.reloader.to_prepare do
                          tags: ["version:#{v}", "context:#{t}", "error:#{err[:code]}"])
       end
     end
+    %w[mhv myvahealth ebenefits vamobile vaoccmobile].each do |client|
+      StatsD.increment(SAML::PostURLService::STATSD_SSO_UNIFIED_NEW_KEY, tags: ["client:#{client}"])
+      StatsD.increment(SAML::PostURLService::STATSD_SSO_UNIFIED_CALLBACK_KEY, tags: ["client:#{client}"])
+    end
     %w[success failure].each do |s|
       (SAML::User::AUTHN_CONTEXTS.keys + [SAML::User::UNKNOWN_AUTHN_CONTEXT]).each do |ctx|
         StatsD.increment(V1::SessionsController::STATSD_SSO_CALLBACK_KEY, 0,
@@ -60,6 +64,45 @@ Rails.application.reloader.to_prepare do
     LOGIN_ERRORS.each do |err|
       StatsD.increment(V1::SessionsController::STATSD_SSO_CALLBACK_FAILED_KEY, 0,
                        tags: ["version:#{v}", "error:#{err[:tag]}"])
+    end
+  end
+
+  # Sign in Service
+  SignIn::Constants::ClientConfig::CLIENT_IDS.each do |client_id|
+    SignIn::Constants::Auth::REDIRECT_URLS.each do |type|
+      acrs = client_id == 'logingov' ? %w[ial1 ial2 min] : %w[loa1 loa3 min]
+      acrs.each do |acr|
+        StatsD.increment(SignIn::Constants::Statsd::STATSD_SIS_AUTHORIZE_ATTEMPT_SUCCESS, 0,
+                         tags: ["type:#{type}", "client_id:#{client_id}", "acr:#{acr}"])
+        StatsD.increment(SignIn::Constants::Statsd::STATSD_SIS_AUTHORIZE_ATTEMPT_FAILURE, 0,
+                         tags: ["type:#{type}", "client_id:#{client_id}", "acr:#{acr}"])
+        StatsD.increment(SignIn::Constants::Statsd::STATSD_SIS_CALLBACK_SUCCESS, 0,
+                         tags: ["type:#{type}", "client_id:#{client_id}", "acr:#{acr}"])
+        StatsD.increment(SignIn::Constants::Statsd::STATSD_SIS_CALLBACK_FAILURE, 0,
+                         tags: ["type:#{type}", "client_id:#{client_id}", "acr:#{acr}"])
+      end
+      %w[1 3].each do |loa|
+        StatsD.increment(SignIn::Constants::Statsd::STATSD_SIS_TOKEN_SUCCESS, 0,
+                         tags: ["type:#{type}", "client_id:#{client_id}", "loa:#{loa}"])
+        StatsD.increment(SignIn::Constants::Statsd::STATSD_SIS_TOKEN_FAILURE, 0,
+                         tags: ["type:#{type}", "client_id:#{client_id}", "loa:#{loa}"])
+        StatsD.increment(SignIn::Constants::Statsd::STATSD_SIS_REFRESH_SUCCESS, 0,
+                         tags: ["type:#{type}", "client_id:#{client_id}", "loa:#{loa}"])
+        StatsD.increment(SignIn::Constants::Statsd::STATSD_SIS_REFRESH_FAILURE, 0,
+                         tags: ["type:#{type}", "client_id:#{client_id}", "loa:#{loa}"])
+        StatsD.increment(SignIn::Constants::Statsd::STATSD_SIS_REVOKE_SUCCESS, 0,
+                         tags: ["type:#{type}", "client_id:#{client_id}", "loa:#{loa}"])
+        StatsD.increment(SignIn::Constants::Statsd::STATSD_SIS_REVOKE_FAILURE, 0,
+                         tags: ["type:#{type}", "client_id:#{client_id}", "loa:#{loa}"])
+        StatsD.increment(SignIn::Constants::Statsd::STATSD_SIS_INTROSPECT_SUCCESS, 0,
+                         tags: ["type:#{type}", "client_id:#{client_id}", "loa:#{loa}"])
+        StatsD.increment(SignIn::Constants::Statsd::STATSD_SIS_INTROSPECT_FAILURE, 0,
+                         tags: ["type:#{type}", "client_id:#{client_id}", "loa:#{loa}"])
+        StatsD.increment(SignIn::Constants::Statsd::STATSD_SIS_REVOKE_ALL_SESSIONS_SUCCESS, 0,
+                         tags: ["type:#{type}", "client_id:#{client_id}", "loa:#{loa}"])
+        StatsD.increment(SignIn::Constants::Statsd::STATSD_SIS_REVOKE_ALL_SESSIONS_FAILURE, 0,
+                         tags: ["type:#{type}", "client_id:#{client_id}", "loa:#{loa}"])
+      end
     end
   end
 
@@ -92,15 +135,17 @@ Rails.application.reloader.to_prepare do
   StatsD.increment("#{Caseflow::Service::STATSD_KEY_PREFIX}.get_appeals.fail", 0)
 
   # init 1010ez
-  %w[submit_form health_check].each do |method|
+  %w[submit_form health_check submit_form_short_form].each do |method|
     %w[total fail].each do |type|
       StatsD.increment("#{HCA::Service::STATSD_KEY_PREFIX}.#{method}.#{type}", 0)
     end
   end
 
-  StatsD.increment("#{HCA::Service::STATSD_KEY_PREFIX}.submission_attempt", 0)
-  StatsD.increment("#{HCA::Service::STATSD_KEY_PREFIX}.validation_error", 0)
-  StatsD.increment("#{HCA::Service::STATSD_KEY_PREFIX}.failed_wont_retry", 0)
+  %w[submission_attempt validation_error failed_wont_retry].each do |stat|
+    key = "#{HCA::Service::STATSD_KEY_PREFIX}.#{stat}"
+    StatsD.increment(key, 0)
+    StatsD.increment("#{key}_short_form", 0)
+  end
 
   # init mulesoft
   %w[create_submission upload_attachments do_post].each do |method|
@@ -109,9 +154,13 @@ Rails.application.reloader.to_prepare do
     end
   end
 
-  # init  mvi
+  # init  mpi
   StatsD.increment("#{MPI::Service::STATSD_KEY_PREFIX}.find_profile.total", 0)
   StatsD.increment("#{MPI::Service::STATSD_KEY_PREFIX}.find_profile.fail", 0)
+  StatsD.increment("#{MPI::Service::STATSD_KEY_PREFIX}.add_person_proxy.total", 0)
+  StatsD.increment("#{MPI::Service::STATSD_KEY_PREFIX}.add_person_proxy.fail", 0)
+  StatsD.increment("#{MPI::Service::STATSD_KEY_PREFIX}.add_person_implicit_search.total", 0)
+  StatsD.increment("#{MPI::Service::STATSD_KEY_PREFIX}.add_person_implicit_search.fail", 0)
 
   # init Vet360
   VAProfile::Exceptions::Parser.instance.known_keys.each do |key|
@@ -148,6 +197,7 @@ Rails.application.reloader.to_prepare do
   StatsD.increment(Form1010cg::Auditor.metrics.submission.success, 0)
   StatsD.increment(Form1010cg::Auditor.metrics.submission.failure.client.data, 0)
   StatsD.increment(Form1010cg::Auditor.metrics.submission.failure.client.qualification, 0)
+  StatsD.increment(Form1010cg::Auditor.metrics.submission.failure.attachments, 0)
   StatsD.increment(Form1010cg::Auditor.metrics.pdf_download, 0)
 
   StatsD.increment(Form1010cg::Auditor.metrics.submission.caregivers.primary_no_secondary, 0)

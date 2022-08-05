@@ -7,6 +7,9 @@ module AppealsApi
   class NoticeOfDisagreement < ApplicationRecord
     include NodStatus
     include PdfOutputPrep
+    include ModelValidations
+
+    required_claimant_headers %w[X-VA-Claimant-First-Name X-VA-Claimant-Last-Name X-VA-Claimant-Birth-Date]
 
     attr_readonly :auth_headers
     attr_readonly :form_data
@@ -19,6 +22,10 @@ module AppealsApi
         .or(where('updated_at < ? AND board_review_option IN (?)', 91.days.ago, 'evidence_submission'))
       )
     }
+
+    def self.past?(date)
+      date < Time.zone.today
+    end
 
     def self.load_json_schema(filename)
       MultiJson.load File.read Rails.root.join('modules', 'appeals_api', 'config', 'schemas', "#{filename}.json")
@@ -33,17 +40,29 @@ module AppealsApi
     serialize :auth_headers, JsonMarshal::Marshaller
     serialize :form_data, JsonMarshal::Marshaller
     has_kms_key
-    encrypts :auth_headers, :form_data, key: :kms_key, **lockbox_options
+    has_encrypted :auth_headers, :form_data, key: :kms_key, **lockbox_options
 
-    validate :validate_hearing_type_selection, if: :pii_present?
-    validate :validate_extension_request, if: :version_2?
+    # the controller applies the JSON Schemas in modules/appeals_api/config/schemas/
+    # further validations:
+    validate :veteran_birth_date_is_in_the_past,
+             :contestable_issue_dates_are_in_the_past,
+             :validate_hearing_type_selection,
+             if: proc { |a| a.form_data.present? }
+
+    # V2 validations
+    validate  :required_claimant_data_is_present,
+              :claimant_birth_date_is_in_the_past,
+              if: proc { |a| a.api_version.upcase != 'V1' && a.form_data.present? }
+
+    validate :validate_requesting_extension, if: :version_2?
+    validate :validate_api_version_presence
 
     has_many :evidence_submissions, as: :supportable, dependent: :destroy
     has_many :status_updates, as: :statusable, dependent: :destroy
 
-    def pdf_structure(version)
+    def pdf_structure(pdf_version)
       Object.const_get(
-        "AppealsApi::PdfConstruction::NoticeOfDisagreement::#{version.upcase}::Structure"
+        "AppealsApi::PdfConstruction::NoticeOfDisagreement::#{pdf_version.upcase}::Structure"
       ).new(self)
     end
 
@@ -72,8 +91,8 @@ module AppealsApi
       signing_appellant.timezone ? created_at.in_time_zone(signing_appellant.timezone) : created_at.utc
     end
 
-    def extension_request?
-      data_attributes['extensionRequest'] && extension_reason.present?
+    def requesting_extension?
+      data_attributes['requestingExtension'] && extension_reason.present?
     end
 
     def extension_reason
@@ -85,7 +104,11 @@ module AppealsApi
     end
 
     def contestable_issues
-      form_data&.dig('included')
+      issues = form_data['included'] || []
+
+      @contestable_issues ||= issues.map do |issue|
+        AppealsApi::ContestableIssue.new(issue)
+      end
     end
 
     def representative
@@ -195,26 +218,47 @@ module AppealsApi
       }
     end
 
-    def update_status!(status:, code: nil, detail: nil)
-      handler = Events::Handler.new(event_type: :nod_status_updated, opts: {
-                                      from: self.status,
-                                      to: status,
-                                      status_update_time: Time.zone.now.iso8601,
-                                      statusable_id: id
-                                    })
+    def stamp_text
+      # TODO: Once we get the green light to completely shut off NOD v1, remove the conditional and use file number
+      id = veteran.ssn.presence&.last(4) || veteran.file_number
+      "#{veteran.last_name.truncate(35)} - #{id}"
+    end
 
-      email_handler = Events::Handler.new(event_type: :nod_received, opts: {
-                                            email_identifier: email_identifier,
-                                            first_name: veteran_first_name,
-                                            date_submitted: veterans_local_time.iso8601,
-                                            guid: id
-                                          })
+    # rubocop:disable Metrics/MethodLength
+    def update_status!(status:, code: nil, detail: nil)
+      current_status = self.status
 
       update!(status: status, code: code, detail: detail)
 
-      handler.handle!
-      email_handler.handle! if status == 'submitted' && email_identifier.present?
+      if status != current_status
+        AppealsApi::StatusUpdatedJob.perform_async(
+          {
+            status_event: 'nod_status_updated',
+            from: current_status,
+            to: status.to_s,
+            status_update_time: Time.zone.now.iso8601,
+            statusable_id: id
+          }
+        )
+      end
+
+      return if auth_headers.blank? # Go no further if we've removed PII
+
+      if status == 'submitted' && email_present?
+        AppealsApi::AppealReceivedJob.perform_async(
+          {
+            receipt_event: 'nod_received',
+            email_identifier: email_identifier,
+            first_name: veteran_first_name,
+            date_submitted: veterans_local_time.iso8601,
+            guid: id,
+            claimant_email: claimant.email,
+            claimant_first_name: claimant.first_name
+          }
+        )
+      end
     end
+    # rubocop:enable Metrics/MethodLength
 
     private
 
@@ -223,7 +267,7 @@ module AppealsApi
         ssn: ssn,
         first_name: veteran_first_name,
         last_name: veteran_last_name,
-        birth_date: birth_date.iso8601
+        birth_date: veteran_birth_date.iso8601
       )
     end
 
@@ -232,7 +276,7 @@ module AppealsApi
 
       icn = mpi_veteran.mpi_icn
 
-      return { id_type: 'ICN', id_value: icn } if icn.present?
+      { id_type: 'ICN', id_value: icn } if icn.present?
     end
 
     def data_attributes
@@ -251,26 +295,21 @@ module AppealsApi
       return if board_review_hearing_selected? && includes_hearing_type_preference?
 
       source = '/data/attributes/hearingTypePreference'
-      data = I18n.t('common.exceptions.validation_errors')
-
       if hearing_type_missing?
-        errors.add source, data.merge(detail: I18n.t('appeals_api.errors.hearing_type_preference_missing'))
+        errors.add source, I18n.t('appeals_api.errors.hearing_type_preference_missing')
       elsif unexpected_hearing_type_inclusion?
-        errors.add source, data.merge(detail: I18n.t('appeals_api.errors.hearing_type_preference_inclusion'))
+        errors.add source, I18n.t('appeals_api.errors.hearing_type_preference_inclusion')
       end
     end
 
     # v2 specific validation
-    def validate_extension_request
-      # json schema will have already validated that if extensionRequest true then extensionReason required
-      return if data_attributes&.dig('extensionRequest') == true
-
-      source = '/data/attributes/extensionRequest'
-      data = I18n.t('common.exceptions.validation_errors')
+    def validate_requesting_extension
+      # json schema will have already validated that if requestingExtension true then extensionReason required
+      return if data_attributes&.dig('requestingExtension') == true
 
       if data_attributes&.dig('extensionReason').present?
-        errors.add source,
-                   data.merge(detail: I18n.t('appeals_api.errors.nod_extension_request_must_be_true'))
+        errors.add '/data/attributes/requestingExtension',
+                   I18n.t('appeals_api.errors.nod_requesting_extension_must_be_true')
       end
     end
 
@@ -290,7 +329,7 @@ module AppealsApi
       !board_review_hearing_selected? && includes_hearing_type_preference?
     end
 
-    def birth_date
+    def veteran_birth_date
       self.class.date_from_string header_field_as_string 'X-VA-Birth-Date'
     end
 
@@ -298,8 +337,13 @@ module AppealsApi
       auth_headers&.dig(key).to_s.strip
     end
 
+    def validate_api_version_presence
+      # We'll likely never see this since the controller should supply this in all circumstances
+      errors.add :api_version, 'Appeal must include the api_version attribute' if api_version.blank?
+    end
+
     def version_2?
-      pii_present? && api_version == 'v2'
+      pii_present? && api_version.upcase == 'V2'
     end
 
     # After expunging pii, form_data is nil, update will fail unless validation skipped
@@ -307,8 +351,12 @@ module AppealsApi
       proc { |a| a.form_data.present? }
     end
 
+    def email_present?
+      claimant.email.present? || email_identifier.present?
+    end
+
     def clear_memoized_values
-      @veteran = @claimant = nil
+      @contestable_issues = @veteran = @claimant = nil
     end
   end
 end

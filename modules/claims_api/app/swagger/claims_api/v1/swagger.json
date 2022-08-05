@@ -1,8 +1,9 @@
 {
   "openapi": "3.0.1",
   "info": {
-    "title": "API V1",
+    "title": "Benefits Claims",
     "version": "v1",
+    "termsOfService": "https://developer.va.gov/terms-of-service",
     "description": "This API automatically establishes and submits these VA forms.\n| Form number       | Form name     | Description     |\n| :------------- | :----------: | -----------: |\n| [21-526EZ](https://www.va.gov/find-forms/about-form-21-526ez/) | Application for Disability Compensation and Related Compensation Benefits | Used to apply for VA disability compensation and related benefits. |\n| [21-0966](https://www.va.gov/find-forms/about-form-21-0966/) | Intent to File a Claim for Compensation and/or Pension, or Survivors Pension and/or DIC | Submits an intent to file to secure the earliest possible effective date for any retroactive payments. |\n| [21-22](https://www.va.gov/find-forms/about-form-21-22/) | Appointment of Veterans Service Organization as Claimant's Representative | Used to assign a Veterans Service Organization as a POA to help a Veteran with benefits or claims. |\n| [21-22a](https://www.va.gov/find-forms/about-form-21-22a/) | Appointment of Individual As Claimant's Representative | Used to assign an individual as a POA to help a Veteran with benefits or claims. |\n\nIt also lets Veterans or their authorized representatives:\n - Digitally submit supporting documentation for disability compensation claims\n - Retrieve information such as status for any claim, including pension and burial\n - Retrieve power of attorney (POA) status for individuals and Veterans Service Organizations (VSOs)\n - Retrieve intent to file status\n\n## Background\nThe Benefits Claims API offers faster establishment and enhanced reporting for several VA claims and forms. Using this API provides many benefits, such as:\n - Automatic claim and POA establishment\n - Direct establishment of disability compensation claims in Veterans Benefits Management System (VBMS) to avoid unnecessary manual processing and entry by Veteran Service Representatives (VSRs)\n - Faster claims processing by several days\n - End-to-end claims status and result tracking by claim ID\n\nForms not supported by the Benefits Claims API are submitted using the [Benefits Intake API](https://developer.va.gov/explore/benefits/docs/benefits?version=current), which places uploaded PDFs into the Centralized Mail Portal to be manually processed.\n\n## Technical Overview\nThis API accepts a payload of requests and responses on a per-form basis, with the payload identifying the form and Veteran. Trackable responses provide a unique ID which is used with the appropriate GET endpoint to track a submission’s processing status.\n\n### Attachment and file size limits\nThere is no limit on the number of files a payload can contain, but size limits do apply.\n - Uploaded documents cannot be larger than 11\" x 11\"\n - The entire payload cannot exceed 5 GB\n - No single file in a payload can exceed 100 MB\n\n### Authentication and authorization\nTo make an API request, follow our [authentication process](https://developer.va.gov/explore/authorization?api=claims) to receive an [OAuth token](https://oauth.net/2/).\n\n#### Representative authorization\nRepresentatives seeking authorization for a Veteran must first [authenticate](https://developer.va.gov/explore/authorization?api=claims) and then pass the Veteran’s information in the right header:\n - SSN in X-VA-SSN\n - First name in X-VA-First-Name\n - Last name in X-VA-Last-Name\n - Date of birth in X-VA-Birth-Date\n\nOmitting the information will cause the API to treat the representative as the claimant.\n\n#### Veteran authorization\nVeterans seeking authorization do not need to include headers such as X-VA-First-Name since the token authentication via ID.me, MyHealtheVet, or DSLogon provides this information.\n\n### POA Codes\nVeteran representatives receive their organization’s POA code. If they are the assigned POA for a Veteran, that Veteran will have a matching POA code. When a claim is submitted, this API verifies that the representative and Veteran codes match against each other and the codes in the [Office of General Council (OGC) Database](https://www.va.gov/ogc/apps/accreditation/index.asp).\n\nUse the [Power of Attorney endpoint](#operations-Power_of_Attorney-post2122) to assign or update POA status. A newly appointed representative may not be able to submit forms for a Veteran until a day after their POA code is first associated with the OGC data set.\n\n### Test data for sandbox environment use\n[Test data](https://github.com/department-of-veterans-affairs/vets-api-clients/blob/master/test_accounts.md) is used for all forms in the sandbox environment and for 21-526 submissions in the staging environment.\n\n### Claim and form processing\nClaims and forms are first submitted by this API and then established in VBMS. A 200 response means only that your claim or form was submitted successfully. To see if your submission is processed or has reached VBMS, you must check its status using the appropriate GET endpoint and the ID returned with your submission response.\n\nA “claim established” status means the claim has reached VBMS. In sandbox, submissions can take over an hour to reach “claim established” status. In production, this may take over two days.\n"
   },
   "tags": [
@@ -496,7 +497,7 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "68f2abde-02b4-43a1-a5cd-f5ace532202c",
+                    "id": "612f6b61-ebc9-426d-a6de-833637388618",
                     "type": "claims_api_claim",
                     "attributes": {
                       "evss_id": 600118851,
@@ -545,11 +546,11 @@
                       "status": "Initial review",
                       "supporting_documents": [
                         {
-                          "id": "a0a9a6a4-057f-4992-b366-4c1ce8c989ed",
+                          "id": "c3d80864-748e-4dc0-9cee-4ea3513e0eae",
                           "type": "claim_supporting_document",
                           "md5": "d927c7e283b3158a54822a493d06181d",
                           "filename": "extras.pdf",
-                          "uploaded_at": "2022-02-21T18:16:46.894Z"
+                          "uploaded_at": "2022-08-01T21:54:36.500Z"
                         }
                       ]
                     }
@@ -1046,7 +1047,7 @@
                                   "type": "string"
                                 },
                                 "type": {
-                                  "description": "Type of residence Veteran resides in.",
+                                  "description": "Type of residence Veteran resides in.  \n If value is \"INTERNATIONAL\", then \"addressLine1\", \"city\", \"country\", and \"internationalPostalCode\" are required.  \n If value is \"DOMESTIC\", then \"addressLine1\", \"city\", \"state\", \"country\", and \"zipFirstFive\" are required.  \n If value is \"MILITARY\", then \"addressLine1\", \"country\", \"militaryStateCode\", \"militaryPostOfficeTypeCode\", and \"zipFirstFive\" are required.",
                                   "type": "string",
                                   "default": "DOMESTIC",
                                   "enum": [
@@ -1135,7 +1136,7 @@
                               ],
                               "properties": {
                                 "beginningDate": {
-                                  "description": "Date in YYYY-MM-DD the Veteran changed address.",
+                                  "description": "Date in YYYY-MM-DD the Veteran changed address. Date must be in the future if change is temporary.",
                                   "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$",
                                   "type": "string",
                                   "example": "2018-06-04"
@@ -1192,7 +1193,7 @@
                                   "type": "string"
                                 },
                                 "type": {
-                                  "description": "New type of residence Veteran resides in.",
+                                  "description": "New type of residence Veteran resides in.  \n If value is \"INTERNATIONAL\", then \"city\" and \"internationalPostalCode\" are required.  \n If value is \"DOMESTIC\", then \"city\", \"state\", and \"zipFirstFive\" are required.  \n If value is \"MILITARY\", then \"militaryStateCode\", \"militaryPostOfficeTypeCode\", and \"zipFirstFive\" are required.",
                                   "type": "string",
                                   "default": "DOMESTIC",
                                   "enum": [
@@ -1269,12 +1270,6 @@
                               "description": "Object describing Veteran Homelessness if applicable.",
                               "type": "object",
                               "additionalProperties": false,
-                              "dependentRequired": {
-                                "pointOfContact": [
-                                  "currentlyHomeless",
-                                  "homelessnessRisk"
-                                ]
-                              },
                               "properties": {
                                 "pointOfContact": {
                                   "description": "Object describing Homeless Veteran Point of Contact.",
@@ -1327,7 +1322,7 @@
                                     "homelessSituationType": {
                                       "description": "Current state of the veteran's homelessness.",
                                       "type": "string",
-                                      "default": "OTHER",
+                                      "default": "other",
                                       "enum": [
                                         "fleeing",
                                         "shelter",
@@ -1338,7 +1333,7 @@
                                       "example": "fleeing"
                                     },
                                     "otherLivingSituation": {
-                                      "description": "List any other living scenarios.",
+                                      "description": "For a 'homelessSituationType' of value 'other', please provide additional comments on the living situation.",
                                       "type": "string",
                                       "maxLength": 500,
                                       "example": "other living situation"
@@ -1355,7 +1350,7 @@
                                   "properties": {
                                     "homelessnessRiskSituationType": {
                                       "type": "string",
-                                      "default": "OTHER",
+                                      "default": "other",
                                       "enum": [
                                         "losingHousing",
                                         "leavingShelter",
@@ -1363,8 +1358,10 @@
                                       ]
                                     },
                                     "otherLivingSituation": {
+                                      "description": "For a 'homelessnessRiskSituationType' of value 'other', please provide additional comments on the living situation.",
                                       "type": "string",
-                                      "maxLength": 500
+                                      "maxLength": 500,
+                                      "example": "other living situation"
                                     }
                                   }
                                 }
@@ -1429,6 +1426,7 @@
                                       "Public Health Service",
                                       "Regular Philippine Scout",
                                       "Regular Scout Service",
+                                      "Space Force",
                                       "Special Philippine Scout",
                                       "Unknown",
                                       "US Military Academy",
@@ -1443,13 +1441,13 @@
                                     "example": "1980-02-05"
                                   },
                                   "activeDutyEndDate": {
-                                    "description": "Date Completed Active Duty.",
+                                    "description": "Date Completed Active Duty.  If in the future, 'separationLocationCode' is required.",
                                     "type": "string",
                                     "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$",
                                     "example": "1990-01-02"
                                   },
                                   "separationLocationCode": {
-                                    "description": "Code for the facility the Veteran plans to separate from.  [Code values available here.](https://github.com/department-of-veterans-affairs/vets-api/blob/master/modules/claims_api/lib/claims_api/separation_location_code_values.json)",
+                                    "description": "Code for the facility the Veteran plans to separate from.  Required if 'servicePeriod.activeDutyEndDate' is in the future. [Code values available here.](https://github.com/department-of-veterans-affairs/vets-api/blob/master/modules/claims_api/lib/claims_api/separation_location_code_values.json)",
                                     "type": "string",
                                     "example": "98283"
                                   }
@@ -1484,15 +1482,13 @@
                               "type": "object",
                               "additionalProperties": false,
                               "required": [
-                                "title10Activation",
                                 "obligationTermOfServiceFromDate",
                                 "obligationTermOfServiceToDate",
-                                "unitName",
-                                "unitPhone",
-                                "receivingInactiveDutyTrainingPay"
+                                "unitName"
                               ],
                               "properties": {
                                 "title10Activation": {
+                                  "description": "Include if the Veteran is currently activated on federal orders within the National Guard or Reserves",
                                   "type": "object",
                                   "additionalProperties": false,
                                   "required": [
@@ -1501,10 +1497,12 @@
                                   ],
                                   "properties": {
                                     "anticipatedSeparationDate": {
+                                      "description": "Anticipated date of separation. Date must be in the future.",
                                       "type": "string",
                                       "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$"
                                     },
                                     "title10ActivationDate": {
+                                      "description": "Date cannot be in the future and must be after the earliest servicePeriod.activeDutyBeginDate.",
                                       "type": "string",
                                       "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$"
                                     }
@@ -1519,7 +1517,8 @@
                                   "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$"
                                 },
                                 "unitName": {
-                                  "type": "string"
+                                  "type": "string",
+                                  "pattern": "([a-zA-Z0-9\\-'.,# ][a-zA-Z0-9\\-'.,# ]?)*$"
                                 },
                                 "unitPhone": {
                                   "type": "object",
@@ -1772,7 +1771,7 @@
                                 "example": 9999
                               },
                               "disabilityActionType": {
-                                "description": "The status of the current disability.",
+                                "description": "The status of the current disability.  \n If value is \"INCREASE\", then \"ratedDisabilityId\" and \"diagnosticCode\" are required.",
                                 "type": "string",
                                 "enum": [
                                   "NONE",
@@ -1791,7 +1790,7 @@
                                 "example": "249470"
                               },
                               "approximateBeginDate": {
-                                "description": "Approximate date disability began.",
+                                "description": "Approximate date disability began. Date must be in the past.",
                                 "type": "string",
                                 "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$",
                                 "example": "2018-03-02"
@@ -2069,7 +2068,7 @@
                             ],
                             "properties": {
                               "startDate": {
-                                "description": "Date Veteran started treatment.",
+                                "description": "Date Veteran started treatment. Date must be after the earliest servicePeriods.activeDutyBeginDate.",
                                 "type": [
                                   "null",
                                   "string"
@@ -2078,7 +2077,7 @@
                                 "example": "2018-03-02"
                               },
                               "endDate": {
-                                "description": "Date Veteran ended treatment.",
+                                "description": "Date Veteran ended treatment. End date must be after the start date.",
                                 "type": "string",
                                 "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$",
                                 "example": "2018-03-02"
@@ -2107,10 +2106,13 @@
                                   "name": {
                                     "description": "Name of facility Veteran was treated in.",
                                     "type": "string",
+                                    "pattern": "([a-zA-Z0-9\"\\/&\\(\\)\\-'.,# ]([a-zA-Z0-9(\\)\\-'.,# ])?)+$",
                                     "example": "Private Facility 2"
                                   },
                                   "country": {
                                     "description": "Country Veteran was treated in.",
+                                    "minLength": 1,
+                                    "maxLength": 50,
                                     "type": "string",
                                     "example": "USA"
                                   }
@@ -2149,7 +2151,7 @@
                                   "example": true
                                 },
                                 "willReceiveInFuture": {
-                                  "description": "Will Veteran get Retiree pay in future?",
+                                  "description": "Will Veteran get Retiree pay in future?  \n If true, then \"futurePayExplanation\" attribute is required.",
                                   "type": "boolean",
                                   "default": false,
                                   "example": false
@@ -2188,7 +2190,8 @@
                                         "Naval Academy",
                                         "Other",
                                         "US Military Academy",
-                                        "Women's Army Corps"
+                                        "Women's Army Corps",
+                                        "Space Force"
                                       ],
                                       "example": "Air Force"
                                     },
@@ -2268,7 +2271,8 @@
                                         "Naval Academy",
                                         "Other",
                                         "US Military Academy",
-                                        "Women's Army Corps"
+                                        "Women's Army Corps",
+                                        "Space Force"
                                       ],
                                       "example": "Air Force"
                                     },
@@ -2352,10 +2356,10 @@
                           "example": false
                         },
                         "claimDate": {
-                          "description": "Date when claim is being submitted to the VA.",
+                          "description": "Date (or Timestamp with TimeZone) when claim is being submitted to the VA. Date cannot be in the future. UTC TimeZone is assumed unless otherwise specified.",
                           "type": "string",
-                          "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$",
-                          "example": "2018-08-28"
+                          "pattern": "^(?:[0-9]{4})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])(?:T[0-1][0-9]:[0-5][0-9]:[0-5][0-9](?:[-+][0-9]{2}:[0-9]{2}|Z))*$",
+                          "example": "2018-08-28T19:53:45+00:00"
                         }
                       }
                     }
@@ -2391,7 +2395,7 @@
             ]
           }
         ],
-        "description": "Establishes a [Disability Compensation Claim](https://www.vba.va.gov/pubs/forms/VBA-21-526EZ-ARE.pdf) in VBMS. Submits any PDF attachments as a multi-part payload and returns an ID. For claims that are not original claims, this endpoint generates a filled 526 PDF along with the submission.\n<br/><br/>\nA 200 response indicates the submission was successful, but the claim has not reached VBMS until it has a “claim established” status. Check claim status using the GET /claims/{id} endpoint.\n<br/><br/>\n**Original claims**<br/>\nAn original claim is the Veteran’s first claim filed with VA, regardless of the claim type or status. The original claim must have either the Veteran’s wet signature or e-signature. Once there is an original claim on file, future claims may be submitted by a representative without the Veteran’s signature. Uploading a PDF for subsequent claims is not required or recommended.\n<br/><br/>\nPOST the original claim with the autoCestPDFGenerationDisabled boolean as true. After a 200 response, use the PUT /forms/526/{id} endpoint to upload a scanned PDF of your form, signed in ink or e-signature, by the Veteran.\n<br/><br/>\nThe claim data submitted through the POST endpoint must match the signed PDF uploaded through the PUT endpoint. If it does not, VA will manually update the data to match the PDF, and your claim may not process correctly.\n<br/><br/>\n**Standard and fully developed claims (FDCs)**<br/>\n[Fully developed claims (FDCs)](https://www.va.gov/disability/how-to-file-claim/evidence-needed/fully-developed-claims/) are claims certified by the submitter to include all information needed for processing. These claims process faster than claims submitted through the standard claim process. If a claim is certified for the FDC, but is missing needed information, it will route through the standard claim process.\n<br/><br/>\nTo certify a claim for the FDC process, set the standardClaim indicator to false.\n<br/><br/>\n**Flashes and special issues**<br/>\nIncluding flashes and special issues in your 526 claim submission helps VA properly route and prioritize current and future claims for the Veteran and reduces claims processing time.\n\n - Flashes are attributes that describe special circumstances which apply to a Veteran, such as homelessness or terminal illness. See a full list of [supported flashes](https://github.com/department-of-veterans-affairs/vets-api/blob/30659c8e5b2dd254d3e6b5d18849ff0d5f2e2356/modules/claims_api/config/schemas/526.json#L35).\n - Special Issues are attributes that describe special circumstances which apply to a particular claim, such as PTSD. See a full list of [supported special Issues](https://github.com/department-of-veterans-affairs/vets-api/blob/30659c8e5b2dd254d3e6b5d18849ff0d5f2e2356/modules/claims_api/config/schemas/526.json#L28).\n\n\n<br/>\n**Notes On 'disabilityActionType' and 'secondaryDisabilities'**<br/>\n\n- We now recommend using the value **NEW** instead of **INCREASE** for **disabilityActionType** in the Benefits Claims API. For context:\n\n  - When requesting a disability **INCREASE**, the **ratedDisabiltiyId** and **diagnosticCode** are also required. The Benefits Claims API doesn't have access to specific values that are required for these fields. By submitting **NEW** for **disabilityActionType**, these values are not required.\n\n  - Using **NEW** instead of **INCREASE** will not significantly impact how the claim is processed by VA.\n\n- We don’t support the **disabilityActionType** of **REOPEN**. It didn't provide value in claim processing because its functionality wasn’t supported.\n\n- We now recommend using the **disabilities** attribute with a **disabilityActionType** value of **NEW**, instead of sending disabilities as nested values with the **secondaryDisabilities** attribute.\n\n  - This approach will not significantly impact how the claim is processed by VA and is better aligned with the 526 form.\n\n  - **secondaryDisabilties** is required if the primary disability has a **disabilityActionType** equal to **NONE**.\n\n- If you are required to use **secondaryDisabilities**, there are additional validations that apply:\n\n  - **disabilityActionType** of the secondary disability must equal **SECONDARY**.\n\n  - **classificationCode** in the secondary disability is optional. If provided, its value must match the value of the **name** attribute.\n\n  - If **classificationCode** isn’t provided, then the **name** attribute must not contain any special characters and must not exceed 255 characters.\n\n  - **specialIssues** must be nil.\n\n  - **approximateBeginDate** was added, but it’s optional. If provided, it must be a valid date.\n",
+        "description": "Establishes a [Disability Compensation Claim](https://www.vba.va.gov/pubs/forms/VBA-21-526EZ-ARE.pdf) in VBMS. Submits any PDF attachments as a multi-part payload and returns an ID. For claims that are not original claims, this endpoint generates a filled 526 PDF along with the submission.\n<br/><br/>\nA 200 response indicates the submission was successful, but the claim has not reached VBMS until it has a “claim established” status. Check claim status using the GET /claims/{id} endpoint.\n<br/><br/>\n**Original claims**<br/>\nAn original claim is the Veteran’s first claim filed with VA, regardless of the claim type or status. The original claim must have either the Veteran’s wet signature or e-signature. Once there is an original claim on file, future claims may be submitted by a representative without the Veteran’s signature. Uploading a PDF for subsequent claims is not required or recommended.\n<br/><br/>\nPOST the original claim with the autoCestPDFGenerationDisabled boolean as true. After a 200 response, use the PUT /forms/526/{id} endpoint to upload a scanned PDF of your form, signed in ink or e-signature, by the Veteran.\n<br/><br/>\nThe claim data submitted through the POST endpoint must match the signed PDF uploaded through the PUT endpoint. If it does not, VA will manually update the data to match the PDF, and your claim may not process correctly.\n<br/><br/>\n**Standard and fully developed claims (FDCs)**<br/>\n[Fully developed claims (FDCs)](https://www.va.gov/disability/how-to-file-claim/evidence-needed/fully-developed-claims/) are claims certified by the submitter to include all information needed for processing. These claims process faster than claims submitted through the standard claim process. If a claim is certified for the FDC, but is missing needed information, it will route through the standard claim process.\n<br/><br/>\nTo certify a claim for the FDC process, set the standardClaim indicator to false.\n<br/><br/>\n**Flashes and special issues**<br/>\nIncluding flashes and special issues in your 526 claim submission helps VA properly route and prioritize current and future claims for the Veteran and reduces claims processing time.\n\n - Flashes are attributes that describe special circumstances which apply to a Veteran, such as homelessness or terminal illness.\n - Special Issues are attributes that describe special circumstances which apply to a particular claim, such as PTSD.\n\n\n<br/>\n**Notes On 'disabilityActionType' and 'secondaryDisabilities'**<br/>\n\n- We now recommend using the value **NEW** instead of **INCREASE** for **disabilityActionType** in the Benefits Claims API. For context:\n\n  - When requesting a disability **INCREASE**, the **ratedDisabiltiyId** and **diagnosticCode** are also required. The Benefits Claims API doesn't have access to specific values that are required for these fields. By submitting **NEW** for **disabilityActionType**, these values are not required.\n\n  - Using **NEW** instead of **INCREASE** will not significantly impact how the claim is processed by VA.\n\n- We don’t support the **disabilityActionType** of **REOPEN**. It didn't provide value in claim processing because its functionality wasn’t supported.\n\n- We now recommend using the **disabilities** attribute with a **disabilityActionType** value of **NEW**, instead of sending disabilities as nested values with the **secondaryDisabilities** attribute.\n\n  - This approach will not significantly impact how the claim is processed by VA and is better aligned with the 526 form.\n\n  - **secondaryDisabilties** is required if the primary disability has a **disabilityActionType** equal to **NONE**.\n\n- If you are required to use **secondaryDisabilities**, there are additional validations that apply:\n\n  - **disabilityActionType** of the secondary disability must equal **SECONDARY**.\n\n  - **classificationCode** in the secondary disability is optional. If provided, its value must match the value of the **name** attribute.\n\n  - If **classificationCode** isn’t provided, then the **name** attribute must not contain any special characters and must not exceed 255 characters.\n\n  - **specialIssues** must be nil.\n\n  - **approximateBeginDate** was added, but it’s optional. If provided, it must be a valid date.\n",
         "parameters": [
           {
             "in": "header",
@@ -2437,7 +2441,7 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "1084dc3f-c59f-421d-960b-9484ce4f49e1",
+                    "id": "c6568b75-e913-44b1-9378-c693c1bc23e2",
                     "type": "claims_api_claim",
                     "attributes": {
                       "evss_id": null,
@@ -2455,13 +2459,13 @@
                       "current_phase_back": null,
                       "requested_decision": null,
                       "claim_type": null,
-                      "updated_at": "2022-02-21T18:16:47.136Z",
+                      "updated_at": "2022-08-01T21:54:36.729Z",
                       "contention_list": null,
                       "va_representative": null,
                       "events_timeline": [
 
                       ],
-                      "token": "1084dc3f-c59f-421d-960b-9484ce4f49e1",
+                      "token": "c6568b75-e913-44b1-9378-c693c1bc23e2",
                       "status": "pending",
                       "flashes": [
                         "Hardship",
@@ -2770,7 +2774,6 @@
                             "disabilityActionType": "NEW",
                             "name": "PTSD (post traumatic stress disorder)",
                             "specialIssues": [
-                              "POW",
                               "Asbestos"
                             ],
                             "secondaryDisabilities": [
@@ -2908,7 +2911,7 @@
                                     "type": "string"
                                   },
                                   "type": {
-                                    "description": "Type of residence Veteran resides in.",
+                                    "description": "Type of residence Veteran resides in.  \n If value is \"INTERNATIONAL\", then \"addressLine1\", \"city\", \"country\", and \"internationalPostalCode\" are required.  \n If value is \"DOMESTIC\", then \"addressLine1\", \"city\", \"state\", \"country\", and \"zipFirstFive\" are required.  \n If value is \"MILITARY\", then \"addressLine1\", \"country\", \"militaryStateCode\", \"militaryPostOfficeTypeCode\", and \"zipFirstFive\" are required.",
                                     "type": "string",
                                     "default": "DOMESTIC",
                                     "enum": [
@@ -2997,7 +3000,7 @@
                                 ],
                                 "properties": {
                                   "beginningDate": {
-                                    "description": "Date in YYYY-MM-DD the Veteran changed address.",
+                                    "description": "Date in YYYY-MM-DD the Veteran changed address. Date must be in the future if change is temporary.",
                                     "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$",
                                     "type": "string",
                                     "example": "2018-06-04"
@@ -3054,7 +3057,7 @@
                                     "type": "string"
                                   },
                                   "type": {
-                                    "description": "New type of residence Veteran resides in.",
+                                    "description": "New type of residence Veteran resides in.  \n If value is \"INTERNATIONAL\", then \"city\" and \"internationalPostalCode\" are required.  \n If value is \"DOMESTIC\", then \"city\", \"state\", and \"zipFirstFive\" are required.  \n If value is \"MILITARY\", then \"militaryStateCode\", \"militaryPostOfficeTypeCode\", and \"zipFirstFive\" are required.",
                                     "type": "string",
                                     "default": "DOMESTIC",
                                     "enum": [
@@ -3131,12 +3134,6 @@
                                 "description": "Object describing Veteran Homelessness if applicable.",
                                 "type": "object",
                                 "additionalProperties": false,
-                                "dependentRequired": {
-                                  "pointOfContact": [
-                                    "currentlyHomeless",
-                                    "homelessnessRisk"
-                                  ]
-                                },
                                 "properties": {
                                   "pointOfContact": {
                                     "description": "Object describing Homeless Veteran Point of Contact.",
@@ -3189,7 +3186,7 @@
                                       "homelessSituationType": {
                                         "description": "Current state of the veteran's homelessness.",
                                         "type": "string",
-                                        "default": "OTHER",
+                                        "default": "other",
                                         "enum": [
                                           "fleeing",
                                           "shelter",
@@ -3200,7 +3197,7 @@
                                         "example": "fleeing"
                                       },
                                       "otherLivingSituation": {
-                                        "description": "List any other living scenarios.",
+                                        "description": "For a 'homelessSituationType' of value 'other', please provide additional comments on the living situation.",
                                         "type": "string",
                                         "maxLength": 500,
                                         "example": "other living situation"
@@ -3217,7 +3214,7 @@
                                     "properties": {
                                       "homelessnessRiskSituationType": {
                                         "type": "string",
-                                        "default": "OTHER",
+                                        "default": "other",
                                         "enum": [
                                           "losingHousing",
                                           "leavingShelter",
@@ -3225,8 +3222,10 @@
                                         ]
                                       },
                                       "otherLivingSituation": {
+                                        "description": "For a 'homelessnessRiskSituationType' of value 'other', please provide additional comments on the living situation.",
                                         "type": "string",
-                                        "maxLength": 500
+                                        "maxLength": 500,
+                                        "example": "other living situation"
                                       }
                                     }
                                   }
@@ -3291,6 +3290,7 @@
                                         "Public Health Service",
                                         "Regular Philippine Scout",
                                         "Regular Scout Service",
+                                        "Space Force",
                                         "Special Philippine Scout",
                                         "Unknown",
                                         "US Military Academy",
@@ -3305,13 +3305,13 @@
                                       "example": "1980-02-05"
                                     },
                                     "activeDutyEndDate": {
-                                      "description": "Date Completed Active Duty.",
+                                      "description": "Date Completed Active Duty.  If in the future, 'separationLocationCode' is required.",
                                       "type": "string",
                                       "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$",
                                       "example": "1990-01-02"
                                     },
                                     "separationLocationCode": {
-                                      "description": "Code for the facility the Veteran plans to separate from.  [Code values available here.](https://github.com/department-of-veterans-affairs/vets-api/blob/master/modules/claims_api/lib/claims_api/separation_location_code_values.json)",
+                                      "description": "Code for the facility the Veteran plans to separate from.  Required if 'servicePeriod.activeDutyEndDate' is in the future. [Code values available here.](https://github.com/department-of-veterans-affairs/vets-api/blob/master/modules/claims_api/lib/claims_api/separation_location_code_values.json)",
                                       "type": "string",
                                       "example": "98283"
                                     }
@@ -3346,15 +3346,13 @@
                                 "type": "object",
                                 "additionalProperties": false,
                                 "required": [
-                                  "title10Activation",
                                   "obligationTermOfServiceFromDate",
                                   "obligationTermOfServiceToDate",
-                                  "unitName",
-                                  "unitPhone",
-                                  "receivingInactiveDutyTrainingPay"
+                                  "unitName"
                                 ],
                                 "properties": {
                                   "title10Activation": {
+                                    "description": "Include if the Veteran is currently activated on federal orders within the National Guard or Reserves",
                                     "type": "object",
                                     "additionalProperties": false,
                                     "required": [
@@ -3363,10 +3361,12 @@
                                     ],
                                     "properties": {
                                       "anticipatedSeparationDate": {
+                                        "description": "Anticipated date of separation. Date must be in the future.",
                                         "type": "string",
                                         "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$"
                                       },
                                       "title10ActivationDate": {
+                                        "description": "Date cannot be in the future and must be after the earliest servicePeriod.activeDutyBeginDate.",
                                         "type": "string",
                                         "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$"
                                       }
@@ -3381,7 +3381,8 @@
                                     "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$"
                                   },
                                   "unitName": {
-                                    "type": "string"
+                                    "type": "string",
+                                    "pattern": "([a-zA-Z0-9\\-'.,# ][a-zA-Z0-9\\-'.,# ]?)*$"
                                   },
                                   "unitPhone": {
                                     "type": "object",
@@ -3634,7 +3635,7 @@
                                   "example": 9999
                                 },
                                 "disabilityActionType": {
-                                  "description": "The status of the current disability.",
+                                  "description": "The status of the current disability.  \n If value is \"INCREASE\", then \"ratedDisabilityId\" and \"diagnosticCode\" are required.",
                                   "type": "string",
                                   "enum": [
                                     "NONE",
@@ -3653,7 +3654,7 @@
                                   "example": "249470"
                                 },
                                 "approximateBeginDate": {
-                                  "description": "Approximate date disability began.",
+                                  "description": "Approximate date disability began. Date must be in the past.",
                                   "type": "string",
                                   "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$",
                                   "example": "2018-03-02"
@@ -3931,7 +3932,7 @@
                               ],
                               "properties": {
                                 "startDate": {
-                                  "description": "Date Veteran started treatment.",
+                                  "description": "Date Veteran started treatment. Date must be after the earliest servicePeriods.activeDutyBeginDate.",
                                   "type": [
                                     "null",
                                     "string"
@@ -3940,7 +3941,7 @@
                                   "example": "2018-03-02"
                                 },
                                 "endDate": {
-                                  "description": "Date Veteran ended treatment.",
+                                  "description": "Date Veteran ended treatment. End date must be after the start date.",
                                   "type": "string",
                                   "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$",
                                   "example": "2018-03-02"
@@ -3969,10 +3970,13 @@
                                     "name": {
                                       "description": "Name of facility Veteran was treated in.",
                                       "type": "string",
+                                      "pattern": "([a-zA-Z0-9\"\\/&\\(\\)\\-'.,# ]([a-zA-Z0-9(\\)\\-'.,# ])?)+$",
                                       "example": "Private Facility 2"
                                     },
                                     "country": {
                                       "description": "Country Veteran was treated in.",
+                                      "minLength": 1,
+                                      "maxLength": 50,
                                       "type": "string",
                                       "example": "USA"
                                     }
@@ -4011,7 +4015,7 @@
                                     "example": true
                                   },
                                   "willReceiveInFuture": {
-                                    "description": "Will Veteran get Retiree pay in future?",
+                                    "description": "Will Veteran get Retiree pay in future?  \n If true, then \"futurePayExplanation\" attribute is required.",
                                     "type": "boolean",
                                     "default": false,
                                     "example": false
@@ -4050,7 +4054,8 @@
                                           "Naval Academy",
                                           "Other",
                                           "US Military Academy",
-                                          "Women's Army Corps"
+                                          "Women's Army Corps",
+                                          "Space Force"
                                         ],
                                         "example": "Air Force"
                                       },
@@ -4130,7 +4135,8 @@
                                           "Naval Academy",
                                           "Other",
                                           "US Military Academy",
-                                          "Women's Army Corps"
+                                          "Women's Army Corps",
+                                          "Space Force"
                                         ],
                                         "example": "Air Force"
                                       },
@@ -4214,10 +4220,10 @@
                             "example": false
                           },
                           "claimDate": {
-                            "description": "Date when claim is being submitted to the VA.",
+                            "description": "Date (or Timestamp with TimeZone) when claim is being submitted to the VA. Date cannot be in the future. UTC TimeZone is assumed unless otherwise specified.",
                             "type": "string",
-                            "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$",
-                            "example": "2018-08-28"
+                            "pattern": "^(?:[0-9]{4})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])(?:T[0-1][0-9]:[0-5][0-9]:[0-5][0-9](?:[-+][0-9]{2}:[0-9]{2}|Z))*$",
+                            "example": "2018-08-28T19:53:45+00:00"
                           }
                         }
                       }
@@ -4312,7 +4318,7 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "040a9201-58ad-44d7-b9d9-45a4be1eb929",
+                    "id": "6245863f-dedc-4baa-9f2f-1f343751f20a",
                     "type": "claims_api_claim",
                     "attributes": {
                       "evss_id": null,
@@ -4330,13 +4336,13 @@
                       "current_phase_back": null,
                       "requested_decision": null,
                       "claim_type": null,
-                      "updated_at": "2022-02-21T18:16:47.328Z",
+                      "updated_at": "2022-08-01T21:54:36.927Z",
                       "contention_list": null,
                       "va_representative": null,
                       "events_timeline": [
 
                       ],
-                      "token": "040a9201-58ad-44d7-b9d9-45a4be1eb929",
+                      "token": "6245863f-dedc-4baa-9f2f-1f343751f20a",
                       "status": "pending",
                       "flashes": [
                         "Hardship",
@@ -4381,41 +4387,31 @@
                           ],
                           "properties": {
                             "evss_id": {
-                              "type": [
-                                "integer",
-                                "null"
-                              ],
+                              "type": "integer",
+                              "nullable": true,
                               "description": "EVSS Claim ID"
                             },
                             "date_filed": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Date in YYYY-MM-DD the claim was first filed"
                             },
                             "min_est_date": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Minimum Estimated Claim Completion Date"
                             },
                             "max_est_date": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Maximum Estimated Claim Completion Date"
                             },
                             "phase_change_date": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Date of last phase change"
                             },
@@ -4424,63 +4420,45 @@
                               "description": "Has the claim been resolved"
                             },
                             "waiver_submitted": {
-                              "type": [
-                                "boolean",
-                                "null"
-                              ],
+                              "type": "boolean",
+                              "nullable": true,
                               "description": "Requested Decision or Waiver 5103 Submitted"
                             },
                             "documents_needed": {
-                              "type": [
-                                "boolean",
-                                "null"
-                              ],
+                              "type": "boolean",
+                              "nullable": true,
                               "description": "Does the claim require additional documents to be submitted"
                             },
                             "development_letter_sent": {
-                              "type": [
-                                "boolean",
-                                "null"
-                              ],
+                              "type": "boolean",
+                              "nullable": true,
                               "description": "Indicates if a Development Letter has been sent to the Claimant regarding a benefit claim"
                             },
                             "decision_letter_sent": {
-                              "type": [
-                                "boolean",
-                                "null"
-                              ],
+                              "type": "boolean",
+                              "nullable": true,
                               "description": "Indicates if a Decision Letter has been sent to the Claimant regarding a benefit claim"
                             },
                             "phase": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": "string",
+                              "nullable": true
                             },
                             "ever_phase_back": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": "string",
+                              "nullable": true
                             },
                             "current_phase_back": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": "string",
+                              "nullable": true
                             },
                             "requested_decision": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "The claim filer has requested a claim decision be made"
                             },
                             "claim_type": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "The type of claim originally submitted"
                             },
                             "updated_at": {
@@ -4489,16 +4467,12 @@
                               "description": "Time stamp of last change to the claim"
                             },
                             "contention_list": {
-                              "type": [
-                                "array",
-                                "null"
-                              ]
+                              "type": "array",
+                              "nullable": true
                             },
                             "va_representative": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": "string",
+                              "nullable": true
                             },
                             "events_timeline": {
                               "type": "array"
@@ -4524,6 +4498,23 @@
                       }
                     }
                   }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "title": "Missing parameter",
+                      "detail": "Must include attachment",
+                      "code": "108",
+                      "status": "400"
+                    }
+                  ]
                 }
               }
             }
@@ -5041,7 +5032,6 @@
                             "disabilityActionType": "NEW",
                             "name": "PTSD (post traumatic stress disorder)",
                             "specialIssues": [
-                              "POW",
                               "Asbestos"
                             ],
                             "secondaryDisabilities": [
@@ -5179,7 +5169,7 @@
                                     "type": "string"
                                   },
                                   "type": {
-                                    "description": "Type of residence Veteran resides in.",
+                                    "description": "Type of residence Veteran resides in.  \n If value is \"INTERNATIONAL\", then \"addressLine1\", \"city\", \"country\", and \"internationalPostalCode\" are required.  \n If value is \"DOMESTIC\", then \"addressLine1\", \"city\", \"state\", \"country\", and \"zipFirstFive\" are required.  \n If value is \"MILITARY\", then \"addressLine1\", \"country\", \"militaryStateCode\", \"militaryPostOfficeTypeCode\", and \"zipFirstFive\" are required.",
                                     "type": "string",
                                     "default": "DOMESTIC",
                                     "enum": [
@@ -5268,7 +5258,7 @@
                                 ],
                                 "properties": {
                                   "beginningDate": {
-                                    "description": "Date in YYYY-MM-DD the Veteran changed address.",
+                                    "description": "Date in YYYY-MM-DD the Veteran changed address. Date must be in the future if change is temporary.",
                                     "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$",
                                     "type": "string",
                                     "example": "2018-06-04"
@@ -5325,7 +5315,7 @@
                                     "type": "string"
                                   },
                                   "type": {
-                                    "description": "New type of residence Veteran resides in.",
+                                    "description": "New type of residence Veteran resides in.  \n If value is \"INTERNATIONAL\", then \"city\" and \"internationalPostalCode\" are required.  \n If value is \"DOMESTIC\", then \"city\", \"state\", and \"zipFirstFive\" are required.  \n If value is \"MILITARY\", then \"militaryStateCode\", \"militaryPostOfficeTypeCode\", and \"zipFirstFive\" are required.",
                                     "type": "string",
                                     "default": "DOMESTIC",
                                     "enum": [
@@ -5402,12 +5392,6 @@
                                 "description": "Object describing Veteran Homelessness if applicable.",
                                 "type": "object",
                                 "additionalProperties": false,
-                                "dependentRequired": {
-                                  "pointOfContact": [
-                                    "currentlyHomeless",
-                                    "homelessnessRisk"
-                                  ]
-                                },
                                 "properties": {
                                   "pointOfContact": {
                                     "description": "Object describing Homeless Veteran Point of Contact.",
@@ -5460,7 +5444,7 @@
                                       "homelessSituationType": {
                                         "description": "Current state of the veteran's homelessness.",
                                         "type": "string",
-                                        "default": "OTHER",
+                                        "default": "other",
                                         "enum": [
                                           "fleeing",
                                           "shelter",
@@ -5471,7 +5455,7 @@
                                         "example": "fleeing"
                                       },
                                       "otherLivingSituation": {
-                                        "description": "List any other living scenarios.",
+                                        "description": "For a 'homelessSituationType' of value 'other', please provide additional comments on the living situation.",
                                         "type": "string",
                                         "maxLength": 500,
                                         "example": "other living situation"
@@ -5488,7 +5472,7 @@
                                     "properties": {
                                       "homelessnessRiskSituationType": {
                                         "type": "string",
-                                        "default": "OTHER",
+                                        "default": "other",
                                         "enum": [
                                           "losingHousing",
                                           "leavingShelter",
@@ -5496,8 +5480,10 @@
                                         ]
                                       },
                                       "otherLivingSituation": {
+                                        "description": "For a 'homelessnessRiskSituationType' of value 'other', please provide additional comments on the living situation.",
                                         "type": "string",
-                                        "maxLength": 500
+                                        "maxLength": 500,
+                                        "example": "other living situation"
                                       }
                                     }
                                   }
@@ -5562,6 +5548,7 @@
                                         "Public Health Service",
                                         "Regular Philippine Scout",
                                         "Regular Scout Service",
+                                        "Space Force",
                                         "Special Philippine Scout",
                                         "Unknown",
                                         "US Military Academy",
@@ -5576,13 +5563,13 @@
                                       "example": "1980-02-05"
                                     },
                                     "activeDutyEndDate": {
-                                      "description": "Date Completed Active Duty.",
+                                      "description": "Date Completed Active Duty.  If in the future, 'separationLocationCode' is required.",
                                       "type": "string",
                                       "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$",
                                       "example": "1990-01-02"
                                     },
                                     "separationLocationCode": {
-                                      "description": "Code for the facility the Veteran plans to separate from.  [Code values available here.](https://github.com/department-of-veterans-affairs/vets-api/blob/master/modules/claims_api/lib/claims_api/separation_location_code_values.json)",
+                                      "description": "Code for the facility the Veteran plans to separate from.  Required if 'servicePeriod.activeDutyEndDate' is in the future. [Code values available here.](https://github.com/department-of-veterans-affairs/vets-api/blob/master/modules/claims_api/lib/claims_api/separation_location_code_values.json)",
                                       "type": "string",
                                       "example": "98283"
                                     }
@@ -5617,15 +5604,13 @@
                                 "type": "object",
                                 "additionalProperties": false,
                                 "required": [
-                                  "title10Activation",
                                   "obligationTermOfServiceFromDate",
                                   "obligationTermOfServiceToDate",
-                                  "unitName",
-                                  "unitPhone",
-                                  "receivingInactiveDutyTrainingPay"
+                                  "unitName"
                                 ],
                                 "properties": {
                                   "title10Activation": {
+                                    "description": "Include if the Veteran is currently activated on federal orders within the National Guard or Reserves",
                                     "type": "object",
                                     "additionalProperties": false,
                                     "required": [
@@ -5634,10 +5619,12 @@
                                     ],
                                     "properties": {
                                       "anticipatedSeparationDate": {
+                                        "description": "Anticipated date of separation. Date must be in the future.",
                                         "type": "string",
                                         "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$"
                                       },
                                       "title10ActivationDate": {
+                                        "description": "Date cannot be in the future and must be after the earliest servicePeriod.activeDutyBeginDate.",
                                         "type": "string",
                                         "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$"
                                       }
@@ -5652,7 +5639,8 @@
                                     "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$"
                                   },
                                   "unitName": {
-                                    "type": "string"
+                                    "type": "string",
+                                    "pattern": "([a-zA-Z0-9\\-'.,# ][a-zA-Z0-9\\-'.,# ]?)*$"
                                   },
                                   "unitPhone": {
                                     "type": "object",
@@ -5905,7 +5893,7 @@
                                   "example": 9999
                                 },
                                 "disabilityActionType": {
-                                  "description": "The status of the current disability.",
+                                  "description": "The status of the current disability.  \n If value is \"INCREASE\", then \"ratedDisabilityId\" and \"diagnosticCode\" are required.",
                                   "type": "string",
                                   "enum": [
                                     "NONE",
@@ -5924,7 +5912,7 @@
                                   "example": "249470"
                                 },
                                 "approximateBeginDate": {
-                                  "description": "Approximate date disability began.",
+                                  "description": "Approximate date disability began. Date must be in the past.",
                                   "type": "string",
                                   "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$",
                                   "example": "2018-03-02"
@@ -6202,7 +6190,7 @@
                               ],
                               "properties": {
                                 "startDate": {
-                                  "description": "Date Veteran started treatment.",
+                                  "description": "Date Veteran started treatment. Date must be after the earliest servicePeriods.activeDutyBeginDate.",
                                   "type": [
                                     "null",
                                     "string"
@@ -6211,7 +6199,7 @@
                                   "example": "2018-03-02"
                                 },
                                 "endDate": {
-                                  "description": "Date Veteran ended treatment.",
+                                  "description": "Date Veteran ended treatment. End date must be after the start date.",
                                   "type": "string",
                                   "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$",
                                   "example": "2018-03-02"
@@ -6240,10 +6228,13 @@
                                     "name": {
                                       "description": "Name of facility Veteran was treated in.",
                                       "type": "string",
+                                      "pattern": "([a-zA-Z0-9\"\\/&\\(\\)\\-'.,# ]([a-zA-Z0-9(\\)\\-'.,# ])?)+$",
                                       "example": "Private Facility 2"
                                     },
                                     "country": {
                                       "description": "Country Veteran was treated in.",
+                                      "minLength": 1,
+                                      "maxLength": 50,
                                       "type": "string",
                                       "example": "USA"
                                     }
@@ -6282,7 +6273,7 @@
                                     "example": true
                                   },
                                   "willReceiveInFuture": {
-                                    "description": "Will Veteran get Retiree pay in future?",
+                                    "description": "Will Veteran get Retiree pay in future?  \n If true, then \"futurePayExplanation\" attribute is required.",
                                     "type": "boolean",
                                     "default": false,
                                     "example": false
@@ -6321,7 +6312,8 @@
                                           "Naval Academy",
                                           "Other",
                                           "US Military Academy",
-                                          "Women's Army Corps"
+                                          "Women's Army Corps",
+                                          "Space Force"
                                         ],
                                         "example": "Air Force"
                                       },
@@ -6401,7 +6393,8 @@
                                           "Naval Academy",
                                           "Other",
                                           "US Military Academy",
-                                          "Women's Army Corps"
+                                          "Women's Army Corps",
+                                          "Space Force"
                                         ],
                                         "example": "Air Force"
                                       },
@@ -6485,10 +6478,10 @@
                             "example": false
                           },
                           "claimDate": {
-                            "description": "Date when claim is being submitted to the VA.",
+                            "description": "Date (or Timestamp with TimeZone) when claim is being submitted to the VA. Date cannot be in the future. UTC TimeZone is assumed unless otherwise specified.",
                             "type": "string",
-                            "pattern": "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$",
-                            "example": "2018-08-28"
+                            "pattern": "^(?:[0-9]{4})-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2][0-9]|3[0-1])(?:T[0-1][0-9]:[0-5][0-9]:[0-5][0-9](?:[-+][0-9]{2}:[0-9]{2}|Z))*$",
+                            "example": "2018-08-28T19:53:45+00:00"
                           }
                         }
                       }
@@ -6583,7 +6576,7 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "b61f2623-fd8d-438a-aa4e-250f24d67552",
+                    "id": "710d782b-9f5e-441e-be38-8a900ae716c6",
                     "type": "claims_api_claim",
                     "attributes": {
                       "evss_id": null,
@@ -6597,7 +6590,7 @@
                       "decision_letter_sent": null,
                       "requested_decision": null,
                       "claim_type": null,
-                      "updated_at": "2022-02-21T18:16:47.688Z",
+                      "updated_at": "2022-08-01T21:54:37.379Z",
                       "contention_list": null,
                       "va_representative": null,
                       "events_timeline": [
@@ -6606,7 +6599,7 @@
                       "status": "pending",
                       "supporting_documents": [
                         {
-                          "id": "ab179d66-33c1-442a-ac33-cb9a4437626d",
+                          "id": "c1bb4267-306b-4328-b985-875c4d850816",
                           "type": "claim_supporting_document",
                           "md5": null,
                           "filename": null,
@@ -6651,41 +6644,31 @@
                           ],
                           "properties": {
                             "evss_id": {
-                              "type": [
-                                "integer",
-                                "null"
-                              ],
+                              "type": "integer",
+                              "nullable": true,
                               "description": "EVSS Claim ID"
                             },
                             "date_filed": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Date in YYYY-MM-DD the claim was first filed"
                             },
                             "min_est_date": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Minimum Estimated Claim Completion Date"
                             },
                             "max_est_date": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Maximum Estimated Claim Completion Date"
                             },
                             "phase_change_date": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Date of last phase change"
                             },
@@ -6694,63 +6677,45 @@
                               "description": "Has the claim been resolved"
                             },
                             "waiver_submitted": {
-                              "type": [
-                                "boolean",
-                                "null"
-                              ],
+                              "type": "boolean",
+                              "nullable": true,
                               "description": "Requested Decision or Waiver 5103 Submitted"
                             },
                             "documents_needed": {
-                              "type": [
-                                "boolean",
-                                "null"
-                              ],
+                              "type": "boolean",
+                              "nullable": true,
                               "description": "Does the claim require additional documents to be submitted"
                             },
                             "development_letter_sent": {
-                              "type": [
-                                "boolean",
-                                "null"
-                              ],
+                              "type": "boolean",
+                              "nullable": true,
                               "description": "Indicates if a Development Letter has been sent to the Claimant regarding a benefit claim"
                             },
                             "decision_letter_sent": {
-                              "type": [
-                                "boolean",
-                                "null"
-                              ],
+                              "type": "boolean",
+                              "nullable": true,
                               "description": "Indicates if a Decision Letter has been sent to the Claimant regarding a benefit claim"
                             },
                             "phase": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": "string",
+                              "nullable": true
                             },
                             "ever_phase_back": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": "string",
+                              "nullable": true
                             },
                             "current_phase_back": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": "string",
+                              "nullable": true
                             },
                             "requested_decision": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "The claim filer has requested a claim decision be made"
                             },
                             "claim_type": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "The type of claim originally submitted"
                             },
                             "updated_at": {
@@ -6759,16 +6724,12 @@
                               "description": "Time stamp of last change to the claim"
                             },
                             "contention_list": {
-                              "type": [
-                                "array",
-                                "null"
-                              ]
+                              "type": "array",
+                              "nullable": true
                             },
                             "va_representative": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": "string",
+                              "nullable": true
                             },
                             "events_timeline": {
                               "type": "array"
@@ -6792,24 +6753,18 @@
                                     "type": "string"
                                   },
                                   "md5": {
-                                    "type": [
-                                      "string",
-                                      "null"
-                                    ],
+                                    "type": "string",
+                                    "nullable": true,
                                     "description": "Hashed representation of document"
                                   },
                                   "filename": {
-                                    "type": [
-                                      "string",
-                                      "null"
-                                    ],
+                                    "type": "string",
+                                    "nullable": true,
                                     "description": "Name of document"
                                   },
                                   "uploaded_at": {
-                                    "type": [
-                                      "string",
-                                      "null"
-                                    ],
+                                    "type": "string",
+                                    "nullable": true,
                                     "format": "date",
                                     "description": "Date and time document was uploaded"
                                   }
@@ -7005,7 +6960,7 @@
                         "type": {
                           "type": "string",
                           "example": "compensation",
-                          "description": "For type \"burial\", the request must be made by a valid Veteran Representative. If the Representative is not a Veteran or a VA employee, this method is currently not available to them, and they should use the Benefits Intake API as an alternative.",
+                          "description": "For type \"burial\", the request must include claimant_ssn or participant_claimant_id and be made by a valid Veteran Representative. If the Representative is not a Veteran or a VA employee, this method is currently not available to them, and they should use the Benefits Intake API as an alternative.",
                           "enum": [
                             "compensation",
                             "pension",
@@ -7015,16 +6970,22 @@
                         "participant_claimant_id": {
                           "type": "string",
                           "example": "123456789",
-                          "description": "Participant ID or SSN of the claimant."
+                          "description": "Participant ID of the Claimant."
                         },
                         "participant_vet_id": {
                           "type": "string",
-                          "example": "987654321"
+                          "example": "987654321",
+                          "description": "Participant ID of the Veteran."
                         },
                         "received_date": {
                           "type": "string",
                           "example": "2015-01-05T17:42:12.058Z",
                           "format": "datetime"
+                        },
+                        "claimant_ssn": {
+                          "type": "string",
+                          "example": "123456789",
+                          "description": "SSN of the Claimant."
                         }
                       }
                     }
@@ -7321,7 +7282,7 @@
                   "errors": [
                     {
                       "status": 422,
-                      "detail": "The property /type did not match the following requirements: {\"type\"=>\"string\", \"example\"=>\"compensation\", \"description\"=>\"For type \\\"burial\\\", the request must be made by a valid Veteran Representative. If the Representative is not a Veteran or a VA employee, this method is currently not available to them, and they should use the Benefits Intake API as an alternative.\", \"enum\"=>[\"compensation\", \"pension\", \"burial\"]}",
+                      "detail": "The property /type did not match the following requirements: {\"type\"=>\"string\", \"example\"=>\"compensation\", \"description\"=>\"For type \\\"burial\\\", the request must include claimant_ssn or participant_claimant_id and be made by a valid Veteran Representative. If the Representative is not a Veteran or a VA employee, this method is currently not available to them, and they should use the Benefits Intake API as an alternative.\", \"enum\"=>[\"compensation\", \"pension\", \"burial\"]}",
                       "source": "/type"
                     }
                   ]
@@ -7397,7 +7358,7 @@
                           "type": {
                             "type": "string",
                             "example": "compensation",
-                            "description": "For type \"burial\", the request must be made by a valid Veteran Representative. If the Representative is not a Veteran or a VA employee, this method is currently not available to them, and they should use the Benefits Intake API as an alternative.",
+                            "description": "For type \"burial\", the request must include claimant_ssn or participant_claimant_id and be made by a valid Veteran Representative. If the Representative is not a Veteran or a VA employee, this method is currently not available to them, and they should use the Benefits Intake API as an alternative.",
                             "enum": [
                               "compensation",
                               "pension",
@@ -7407,16 +7368,22 @@
                           "participant_claimant_id": {
                             "type": "string",
                             "example": "123456789",
-                            "description": "Participant ID or SSN of the claimant."
+                            "description": "Participant ID of the Claimant."
                           },
                           "participant_vet_id": {
                             "type": "string",
-                            "example": "987654321"
+                            "example": "987654321",
+                            "description": "Participant ID of the Veteran."
                           },
                           "received_date": {
                             "type": "string",
                             "example": "2015-01-05T17:42:12.058Z",
                             "format": "datetime"
+                          },
+                          "claimant_ssn": {
+                            "type": "string",
+                            "example": "123456789",
+                            "description": "SSN of the Claimant."
                           }
                         }
                       }
@@ -7550,10 +7517,8 @@
                           ],
                           "properties": {
                             "creation_date": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "format": "date",
                               "description": "Date the Intent to File was received at the VA"
                             },
@@ -8053,7 +8018,7 @@
                           "type": {
                             "type": "string",
                             "example": "compensation",
-                            "description": "For type \"burial\", the request must be made by a valid Veteran Representative. If the Representative is not a Veteran or a VA employee, this method is currently not available to them, and they should use the Benefits Intake API as an alternative.",
+                            "description": "For type \"burial\", the request must include claimant_ssn or participant_claimant_id and be made by a valid Veteran Representative. If the Representative is not a Veteran or a VA employee, this method is currently not available to them, and they should use the Benefits Intake API as an alternative.",
                             "enum": [
                               "compensation",
                               "pension",
@@ -8063,16 +8028,22 @@
                           "participant_claimant_id": {
                             "type": "string",
                             "example": "123456789",
-                            "description": "Participant ID or SSN of the claimant."
+                            "description": "Participant ID of the Claimant."
                           },
                           "participant_vet_id": {
                             "type": "string",
-                            "example": "987654321"
+                            "example": "987654321",
+                            "description": "Participant ID of the Veteran."
                           },
                           "received_date": {
                             "type": "string",
                             "example": "2015-01-05T17:42:12.058Z",
                             "format": "datetime"
+                          },
+                          "claimant_ssn": {
+                            "type": "string",
+                            "example": "123456789",
+                            "description": "SSN of the Claimant."
                           }
                         }
                       }
@@ -8218,6 +8189,12 @@
                                 "OTHER"
                               ],
                               "example": "ARMY"
+                            },
+                            "serviceBranchOther": {
+                              "description": "For a 'service branch' of value 'other', please provide the service branch name.",
+                              "type": "string",
+                              "maxLength": 50,
+                              "example": "Space Force"
                             }
                           }
                         },
@@ -8473,7 +8450,7 @@
                           ],
                           "properties": {
                             "veteran": {
-                              "description": "Base64 encoded png image of the veterans signature.",
+                              "description": "Base64 encoded png image of the veteran or claimant signature.",
                               "title": "Signature of the Veteran",
                               "type": "string"
                             },
@@ -8564,11 +8541,11 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "39ec278b-486e-4627-9aa3-4433a825c554",
+                    "id": "b2c22b11-7fab-4aa6-bbd2-ecde45ca1576",
                     "type": "claims_api_power_of_attorneys",
                     "attributes": {
                       "status": "pending",
-                      "date_request_accepted": "2022-02-21",
+                      "date_request_accepted": "2022-08-01",
                       "representative": {
                         "service_organization": {
                           "poa_code": "074"
@@ -8648,10 +8625,8 @@
                               }
                             },
                             "previous_poa": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "Current or Previous Power of Attorney Code submitted for Veteran"
                             }
                           }
@@ -8918,6 +8893,12 @@
                                   "OTHER"
                                 ],
                                 "example": "ARMY"
+                              },
+                              "serviceBranchOther": {
+                                "description": "For a 'service branch' of value 'other', please provide the service branch name.",
+                                "type": "string",
+                                "maxLength": 50,
+                                "example": "Space Force"
                               }
                             }
                           },
@@ -9173,7 +9154,7 @@
                             ],
                             "properties": {
                               "veteran": {
-                                "description": "Base64 encoded png image of the veterans signature.",
+                                "description": "Base64 encoded png image of the veteran or claimant signature.",
                                 "title": "Signature of the Veteran",
                                 "type": "string"
                               },
@@ -9277,11 +9258,11 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "81cc93d2-5a0a-49e8-a92c-0582ded77939",
+                    "id": "523a1760-dc70-46bd-86e8-387ec1f5bd57",
                     "type": "claims_api_power_of_attorneys",
                     "attributes": {
                       "status": "submitted",
-                      "date_request_accepted": "2022-02-21",
+                      "date_request_accepted": "2022-08-01",
                       "representative": {
                         "service_organization": {
                           "poa_code": "074"
@@ -9361,10 +9342,8 @@
                               }
                             },
                             "previous_poa": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "Current or Previous Power of Attorney Code submitted for Veteran"
                             }
                           }
@@ -9635,6 +9614,71 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "title": "Missing parameter",
+                      "detail": "Must include attachment",
+                      "code": "108",
+                      "status": "400"
+                    }
+                  ]
+                },
+                "schema": {
+                  "required": [
+                    "errors"
+                  ],
+                  "properties": {
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "required": [
+                          "title",
+                          "detail",
+                          "code",
+                          "status"
+                        ],
+                        "properties": {
+                          "title": {
+                            "type": "string",
+                            "description": "HTTP error title"
+                          },
+                          "detail": {
+                            "type": "string",
+                            "description": "HTTP error detail"
+                          },
+                          "code": {
+                            "type": "string",
+                            "description": "HTTP error code"
+                          },
+                          "status": {
+                            "type": "string",
+                            "description": "HTTP error code"
+                          },
+                          "source": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "description": "Source of error",
+                            "properties": {
+                              "pointer": {
+                                "type": "string",
+                                "description": "Pointer to source of error"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -9732,11 +9776,11 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "f62f9e6f-02b1-4df2-b45f-4894643dfb86",
+                    "id": "f0a2f43b-f249-42b9-8721-cd83d1d3a9e6",
                     "type": "claims_api_power_of_attorneys",
                     "attributes": {
                       "status": "submitted",
-                      "date_request_accepted": "2022-02-21",
+                      "date_request_accepted": "2022-08-01",
                       "representative": {
                         "service_organization": {
                           "poa_code": "074"
@@ -9816,10 +9860,8 @@
                               }
                             },
                             "previous_poa": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "Current or Previous Power of Attorney Code submitted for Veteran"
                             }
                           }
@@ -10094,10 +10136,8 @@
                               ]
                             },
                             "date_request_accepted": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "Date request was first accepted",
                               "format": "date"
                             },
@@ -10121,26 +10161,20 @@
                                     },
                                     "first_name": {
                                       "description": "First name of representative, null if representative is an organization",
-                                      "type": [
-                                        "string",
-                                        "null"
-                                      ],
+                                      "type": "string",
+                                      "nullable": true,
                                       "example": "Jane"
                                     },
                                     "last_name": {
                                       "description": "Last name of representative, null if representative is an organization",
-                                      "type": [
-                                        "string",
-                                        "null"
-                                      ],
+                                      "type": "string",
+                                      "nullable": true,
                                       "example": "Doe"
                                     },
                                     "organization_name": {
                                       "description": "Name of representing organization, null if representative is an individual",
-                                      "type": [
-                                        "string",
-                                        "null"
-                                      ],
+                                      "type": "string",
+                                      "nullable": true,
                                       "example": "Some Great Organization"
                                     },
                                     "phone_number": {
@@ -10153,10 +10187,8 @@
                               }
                             },
                             "previous_poa": {
-                              "type": [
-                                "string",
-                                "null"
-                              ],
+                              "type": "string",
+                              "nullable": true,
                               "description": "Current or Previous Power of Attorney Code submitted for Veteran"
                             }
                           }
@@ -10676,6 +10708,12 @@
                                   "OTHER"
                                 ],
                                 "example": "ARMY"
+                              },
+                              "serviceBranchOther": {
+                                "description": "For a 'service branch' of value 'other', please provide the service branch name.",
+                                "type": "string",
+                                "maxLength": 50,
+                                "example": "Space Force"
                               }
                             }
                           },
@@ -10931,7 +10969,7 @@
                             ],
                             "properties": {
                               "veteran": {
-                                "description": "Base64 encoded png image of the veterans signature.",
+                                "description": "Base64 encoded png image of the veteran or claimant signature.",
                                 "title": "Signature of the Veteran",
                                 "type": "string"
                               },
@@ -10955,7 +10993,6 @@
       }
     }
   },
-  "basePath": "/services/claims/v1",
   "servers": [
     {
       "url": "https://sandbox-api.va.gov/services/claims/{version}",

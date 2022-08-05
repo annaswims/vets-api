@@ -16,7 +16,12 @@ module ClaimsApi
        participant_id
        gender
        birls_file_number
+       icn
+       idme_uuid
+       logingov_uuid
        uuid
+       icn_with_aaid
+       search_token
        mhv_icn
        pid].each do |attr|
       attribute attr, String
@@ -31,7 +36,11 @@ module ClaimsApi
     delegate :person_types, to: :mpi, allow_nil: true
 
     def birth_date
-      va_profile[:birth_date]
+      va_profile&.birth_date
+    end
+
+    def birth_date=(new_birth_date)
+      va_profile&.birth_date = new_birth_date
     end
 
     def gender_mpi
@@ -85,10 +94,15 @@ module ClaimsApi
         last_signed_in: Time.now.utc,
         loa: identity.loa,
         gender: identity.gender,
+        mhv_icn: identity.mhv_icn,
+        idme_uuid: identity.idme_uuid,
+        logingov_uuid: identity.logingov_uuid,
         ssn: identity.ssn,
         va_profile: OpenStruct.new(birth_date: identity.birth_date),
         edipi: identity&.edipi,
-        participant_id: identity&.participant_id
+        participant_id: identity&.participant_id,
+        icn_with_aaid: identity.icn_with_aaid,
+        search_token: identity.search_token
       )
     end
 

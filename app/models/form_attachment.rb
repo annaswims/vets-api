@@ -5,7 +5,7 @@ class FormAttachment < ApplicationRecord
   include SentryLogging
 
   has_kms_key
-  encrypts :file_data, key: :kms_key, **lockbox_options
+  has_encrypted :file_data, key: :kms_key, **lockbox_options
 
   validates(:file_data, :guid, presence: true)
 
@@ -42,7 +42,7 @@ class FormAttachment < ApplicationRecord
     tmpf = Tempfile.new(['decrypted_form_attachment', '.pdf'])
 
     error_messages = pdftk.call_pdftk(file.tempfile.path, 'input_pw', file_password, 'output', tmpf.path)
-    if error_messages.present?
+    if error_messages.present? && error_messages.include?('Error')
       log_message_to_sentry(error_messages, 'warn')
       raise Common::Exceptions::UnprocessableEntity.new(
         detail: I18n.t('errors.messages.uploads.pdf.incorrect_password'),

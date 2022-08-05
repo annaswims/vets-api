@@ -50,7 +50,7 @@ module V0
     # rubocop:disable Metrics/MethodLength
     def fsr_form
       params.permit(
-        personal_identification: %i[fsr_reason ssn file_number],
+        personal_identification: %i[fsr_reason ssn file_number debt_type],
         personal_data: [
           :telephone_number,
           :email,
@@ -77,11 +77,11 @@ module V0
           :net_take_home_pay,
           :total_monthly_net_income,
           { deductions: [
-            :taxes,
-            :retirement,
-            :social_security,
-            { other_deductions: name_amount }
-          ],
+              :taxes,
+              :retirement,
+              :social_security,
+              { other_deductions: name_amount }
+            ],
             other_income: name_amount }
         ],
         expenses: [
@@ -135,7 +135,9 @@ module V0
         ],
         applicant_certifications: %i[
           veteran_signature
-        ]
+        ],
+        selected_debts: [],
+        selected_copays: []
       ).to_hash
     end
     # rubocop:enable Metrics/MethodLength

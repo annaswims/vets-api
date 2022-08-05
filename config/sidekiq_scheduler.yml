@@ -60,6 +60,11 @@ InProgressFormCleaner:
   class: InProgressFormCleaner
   description: "Clear out saved forms that have not been updated in a while"
 
+VANotify::InProgressForms:
+  cron: "0 16 * * * America/New_York"
+  class: VANotify::InProgressForms
+  description: "In progress form reminder emails (sent via VaNotify)"
+
 FailedClaimsReport:
   cron: "30 3 * * MON America/New_York"
   class: EVSS::FailedClaimsReport
@@ -166,7 +171,7 @@ AppealsApi::NoticeOfDisagreementCleanUpWeekOldPii:
   description: "Remove PII of NoticeOfDisagreements that have 1) reached one of the 'completed' statuses and 2) are a week old"
 
 AppealsApi::NoticeOfDisagreementUploadStatusBatch:
-  every: "60m"
+  cron: "10 * * * *" # Every hour, 10 minutes after the hour
   class: AppealsApi::NoticeOfDisagreementUploadStatusBatch
   description: "Update NoticeOfDisagreement statuses with their Central Mail status"
 
@@ -174,6 +179,11 @@ AppealsApi::SupplementalClaimCleanUpPii:
   every: ['24h', first_in: '45m']
   class: AppealsApi::SupplementalClaimCleanUpPii
   description: "Remove PII of SupplementalClaims that have 1) reached one of the 'completed' statuses and 2) are a week old"
+
+AppealsApi::SupplementalClaimUploadStatusBatch:
+  cron: "15 * * * *" # Every hour, 15 minutes after the hour
+  class: AppealsApi::SupplementalClaimUploadStatusBatch
+  description: "Update SupplementalClaim statuses with their Central Mail status"
 
 TransactionalEmailAnalyticsJob:
   cron: "0 1 * * * America/New_York"
@@ -191,6 +201,9 @@ AccountLoginStatisticsJob:
   cron: "0 6 * * * America/New_York"
   description: "Gather account login statistics for statsd"
 
+SignIn::DeleteExpiredSessionsJob:
+  cron: "0 7 * * * America/New_York"
+
 ExternalServicesStatusJob:
   every: '1m'
   description: "Checks the current status of all external services through PagerDuty's API"
@@ -199,6 +212,11 @@ VAForms::FetchLatest:
   cron: "0 2 * * * America/New_York"
   class: VAForms::FormReloader
   description: "Fetches latest VA Forms"
+
+AppsApi::FetchConnections:
+  every: "60m"
+  class: AppsApi::FetchConnections
+  description: "Fetches and handles notifications for recent application connections and disconnections"
 
 EducationForm::Process10203Submissions:
   cron: "0 6-18/6 * * * America/New_York"
@@ -211,7 +229,7 @@ CypressViewportUpdater::UpdateCypressViewportsJob:
   description: "Updates Cypress files in vets-website with data from Google Analytics."
 
 ClaimsApi::ClaimAuditor:
-  every: "12h"
+  cron: "0 11 * * * America/New_York"
   class: ClaimsApi::ClaimAuditor
   description: "Daily alert of pending claims longer than acceptable threshold"
 
@@ -271,3 +289,9 @@ TestUserDashboard::MirrorAccountAvailabilityLogsInBigQuery:
   cron: "0 */2 * * * America/New_York"
   class: TestUserDashboard::MirrorAccountAvailabilityLogsInBigQuery
   description: "Mirrors the test_user_dashboard_tud_account_availability_logs table in BigQuery."
+
+New1095BsJob:
+  cron: "0 3 * * * America/New_York"
+  class: Form1095::New1095BsJob
+  description: "Getting new 1095Bs"
+  

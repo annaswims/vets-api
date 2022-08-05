@@ -49,7 +49,9 @@ FactoryBot.define do
 
       sign_in do
         {
-          service_name: SAML::User::AUTHN_CONTEXTS[authn_context][:sign_in][:service_name]
+          service_name: SAML::User::AUTHN_CONTEXTS[authn_context][:sign_in][:service_name],
+          auth_broker: SAML::URLService::BROKER_CODE,
+          client_id: SignIn::Constants::ClientConfig::COOKIE_AUTH.first
         }
       end
 
@@ -132,7 +134,9 @@ FactoryBot.define do
 
       sign_in do
         {
-          service_name: SAML::User::AUTHN_CONTEXTS[authn_context][:sign_in][:service_name]
+          service_name: SAML::User::AUTHN_CONTEXTS[authn_context][:sign_in][:service_name],
+          auth_broker: SAML::URLService::BROKER_CODE,
+          client_id: SignIn::Constants::ClientConfig::COOKIE_AUTH.first
         }
       end
 
@@ -151,7 +155,9 @@ FactoryBot.define do
 
       sign_in do
         {
-          service_name: SAML::User::AUTHN_CONTEXTS[authn_context][:sign_in][:service_name]
+          service_name: SAML::User::AUTHN_CONTEXTS[authn_context][:sign_in][:service_name],
+          auth_broker: SAML::URLService::BROKER_CODE,
+          client_id: SignIn::Constants::ClientConfig::COOKIE_AUTH.first
         }
       end
 
@@ -170,7 +176,9 @@ FactoryBot.define do
 
       sign_in do
         {
-          service_name: SAML::User::AUTHN_CONTEXTS[authn_context][:sign_in][:service_name]
+          service_name: SAML::User::AUTHN_CONTEXTS[authn_context][:sign_in][:service_name],
+          auth_broker: SAML::URLService::BROKER_CODE,
+          client_id: SignIn::Constants::ClientConfig::COOKIE_AUTH.first
         }
       end
 
@@ -183,7 +191,9 @@ FactoryBot.define do
       authn_context { LOA::IDME_LOA1_VETS }
       sign_in do
         {
-          service_name: SAML::User::AUTHN_CONTEXTS[authn_context][:sign_in][:service_name]
+          service_name: SAML::User::AUTHN_CONTEXTS[authn_context][:sign_in][:service_name],
+          auth_broker: SAML::URLService::BROKER_CODE,
+          client_id: SignIn::Constants::ClientConfig::COOKIE_AUTH.first
         }
       end
 
@@ -197,7 +207,9 @@ FactoryBot.define do
 
       sign_in do
         {
-          service_name: SAML::User::AUTHN_CONTEXTS[authn_context][:sign_in][:service_name]
+          service_name: SAML::User::AUTHN_CONTEXTS[authn_context][:sign_in][:service_name],
+          auth_broker: SAML::URLService::BROKER_CODE,
+          client_id: SignIn::Constants::ClientConfig::COOKIE_AUTH.first
         }
       end
 
@@ -213,7 +225,9 @@ FactoryBot.define do
       authn_context { IAL::LOGIN_GOV_IAL1 }
       sign_in do
         {
-          service_name: SAML::User::AUTHN_CONTEXTS[authn_context][:sign_in][:service_name]
+          service_name: SAML::User::AUTHN_CONTEXTS[authn_context][:sign_in][:service_name],
+          auth_broker: SAML::URLService::BROKER_CODE,
+          client_id: SignIn::Constants::ClientConfig::COOKIE_AUTH.first
         }
       end
 
@@ -436,7 +450,9 @@ FactoryBot.define do
 
       sign_in do
         {
-          service_name: SAML::User::AUTHN_CONTEXTS[authn_context][:sign_in][:service_name]
+          service_name: SAML::User::AUTHN_CONTEXTS[authn_context][:sign_in][:service_name],
+          auth_broker: SAML::URLService::BROKER_CODE,
+          client_id: SignIn::Constants::ClientConfig::COOKIE_AUTH.first
         }
       end
 
@@ -453,7 +469,9 @@ FactoryBot.define do
 
       sign_in do
         {
-          service_name: SAML::User::AUTHN_CONTEXTS[authn_context][:sign_in][:service_name]
+          service_name: SAML::User::AUTHN_CONTEXTS[authn_context][:sign_in][:service_name],
+          auth_broker: SAML::URLService::BROKER_CODE,
+          client_id: SignIn::Constants::ClientConfig::COOKIE_AUTH.first
         }
       end
 
@@ -468,6 +486,16 @@ FactoryBot.define do
             sec_id: nil
           )
         )
+      end
+    end
+
+    trait :api_auth do
+      sign_in do
+        {
+          service_name: SAML::User::AUTHN_CONTEXTS[authn_context][:sign_in][:service_name],
+          auth_broker: SAML::URLService::BROKER_CODE,
+          client_id: SignIn::Constants::ClientConfig::API_AUTH.first
+        }
       end
     end
 
@@ -510,7 +538,9 @@ FactoryBot.define do
 
       sign_in do
         {
-          service_name: 'myhealthevet'
+          service_name: 'mhv',
+          auth_broker: SAML::URLService::BROKER_CODE,
+          client_id: SignIn::Constants::ClientConfig::COOKIE_AUTH.first
         }
       end
 
@@ -557,7 +587,9 @@ FactoryBot.define do
 
       sign_in do
         {
-          service_name: 'dslogon'
+          service_name: 'dslogon',
+          auth_broker: SAML::URLService::BROKER_CODE,
+          client_id: SignIn::Constants::ClientConfig::COOKIE_AUTH.first
         }
       end
 

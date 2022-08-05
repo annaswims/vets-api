@@ -21,11 +21,18 @@ module AppealsApi
     end
 
     def stuck_hlr
-      @stuck_hlr ||= stuck_records(HigherLevelReview, HlrStatus)
+      HigherLevelReview.v2.where('updated_at < ? AND status IN (?)',
+                                 1.week.ago,
+                                 HlrStatus::STATUSES - HlrStatus::COMPLETE_STATUSES).order(created_at: :desc)
     end
 
     def total_hlr_successes
-      @total_hlr_successes ||= total_success_count(HigherLevelReview)
+      # HLRv1s final success status is "success", while HLRv2 is "complete", so we need to count on both
+      @total_hlr_successes ||= lambda do
+        sum = total_statuses_count(HigherLevelReview.v1, ['success'])
+        sum += total_statuses_count(HigherLevelReview.v2, ['complete'])
+        sum
+      end.call
     end
 
     # NOD
@@ -42,7 +49,7 @@ module AppealsApi
     end
 
     def total_nod_successes
-      @total_nod_successes ||= total_success_count(NoticeOfDisagreement)
+      @total_nod_successes ||= total_statuses_count(NoticeOfDisagreement)
     end
 
     # SC
@@ -59,7 +66,7 @@ module AppealsApi
     end
 
     def total_sc_successes
-      @total_sc_successes ||= total_success_count(SupplementalClaim)
+      @total_sc_successes ||= total_statuses_count(SupplementalClaim)
     end
 
     # Evidence submissions - NOD
@@ -69,7 +76,10 @@ module AppealsApi
 
     def faulty_evidence_submission
       @faulty_evidence_submission ||=
-        EvidenceSubmission.errored.where(created_at: from..to, supportable_type: 'AppealsApi::NoticeOfDisagreement')
+        EvidenceSubmission
+        .errored
+        .where(created_at: from..to, supportable_type: 'AppealsApi::NoticeOfDisagreement')
+        .order(created_at: :desc)
     end
 
     # Evidence submissions - SC
@@ -79,11 +89,18 @@ module AppealsApi
 
     def sc_faulty_evidence_submission
       @sc_faulty_evidence_submission ||=
-        EvidenceSubmission.errored.where(created_at: from..to, supportable_type: 'AppealsApi::SupplementalClaim')
+        EvidenceSubmission
+        .errored
+        .where(created_at: from..to, supportable_type: 'AppealsApi::SupplementalClaim')
+        .order(created_at: :desc)
     end
 
     def no_faulty_records?
       faulty_hlr.empty? && faulty_nod.empty? && faulty_sc.empty?
+    end
+
+    def no_stuck_records?
+      stuck_hlr.empty? && stuck_nod.empty? && stuck_sc.empty?
     end
 
     private
@@ -106,8 +123,8 @@ module AppealsApi
       statuses
     end
 
-    def total_success_count(record_type)
-      record_type.where(status: 'success').count
+    def total_statuses_count(record_type, statuses = ['complete'])
+      record_type.where(status: statuses).count
     end
 
     def stuck_records(record_type, status_class, timeframe = 1.week.ago)

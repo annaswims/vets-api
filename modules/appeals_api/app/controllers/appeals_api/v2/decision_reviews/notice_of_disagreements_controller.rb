@@ -44,12 +44,18 @@ class AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController < Appeals
   end
 
   def schema
-    render json: AppealsApi::JsonSchemaToSwaggerConverter.remove_comments(
+    # TODO: Return full schema after we've validated all Non-Veteran Claimant functionality
+    response = AppealsApi::JsonSchemaToSwaggerConverter.remove_comments(
       AppealsApi::FormSchemas.new(
         SCHEMA_ERROR_TYPE,
         schema_version: 'v2'
       ).schema(self.class::FORM_NUMBER)
     )
+    response.tap do |s|
+      s.dig(*%w[definitions nodCreate properties data properties attributes properties]).delete('claimant')
+    end
+
+    render json: response
   end
 
   private
@@ -69,7 +75,8 @@ class AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController < Appeals
   end
 
   def validate_json_schema_for_body
-    AppealsApi::FormSchemas.new(SCHEMA_ERROR_TYPE, schema_version: API_VERSION).validate!(FORM_NUMBER, @json_body)
+    schema = AppealsApi::FormSchemas.new(SCHEMA_ERROR_TYPE, schema_version: API_VERSION)
+    schema.validate!(FORM_NUMBER, @json_body)
   end
 
   def validation_success
@@ -100,16 +107,7 @@ class AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController < Appeals
 
   # Follows JSON API v1.0 error object standard (https://jsonapi.org/format/1.0/#error-objects)
   def render_model_errors
-    render json: model_errors_to_json_api, status: MODEL_ERROR_STATUS
-  end
-
-  def model_errors_to_json_api
-    errors = @notice_of_disagreement.errors.map do |error|
-      data = I18n.t('common.exceptions.validation_errors').deep_merge error.options
-      data[:source] = { pointer: error.attribute.to_s }
-      data
-    end
-    { errors: errors }
+    render json: model_errors_to_json_api(@notice_of_disagreement), status: MODEL_ERROR_STATUS
   end
 
   def find_notice_of_disagreement

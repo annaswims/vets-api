@@ -3,6 +3,7 @@
 require 'evss/error_middleware'
 require 'bgs/power_of_attorney_verifier'
 require 'token_validation/v2/client'
+require 'claims_api/claim_logger'
 
 module ClaimsApi
   module V1
@@ -10,6 +11,7 @@ module ClaimsApi
       include ClaimsApi::MPIVerification
       include ClaimsApi::HeaderValidation
       include ClaimsApi::JsonFormatValidation
+      include ClaimsApi::CcgTokenValidation
 
       before_action :validate_json_format, if: -> { request.post? }
       before_action :validate_veteran_identifiers
@@ -22,23 +24,40 @@ module ClaimsApi
 
       protected
 
-      def validate_veteran_identifiers(require_birls: false)
+      def validate_veteran_identifiers(require_birls: false) # rubocop:disable Metrics/MethodLength
         return if !require_birls && target_veteran.participant_id.present?
         return if require_birls && target_veteran.participant_id.present? && target_veteran.birls_id.present?
 
         if require_birls && target_veteran.participant_id.present? && target_veteran.birls_id.blank?
-          raise ::Common::Exceptions::UnprocessableEntity.new(detail: 'No birls_id while participant_id present')
+          raise ::Common::Exceptions::UnprocessableEntity.new(detail:
+            "Unable to locate Veteran's BIRLS ID in Master Person Index (MPI)." \
+            'Please submit an issue at ask.va.gov or call 1-800-MyVA411 (800-698-2411) for assistance.')
         end
 
         if header_request? && !target_veteran.mpi_record?
           raise ::Common::Exceptions::UnprocessableEntity.new(
             detail:
-              'Submitting an original claim requires the Veteran to be authenticated with an identity-verified account'
+              'Unable to locate Veteran in Master Person Index (MPI).' \
+              'Please submit an issue at ask.va.gov or call 1-800-MyVA411 (800-698-2411) for assistance.'
           )
         end
 
-        mpi_add_response = target_veteran.mpi.add_person
+        ClaimsApi::Logger.log('validate_identifiers',
+                              rid: request.request_id,
+                              require_birls: require_birls,
+                              header_request: header_request?,
+                              ptcpnt_id: target_veteran.participant_id.present?,
+                              birls_id: target_veteran.birls_id.present?)
+
+        mpi_add_response = target_veteran.mpi.add_person_proxy
         raise mpi_add_response.error unless mpi_add_response.ok?
+
+        ClaimsApi::Logger.log('validate_identifiers',
+                              rid: request.request_id, mpi_res_ok: mpi_add_response.ok?)
+      rescue ::Common::Exceptions::UnprocessableEntity
+        raise ::Common::Exceptions::UnprocessableEntity.new(detail:
+          "Unable to locate Veteran's Participant ID in Master Person Index (MPI)." \
+          'Please submit an issue at ask.va.gov or call 1-800-MyVA411 (800-698-2411) for assistance.')
       rescue ArgumentError
         raise ::Common::Exceptions::UnprocessableEntity.new(
           detail: 'Required values are missing. Please double check the accuracy of any request header values.'
@@ -100,22 +119,6 @@ module ClaimsApi
         vet.participant_id = vet.participant_id_mpi
 
         vet
-      end
-
-      def validate_ccg_token!
-        client = TokenValidation::V2::Client.new(api_key: Settings.claims_api.token_validation.api_key)
-        root_url = request.base_url == 'http://localhost:3000' ? 'https://sandbox-api.va.gov' : request.base_url
-        claims_audience = "#{root_url}/services/claims"
-        request_method_to_scope = {
-          'GET' => 'claim.read',
-          'PUT' => 'claim.write',
-          'POST' => 'claim.write'
-        }
-
-        @is_token_valid ||= client.token_valid?(audience: claims_audience,
-                                                scope: request_method_to_scope[request.method],
-                                                token: token)
-        raise ::Common::Exceptions::Forbidden unless @is_token_valid
       end
 
       def authenticate_token

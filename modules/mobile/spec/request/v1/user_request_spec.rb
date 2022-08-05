@@ -160,6 +160,7 @@ RSpec.describe 'user', type: :request do
             militaryServiceHistory
             paymentHistory
             userProfileUpdate
+            scheduleAppointments
             directDepositBenefitsUpdate
           ]
         )
@@ -178,6 +179,8 @@ RSpec.describe 'user', type: :request do
             paymentHistory
             userProfileUpdate
             secureMessaging
+            scheduleAppointments
+            prescriptions
           ]
         )
       end
@@ -264,6 +267,37 @@ RSpec.describe 'user', type: :request do
               militaryServiceHistory
               paymentHistory
               userProfileUpdate
+              scheduleAppointments
+            ]
+          )
+        end
+      end
+
+      context 'with a user that has mhv sign-in service' do
+        before do
+          allow_any_instance_of(MHVAccountTypeService).to receive(:mhv_account_type).and_return('Premium')
+          current_user = build(:iam_user, :mhv)
+          iam_sign_in(current_user)
+          VCR.use_cassette('payment_information/payment_information') do
+            VCR.use_cassette('user/get_facilities') do
+              get '/mobile/v0/user', headers: iam_headers
+            end
+          end
+        end
+
+        it 'includes prescriptions in authorized services' do
+          expect(attributes['authorizedServices']).to eq(
+            %w[
+              appeals
+              appointments
+              claims
+              disabilityRating
+              lettersAndDocuments
+              militaryServiceHistory
+              paymentHistory
+              userProfileUpdate
+              scheduleAppointments
+              prescriptions
             ]
           )
         end
@@ -288,6 +322,73 @@ RSpec.describe 'user', type: :request do
               userProfileUpdate
             ]
           )
+        end
+      end
+
+      context 'with a user who does not have access to schedule appointments' do
+        context 'due to not having any registered faclities' do
+          let(:user_request) do
+            iam_sign_in(FactoryBot.build(:iam_user, :no_vha_facilities))
+            VCR.use_cassette('payment_information/payment_information') do
+              VCR.use_cassette('user/get_facilities_no_ids', match_requests_on: %i[method uri]) do
+                get '/mobile/v0/user', headers: iam_headers
+              end
+            end
+          end
+
+          it 'authorized services does not include scheduleAppointments' do
+            user_request
+            expect(attributes['authorizedServices']).not_to include('scheduleAppointments')
+          end
+
+          it 'increments statsd' do
+            expect do
+              user_request
+            end.to trigger_statsd_increment('mobile.schedule_appointment.policy.failure', times: 1)
+          end
+        end
+
+        context 'due to not being LOA3' do
+          let(:user_request) do
+            iam_sign_in(FactoryBot.build(:iam_user, :loa2))
+            VCR.use_cassette('payment_information/payment_information') do
+              VCR.use_cassette('user/get_facilities_no_ids', match_requests_on: %i[method uri]) do
+                get '/mobile/v0/user', headers: iam_headers
+              end
+            end
+          end
+
+          it 'authorized services does not include scheduleAppointments' do
+            user_request
+            expect(attributes['authorizedServices']).not_to include('scheduleAppointments')
+          end
+
+          it 'increments statsd' do
+            expect do
+              user_request
+            end.to trigger_statsd_increment('mobile.schedule_appointment.policy.failure', times: 1)
+          end
+        end
+      end
+
+      context 'with a user who does have access to schedule appointments' do
+        let(:user_request) do
+          VCR.use_cassette('payment_information/payment_information') do
+            VCR.use_cassette('user/get_facilities', match_requests_on: %i[method uri]) do
+              get '/mobile/v0/user', headers: iam_headers
+            end
+          end
+        end
+
+        it 'authorized services does include scheduleAppointments' do
+          user_request
+          expect(attributes['authorizedServices']).to include('scheduleAppointments')
+        end
+
+        it 'increments statsd' do
+          expect do
+            user_request
+          end.to trigger_statsd_increment('mobile.schedule_appointment.policy.success', times: 1)
         end
       end
     end
@@ -370,12 +471,31 @@ RSpec.describe 'user', type: :request do
       end
     end
 
-    context 'after a profile request' do
-      it 'kicks off a pre cache appointments job' do
-        expect(Mobile::V0::PreCacheAppointmentsJob).to receive(:perform_async).once
-        VCR.use_cassette('payment_information/payment_information') do
-          VCR.use_cassette('user/get_facilities', match_requests_on: %i[method uri]) do
-            get '/mobile/v1/user', headers: iam_headers
+    describe 'appointments precaching' do
+      context 'with mobile_precache_appointments flag on' do
+        before { Flipper.enable(:mobile_precache_appointments) }
+
+        it 'kicks off a pre cache appointments job' do
+          expect(Mobile::V0::PreCacheAppointmentsJob).to receive(:perform_async).once
+          VCR.use_cassette('payment_information/payment_information') do
+            VCR.use_cassette('user/get_facilities', match_requests_on: %i[method uri]) do
+              get '/mobile/v1/user', headers: iam_headers
+            end
+          end
+        end
+      end
+
+      context 'with mobile_precache_appointments flag off' do
+        before { Flipper.disable(:mobile_precache_appointments) }
+
+        after { Flipper.enable(:mobile_precache_appointments) }
+
+        it 'does not kick off a pre cache appointments job' do
+          expect(Mobile::V0::PreCacheAppointmentsJob).not_to receive(:perform_async)
+          VCR.use_cassette('payment_information/payment_information') do
+            VCR.use_cassette('user/get_facilities', match_requests_on: %i[method uri]) do
+              get '/mobile/v1/user', headers: iam_headers
+            end
           end
         end
       end
@@ -449,6 +569,7 @@ RSpec.describe 'user', type: :request do
             militaryServiceHistory
             paymentHistory
             userProfileUpdate
+            scheduleAppointments
             directDepositBenefitsUpdate
           ]
         )

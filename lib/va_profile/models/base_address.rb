@@ -114,7 +114,6 @@ module VAProfile
       end
 
       with_options if: proc { |a| a.address_type == INTERNATIONAL } do
-        validates :international_postal_code, presence: true
         validates :state_code, absence: true
         validates :zip_code, absence: true
         validates :zip_code_suffix, absence: true

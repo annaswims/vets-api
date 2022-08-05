@@ -48,7 +48,9 @@ module Mobile
         militaryServiceHistory: :emis,
         paymentHistory: :bgs,
         userProfileUpdate: :vet360,
-        secureMessaging: :mhv_messaging
+        secureMessaging: :mhv_messaging,
+        scheduleAppointments: :schedule_appointment,
+        prescriptions: :mhv_prescriptions
       }.freeze
 
       set_type :user
@@ -63,7 +65,7 @@ module Mobile
       def initialize(user, options = {})
         @user = user
         fetch_additional_resources
-        resource = UserStruct.new(user.id, profile, authorized_services, health)
+        resource = UserStruct.new(user.uuid, profile, authorized_services, health)
         super(resource, options)
       end
 
@@ -87,25 +89,23 @@ module Mobile
           home_phone_number: filter_keys(contact_info&.home_phone, PHONE_KEYS),
           mobile_phone_number: filter_keys(contact_info&.mobile_phone, PHONE_KEYS),
           work_phone_number: filter_keys(contact_info&.work_phone, PHONE_KEYS),
-          fax_number: filter_keys(contact_info&.fax_number, PHONE_KEYS),
+          fax_number: filter_keys(contact_info.try(:fax_number), PHONE_KEYS),
           signin_service: user.identity.sign_in[:service_name].remove('oauth_')
         }
       end
 
       def authorized_services
         auth_services = SERVICE_DICTIONARY.filter { |_k, policies| authorized_for_service(policies) }.keys
-        auth_services.push(:directDepositBenefitsUpdate) if can_update_direct_deposit_benefits?(auth_services)
+        if auth_services.include?(:directDepositBenefits) && direct_deposit_update_access?
+          auth_services.push(:directDepositBenefitsUpdate)
+        end
         auth_services
       end
 
-      def can_update_direct_deposit_benefits?(auth_services)
-        auth_services.include?(:directDepositBenefits) && user.authorize(:ppiu, :access_update?)
-      rescue EVSS::ErrorMiddleware::EVSSError => e
-        # this is a temporary patch for upstream issues
-        Rails.logger.error(
-          'Mobile user serializer error when fetching from EVSS',
-          user_uuid: user.uuid, details: e.details
-        )
+      def direct_deposit_update_access?
+        user.authorize(:ppiu, :access_update?)
+      rescue EVSS::PPIU::ServiceException => e
+        Rails.logger.error('Error fetching user data from EVSS', user_uuid: user.uuid, details: e.messages)
         false
       end
 

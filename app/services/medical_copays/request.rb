@@ -32,7 +32,7 @@ module MedicalCopays
     end
 
     def initialize
-      @settings = Settings.mcp.vbs
+      @settings = endpoint_settings
     end
 
     ##
@@ -91,7 +91,7 @@ module MedicalCopays
       {
         'Host' => host,
         'Content-Type' => 'application/json',
-        'x-api-key' => settings.api_key
+        api_key => settings.api_key
       }
     end
 
@@ -102,6 +102,16 @@ module MedicalCopays
     #
     def mock_enabled?
       settings.mock || false
+    end
+
+    private
+
+    def api_key
+      Flipper.enabled?(:medical_copays_api_key_change) ? 'apiKey' : 'x-api-key'
+    end
+
+    def endpoint_settings
+      Flipper.enabled?(:medical_copays_api_key_change) ? Settings.mcp.vbs_v2 : Settings.mcp.vbs
     end
   end
 end

@@ -67,7 +67,8 @@ RSpec.describe Users::Profile do
         end
 
         it 'includes sign_in' do
-          expect(profile[:sign_in]).to eq(service_name: 'idme')
+          expect(profile[:sign_in]).to eq(service_name: 'idme', auth_broker: SAML::URLService::BROKER_CODE,
+                                          client_id: 'web')
         end
 
         context 'multifactor' do
@@ -87,14 +88,16 @@ RSpec.describe Users::Profile do
         let(:user) { create(:user, :mhv) }
 
         it 'includes sign_in' do
-          expect(profile[:sign_in]).to eq(service_name: 'myhealthevet')
+          expect(profile[:sign_in]).to eq(service_name: 'mhv',
+                                          auth_broker: SAML::URLService::BROKER_CODE,
+                                          client_id: 'web')
         end
 
         context 'multifactor' do
           let(:user) { create(:user, :loa1, authn_context: 'myhealthevet_multifactor') }
 
           it 'includes sign_in.service_name' do
-            expect(profile[:sign_in][:service_name]).to eq('myhealthevet')
+            expect(profile[:sign_in][:service_name]).to eq('mhv')
           end
         end
 
@@ -102,7 +105,7 @@ RSpec.describe Users::Profile do
           let(:user) { create(:user, :loa1, authn_context: 'myhealthevet_loa3') }
 
           it 'includes sign_in.service_name' do
-            expect(profile[:sign_in][:service_name]).to eq('myhealthevet')
+            expect(profile[:sign_in][:service_name]).to eq('mhv')
           end
         end
       end
@@ -110,15 +113,16 @@ RSpec.describe Users::Profile do
       context 'dslogon user' do
         let(:user) { create(:user, :dslogon) }
 
-        it 'includes sign_in.service_name' do
-          expect(profile[:sign_in]).to eq(service_name: 'dslogon')
+        it 'includes sign_in' do
+          expect(profile[:sign_in]).to eq(service_name: 'dslogon', auth_broker: SAML::URLService::BROKER_CODE,
+                                          client_id: 'web')
         end
 
         context 'multifactor' do
           let(:user) { create(:user, :loa1, authn_context: 'dslogon_multifactor') }
 
           it 'includes sign_in.service_name' do
-            expect(profile[:sign_in]).to eq(service_name: 'dslogon')
+            expect(profile[:sign_in][:service_name]).to eq('dslogon')
           end
         end
 
@@ -126,7 +130,7 @@ RSpec.describe Users::Profile do
           let(:user) { create(:user, :loa1, authn_context: 'dslogon_loa3') }
 
           it 'includes sign_in.service_name' do
-            expect(profile[:sign_in]).to eq(service_name: 'dslogon')
+            expect(profile[:sign_in][:service_name]).to eq('dslogon')
           end
         end
       end
@@ -161,6 +165,10 @@ RSpec.describe Users::Profile do
 
       it 'includes last_signed_in' do
         expect(profile[:last_signed_in].httpdate).to eq(user.last_signed_in.httpdate)
+      end
+
+      it 'includes inherited_proof_verified' do
+        expect(profile[:inherited_proof_verified]).to eq(user.inherited_proof_verified)
       end
 
       # --- negative tests ---
@@ -430,12 +438,12 @@ RSpec.describe Users::Profile do
 
       it 'no session object indicates no SSOe authentication' do
         expect(subject.session)
-          .to eq({ ssoe: false, transactionid: nil })
+          .to eq({ auth_broker: SAML::URLService::BROKER_CODE, ssoe: false, transactionid: nil })
       end
 
       it 'with a transaction in the Session shows a SSOe authentication' do
         expect(scaffold_with_ssoe.session)
-          .to eq({ ssoe: true, transactionid: 'a' })
+          .to eq({ auth_broker: SAML::URLService::BROKER_CODE, ssoe: true, transactionid: 'a' })
       end
     end
   end

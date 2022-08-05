@@ -167,8 +167,12 @@ module V2
       def connection
         Faraday.new(url: url) do |conn|
           conn.use :breakers
-          conn.response :raise_error, error_prefix: service_name
-          conn.response :betamocks if Settings.check_in.chip_api_v2.mock
+          if Flipper.enabled?('check_in_experience_504_error_mapping_enabled')
+            conn.response :raise_error, error_prefix: 'CHIP-MAPPED-API'
+          else
+            conn.response :raise_error, error_prefix: service_name
+          end
+          conn.response :betamocks if mock_enabled?
 
           conn.adapter Faraday.default_adapter
         end
@@ -184,6 +188,10 @@ module V2
           'Content-Type' => 'application/json',
           'x-apigw-api-id' => tmp_api_id
         }
+      end
+
+      def mock_enabled?
+        settings.mock || Flipper.enabled?('check_in_experience_mock_enabled') || false
       end
     end
   end

@@ -1,39 +1,22 @@
 # frozen_string_literal: true
 
+require AppealsApi::Engine.root.join('spec', 'spec_helper.rb')
+
 # rubocop:disable Metrics/MethodLength, Layout/LineLength, Metrics/ClassLength
 class AppealsApi::RswagConfig
+  include DocHelpers
+
   def config
     {
-      'modules/appeals_api/app/swagger/appeals_api/v2/swagger.json' => {
+      "modules/appeals_api/app/swagger/appeals_api/v2/swagger#{DocHelpers.doc_suffix}.json" => {
         openapi: '3.0.0',
         info: {
           title: 'Decision Reviews',
           version: 'v2',
           termsOfService: 'https://developer.va.gov/terms-of-service',
-          description: File.read(AppealsApi::Engine.root.join('app', 'swagger', 'appeals_api', 'v2', 'api_description.md'))
+          description: File.read(AppealsApi::Engine.root.join('app', 'swagger', 'appeals_api', 'v2', "api_description#{DocHelpers.doc_suffix}.md"))
         },
-        tags: [
-          {
-            name: 'Higher-Level Reviews',
-            description: ''
-          },
-          {
-            name: 'Notice of Disagreements',
-            description: ''
-          },
-          {
-            name: 'Supplemental Claims',
-            description: ''
-          },
-          {
-            name: 'Contestable Issues',
-            description: ''
-          },
-          {
-            name: 'Legacy Appeals',
-            description: ''
-          }
-        ],
+        tags: tags,
         paths: {},
         basePath: '/services/appeals/v2/decision_reviews',
         components: {
@@ -44,17 +27,7 @@ class AppealsApi::RswagConfig
               in: :header
             }
           },
-          schemas: [
-            generic_schemas('#/components/schemas'),
-            hlr_v2_create_schemas,
-            hlr_v2_response_schemas('#/components/schemas'),
-            contestable_issues_schema('#/components/schemas'),
-            nod_v2_create_schemas,
-            nod_v2_response_schemas('#/components/schemas'),
-            sc_create_schemas,
-            sc_response_schemas('#/components/schemas'),
-            legacy_appeals_schema('#/components/schemas')
-          ].reduce(&:merge).sort_by { |k, _| k.to_s.downcase }.to_h
+          schemas: schemas
         },
         servers: [
           {
@@ -81,6 +54,32 @@ class AppealsApi::RswagConfig
   end
 
   private
+
+  def tags
+    [].tap do |a|
+      a << { name: 'Higher-Level Reviews', description: '' }
+      a << { name: 'Notice of Disagreements', description: '' }
+      a << { name: 'Supplemental Claims', description: '' }
+      a << { name: 'Contestable Issues', description: '' }
+      a << { name: 'Legacy Appeals', description: '' }
+    end
+  end
+
+  def schemas
+    a = []
+    a << generic_schemas('#/components/schemas')
+    a << hlr_v2_create_schemas
+    a << hlr_v2_response_schemas('#/components/schemas')
+    a << contestable_issues_schema('#/components/schemas')
+    a << nod_v2_create_schemas
+    a << nod_v2_response_schemas('#/components/schemas')
+    a << sc_create_schemas
+    a << sc_response_schemas('#/components/schemas')
+    a << legacy_appeals_schema('#/components/schemas')
+    a << shared_schemas unless Settings.vsp_environment == 'production'
+
+    a.reduce(&:merge).sort_by { |k, _| k.to_s.downcase }.to_h
+  end
 
   def generic_schemas(ref_root)
     {
@@ -130,11 +129,40 @@ class AppealsApi::RswagConfig
         ]
       },
       'X-VA-Birth-Date': {
+        'description': "Veteran's birth date",
+        'type': 'string', 'format': 'date'
+      },
+      'X-VA-Claimant-First-Name': {
         'allOf': [
-          { 'description': 'birth date' },
-          { 'minLength': 10 },
-          { 'maxLength': 10 },
-          { '$ref': "#{ref_root}/date" }
+          { 'description': 'first name' },
+          { 'type': 'string' }
+        ]
+      },
+      'X-VA-Claimant-Middle-Initial': {
+        'allOf': [
+          { 'description': 'middle initial' },
+          { '$ref': "#{ref_root}/nonBlankString" }
+        ]
+      },
+      'X-VA-Claimant-Last-Name': {
+        'allOf': [
+          { 'description': 'last name' },
+          { '$ref': "#{ref_root}/nonBlankString" }
+        ]
+      },
+      'X-VA-Claimant-Birth-Date': {
+        'description': "Claimant's birth date",
+        'type': 'string', 'format': 'date'
+      },
+      'X-VA-Claimant-SSN': {
+        'allOf': [
+          { 'description': 'social security number' },
+          {
+            'type': 'string',
+            'minLength': 0,
+            'maxLength': 9,
+            'pattern': '^[0-9]{9}$'
+          }
         ]
       },
       'X-VA-File-Number': {
@@ -630,10 +658,28 @@ class AppealsApi::RswagConfig
     }
   end
 
+  def shared_schemas
+    {
+      'address': JSON.parse(File.read(AppealsApi::Engine.root.join('config', 'schemas', 'shared', 'v1', 'address.json')))['properties']['address'],
+      'non_blank_string': JSON.parse(File.read(AppealsApi::Engine.root.join('config', 'schemas', 'shared', 'v1', 'non_blank_string.json')))['properties']['nonBlankString'],
+      'phone': JSON.parse(File.read(AppealsApi::Engine.root.join('config', 'schemas', 'shared', 'v1', 'phone.json')))['properties']['phone'],
+      'timezone': JSON.parse(File.read(AppealsApi::Engine.root.join('config', 'schemas', 'shared', 'v1', 'timezone.json')))['properties']['timezone']
+    }
+  end
+
   def parse_create_schema(version, schema_file)
     file = File.read(AppealsApi::Engine.root.join('config', 'schemas', version, schema_file))
     file.gsub! '#/definitions/', '#/components/schemas/'
     schema = JSON.parse file
+
+    schema.deep_transform_values! do |value|
+      if value.respond_to?(:end_with?) && value.end_with?('.json')
+        "#/components/schemas/#{value.gsub('.json', '')}"
+      else
+        value
+      end
+    end
+
     schema['definitions']
   end
 end

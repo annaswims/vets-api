@@ -1,20 +1,16 @@
 common:
-  - 'cristopher.shupp@libertyits.com'
-  - 'gregory.bowman@libertyits.com'
-  - 'mark.viterna@libertyits.com'
-  - 'molly.gatti@va.gov'
-  - 'ana.ricci@libertyits.com'
-  - 'nichole.harris@libertyits.com'
+  - 'kelly.lein@adhocteam.us'
+  - 'burnett_matthew@bah.com'
+  - 'viterna_mark@bah.com'
+  - 'kristen.brown@adhocteam.us'
+  - 'drew.fisher@adhocteam.us'
 dev:
 staging:
 sandbox:
 prod:
   - 'david.mazik@va.gov'
-  - 'ryan.link@oddball.io'
-  - 'christopher.stone@libertyits.com'
+  - 'stone_christopher@bah.com'
   - 'valerie.hase@va.gov'
   - 'premal.shah@va.gov'
   - 'zachary.goldfine@va.gov'
-  - 'drew.fisher@adhocteam.us'
-  - 'kelly@adhocteam.us'
   - 'vaapi-alerts-benefits-aaaadoa6hzbhegv23iaramfjfq@lighthouseva.slack.com'

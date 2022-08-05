@@ -10,7 +10,11 @@ describe AppealsApi::V2::DecisionReviews::SupplementalClaimsController, type: :r
     "/services/appeals/v2/decision_reviews/#{path}"
   end
 
-  let(:minimum_data) { fixture_to_s 'valid_200995_minimum.json', version: 'v2' }
+  def new_base_path(path)
+    "/services/appeals/supplemental_claims/v2/#{path}"
+  end
+
+  let(:minimum_data) { fixture_to_s 'valid_200995.json', version: 'v2' }
   let(:data) { fixture_to_s 'valid_200995.json', version: 'v2' }
   let(:extra_data) { fixture_to_s 'valid_200995_extra.json', version: 'v2' }
   let(:headers) { fixture_as_json 'valid_200995_headers.json', version: 'v2' }
@@ -30,6 +34,20 @@ describe AppealsApi::V2::DecisionReviews::SupplementalClaimsController, type: :r
         expect(sc.source).to eq('va.gov')
         expect(parsed['data']['type']).to eq('supplementalClaim')
         expect(parsed['data']['attributes']['status']).to eq('pending')
+      end
+
+      it 'behaves the same on new path' do
+        Timecop.freeze(Time.current) do
+          post(path, params: data, headers: headers)
+          orig_path_response = JSON.parse(response.body)
+          orig_path_response['data']['id'] = 'ignored'
+
+          post(new_base_path('forms/200995'), params: data, headers: headers)
+          new_path_response = JSON.parse(response.body)
+          new_path_response['data']['id'] = 'ignored'
+
+          expect(new_path_response).to match_array orig_path_response
+        end
       end
     end
 
@@ -73,7 +91,7 @@ describe AppealsApi::V2::DecisionReviews::SupplementalClaimsController, type: :r
     end
 
     context 'when invalid headers supplied' do
-      it 'returns an error' do
+      it 'errors when veteran birth date is in the future' do
         invalid_headers = headers.merge!(
           { 'X-VA-Birth-Date' => '3000-12-31' }
         )
@@ -81,7 +99,43 @@ describe AppealsApi::V2::DecisionReviews::SupplementalClaimsController, type: :r
         post(path, params: data, headers: invalid_headers)
 
         expect(response.status).to eq(422)
-        expect(parsed['errors'][0]['detail']).to eq('Veteran birth date isn\'t in the past: 3000-12-31')
+        expect(parsed['errors'][0]['source']).to eq({ 'header' => 'X-VA-Birth-Date' })
+        expect(parsed['errors'][0]['detail']).to eq 'Date must be in the past: 3000-12-31'
+      end
+    end
+
+    context 'returns 422 when birth date is not a date' do
+      it 'when given a string for the birth date ' do
+        headers.merge!({ 'X-VA-Birth-Date' => 'apricot' })
+
+        post(path, params: data.to_json, headers: headers)
+        expect(response.status).to eq(422)
+        expect(parsed['errors']).to be_an Array
+      end
+    end
+
+    context 'returns 422 when decision date is not a date' do
+      it 'errors when given a string for the contestable issues decision date ' do
+        sc_data = JSON.parse(data)
+        sc_data['included'][0]['attributes'].merge!('decisionDate' => 'banana')
+
+        post(path, params: sc_data.to_json, headers: headers)
+        expect(response.status).to eq(422)
+        expect(parsed['errors']).to be_an Array
+        expect(parsed['errors'][0]['title']).to include('Invalid format')
+        expect(parsed['errors'][0]['detail']).to include("'banana' did not match the defined format")
+      end
+
+      it 'errors when given a decision date in the future' do
+        sc_data = JSON.parse(data)
+        sc_data['included'][0]['attributes'].merge!('decisionDate' => '3000-01-02')
+
+        post(path, params: sc_data.to_json, headers: headers)
+        expect(response.status).to eq(422)
+        expect(parsed['errors']).to be_an Array
+        expect(parsed['errors'][0]['source']['pointer']).to eq '/data/included[0]/attributes/decisionDate'
+        expect(parsed['errors'][0]['title']).to eq 'Value outside range'
+        expect(parsed['errors'][0]['detail']).to eq 'Date must be in the past: 3000-01-02'
       end
     end
 
@@ -129,11 +183,12 @@ describe AppealsApi::V2::DecisionReviews::SupplementalClaimsController, type: :r
       end
 
       it 'without upload' do
+        headers_with_nvc = JSON.parse(fixture_to_s('valid_200995_headers_extra.json', version: 'v2'))
         mod_data = JSON.parse(fixture_to_s('valid_200995_extra.json', version: 'v2'))
         # manually setting this to simulate a submission without upload indicated
         mod_data['data']['attributes']['evidenceSubmission']['evidenceType'] = ['retrieval']
 
-        post(path, params: mod_data.to_json, headers: headers)
+        post(path, params: mod_data.to_json, headers: headers_with_nvc)
 
         sc_guid = JSON.parse(response.body)['data']['id']
         sc = AppealsApi::SupplementalClaim.find(sc_guid)
@@ -190,7 +245,7 @@ describe AppealsApi::V2::DecisionReviews::SupplementalClaimsController, type: :r
       end
     end
 
-    it 'creates the job to build the PDF' do
+    it 'updates the appeal status once submitted to central mail' do
       client_stub = instance_double('CentralMail::Service')
       faraday_response = instance_double('Faraday::Response')
 
@@ -198,12 +253,90 @@ describe AppealsApi::V2::DecisionReviews::SupplementalClaimsController, type: :r
       allow(client_stub).to receive(:upload).and_return(faraday_response)
       allow(faraday_response).to receive(:success?).and_return(true)
 
-      Sidekiq::Testing.inline! do
-        post(path, params: data, headers: headers)
+      with_settings(Settings.vanotify.services.lighthouse.template_id,
+                    supplemental_claim_received: 'veteran_template',
+                    supplemental_claim_received_claimant: 'claimant_template') do
+        client = instance_double(VaNotify::Service)
+        allow(VaNotify::Service).to receive(:new).and_return(client)
+        allow(client).to receive(:send_email)
+
+        Sidekiq::Testing.inline! do
+          post(path, params: data, headers: headers)
+        end
+
+        sc = AppealsApi::SupplementalClaim.find_by(id: parsed['data']['id'])
+        expect(sc.status).to eq('submitted')
+      end
+    end
+  end
+
+  describe '#validate' do
+    let(:path) { base_path 'supplemental_claims/validate' }
+    let(:extra_headers) { fixture_as_json 'valid_200995_headers_extra.json', version: 'v2' }
+
+    context 'when validation passes' do
+      it 'returns a valid response' do
+        post(path, params: extra_data, headers: extra_headers)
+        expect(parsed['data']['attributes']['status']).to eq('valid')
+        expect(parsed['data']['type']).to eq('supplementalClaimValidation')
       end
 
-      sc = AppealsApi::SupplementalClaim.find_by(id: parsed['data']['id'])
-      expect(sc.status).to eq('submitted')
+      it 'behaves the same on the new path' do
+        post(new_base_path('forms/200995/validate'), params: data, headers: headers)
+        expect(parsed['data']['attributes']['status']).to eq('valid')
+        expect(parsed['data']['type']).to eq('supplementalClaimValidation')
+      end
+    end
+
+    context 'when validation fails due to invalid data' do
+      before do
+        data = JSON.parse(extra_data)
+        data['data']['attributes']['veteran'].except!('phone', 'email')
+        post(path, params: data.to_json, headers: extra_headers)
+      end
+
+      it 'returns an error response' do
+        expect(response.status).to eq(422)
+        expect(parsed['errors']).not_to be_empty
+      end
+
+      it 'returns error objects in JSON API 1.1 ErrorObject format' do
+        expected_keys = %w[code detail meta source status title]
+        expect(parsed['errors'].first.keys).to include(*expected_keys)
+        expect(parsed['errors'][0]['meta']['missing_fields']).to eq %w[phone email]
+        expect(parsed['errors'][0]['source']['pointer']).to eq '/data/attributes/veteran'
+      end
+    end
+
+    context 'responds with a 422 when request.body isn\'t a JSON *object*' do
+      before do
+        fake_io_object = OpenStruct.new string: json
+        allow_any_instance_of(ActionDispatch::Request).to receive(:body).and_return(fake_io_object)
+      end
+
+      context 'request.body is a JSON string' do
+        let(:json) { '"Toodles!"' }
+
+        it 'responds with a properly formed error object' do
+          post(path, params: data, headers: headers)
+          body = JSON.parse(response.body)
+          expect(response.status).to eq 422
+          expect(body['errors']).to be_an Array
+          expect(body.dig('errors', 0, 'detail')).to eq "The request body isn't a JSON object"
+        end
+      end
+
+      context 'request.body is a JSON integer' do
+        let(:json) { '66' }
+
+        it 'responds with a properly formed error object' do
+          post(path, params: data, headers: headers)
+          body = JSON.parse(response.body)
+          expect(response.status).to eq 422
+          expect(body['errors']).to be_an Array
+          expect(body.dig('errors', 0, 'detail')).to eq "The request body isn't a JSON object"
+        end
+      end
     end
   end
 
@@ -214,6 +347,11 @@ describe AppealsApi::V2::DecisionReviews::SupplementalClaimsController, type: :r
       get path
       expect(response.status).to eq(200)
     end
+
+    it 'behaves the same for new path' do
+      get new_base_path('schemas/200995')
+      expect(response.status).to eq 200
+    end
   end
 
   describe '#show' do
@@ -222,6 +360,13 @@ describe AppealsApi::V2::DecisionReviews::SupplementalClaimsController, type: :r
     it 'returns a supplemental_claims with all of its data' do
       uuid = create(:supplemental_claim).id
       get("#{path}#{uuid}")
+      expect(response.status).to eq(200)
+      expect(parsed.dig('data', 'attributes', 'formData')).to be_a Hash
+    end
+
+    it 'behaves the same on new path' do
+      uuid = create(:supplemental_claim).id
+      get("#{new_base_path 'forms/200995'}/#{uuid}")
       expect(response.status).to eq(200)
       expect(parsed.dig('data', 'attributes', 'formData')).to be_a Hash
     end

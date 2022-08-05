@@ -4,11 +4,11 @@ require 'swagger_helper'
 require Rails.root.join('spec', 'rswag_override.rb').to_s
 
 require 'rails_helper'
-require_relative '../../support/swagger_shared_components'
+require AppealsApi::Engine.root.join('spec', 'spec_helper.rb')
 
 # rubocop:disable RSpec/VariableName, RSpec/ScatteredSetup, RSpec/RepeatedExample, Layout/LineLength
-
-describe 'Contestable Issues', swagger_doc: 'modules/appeals_api/app/swagger/appeals_api/v2/swagger.json', type: :request do
+describe 'Contestable Issues', swagger_doc: "modules/appeals_api/app/swagger/appeals_api/v2/swagger#{DocHelpers.doc_suffix}.json", type: :request do
+  include DocHelpers
   let(:apikey) { 'apikey' }
 
   path '/contestable_issues/{decision_review_type}' do
@@ -28,13 +28,13 @@ describe 'Contestable Issues', swagger_doc: 'modules/appeals_api/app/swagger/app
       parameter name: :decision_review_type,
                 in: :path, required: true,
                 description: 'Scoping of appeal type for associated issues',
-                schema: { 'type': 'string', 'enum': %w[higher_level_reviews notice_of_disagreements] }
+                schema: { 'type': 'string', 'enum': %w[higher_level_reviews notice_of_disagreements supplemental_claims] }
 
       let(:decision_review_type) { 'notice_of_disagreements' }
 
       parameter name: :benefit_type,
                 in: :query,
-                description: 'Required if decision review type is Higher Level Review.',
+                description: 'Required if decision review type is Higher Level Review or Supplemental Claims.',
                 schema: { 'type': 'string', 'enum': %w[compensation pensionSurvivorsBenefits fiduciary lifeInsurance veteransHealthAdministration veteranReadinessAndEmployment loanGuaranty education nationalCemeteryAdministration] }
 
       let(:benefit_type) { '' }

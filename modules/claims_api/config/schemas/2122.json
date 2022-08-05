@@ -104,6 +104,12 @@
             "OTHER"
           ],
           "example": "ARMY"
+        },
+        "serviceBranchOther": {
+          "description": "For a 'service branch' of value 'other', please provide the service branch name.",
+          "type": "string",
+          "maxLength": 50,
+          "example": "Space Force"
         }
       }
     },
@@ -343,7 +349,7 @@
       ],
       "properties": {
         "veteran": {
-          "description": "Base64 encoded png image of the veterans signature.",
+          "description": "Base64 encoded png image of the veteran or claimant signature.",
           "title": "Signature of the Veteran",
           "type":  "string"
         },

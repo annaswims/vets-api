@@ -62,6 +62,7 @@ module VetsAPI
                         X-RateLimit-Reset
                         X-Session-Expiration
                         X-CSRF-Token
+                        X-Request-Id
                       ]
       end
     end
@@ -88,6 +89,13 @@ module VetsAPI
         client_secret: Settings.sidekiq.github_oauth_secret,
         scope: 'read:org',
         redirect_uri: 'sidekiq/auth/github/callback'
+      }
+
+      config.scope_defaults :coverband, config: {
+        client_id: Settings.coverband.github_oauth_key,
+        client_secret: Settings.coverband.github_oauth_secret,
+        scope: 'read:org',
+        redirect_uri: 'coverband/auth/github/callback'
       }
 
       config.serialize_from_session { |key| Warden::GitHub::Verifier.load(key) }

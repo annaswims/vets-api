@@ -7,13 +7,27 @@ RSpec.describe Login::UserVerifier do
     subject { described_class.new(user).perform }
 
     let(:user) do
-      create(:user,
-             authn_context: authn_context,
-             edipi: edipi_identifier,
-             mhv_correlation_id: mhv_correlation_id_identifier,
-             idme_uuid: idme_uuid_identifier,
-             logingov_uuid: logingov_uuid_identifier,
-             icn: icn)
+      OpenStruct.new(
+        {
+          uuid: uuid,
+          identity: identity,
+          mhv_correlation_id: mhv_correlation_id_identifier,
+          idme_uuid: idme_uuid_identifier,
+          logingov_uuid: logingov_uuid_identifier,
+          icn: icn,
+          user_verification_id: nil,
+          user_account_uuid: nil
+        }
+      )
+    end
+    let(:uuid) { 'some-uuid' }
+    let(:identity) do
+      OpenStruct.new(
+        {
+          edipi: edipi_identifier,
+          sign_in: { service_name: login_value }
+        }
+      )
     end
     let(:edipi_identifier) { 'some-edipi' }
     let(:mhv_correlation_id_identifier) { 'some-correlation-id' }
@@ -21,7 +35,7 @@ RSpec.describe Login::UserVerifier do
     let(:logingov_uuid_identifier) { 'some-logingov-uuid' }
 
     let(:icn) { nil }
-    let(:authn_context) { nil }
+    let(:login_value) { nil }
     let(:time_freeze_time) { '10-10-2021' }
 
     before do
@@ -39,20 +53,12 @@ RSpec.describe Login::UserVerifier do
       let(:idme_uuid_identifier) { authn_identifier }
       let(:logingov_uuid_identifier) { authn_identifier }
       let(:expected_log) { "[Login::UserVerifier] Nil identifier for type=#{authn_identifier_type}" }
-      let(:expected_error_log) do
-        "[Login::UserVerifier] UserVerification cannot be created or updated, error=#{expected_error.message}"
-      end
-      let(:expected_error) { Login::Errors::UserVerificationNotCreatedError.new }
+      let(:expected_error) { Login::Errors::UserVerificationNotCreatedError }
 
       context 'and there is not an alternate idme credential identifier' do
-        it 'logs messages to rails logger' do
+        it 'logs messages to rails logger and raises User Verification Not Created error' do
           expect(Rails.logger).to receive(:info).with(expected_log).ordered
-          expect(Rails.logger).to receive(:info).with(expected_error_log).ordered
-          subject
-        end
-
-        it 'returns nil' do
-          expect(subject).to be nil
+          expect { subject }.to raise_exception(expected_error)
         end
       end
 
@@ -88,8 +94,10 @@ RSpec.describe Login::UserVerifier do
           let(:user_account) { UserAccount.new(icn: user.icn) }
           let!(:user_verification) do
             UserVerification.create!(authn_identifier_type => authn_identifier,
-                                     user_account: user_account)
+                                     user_account: user_account,
+                                     verified_at: verified_at)
           end
+          let(:verified_at) { Time.zone.now - 1.day }
 
           it 'does not create a new user_verification' do
             expect { subject }.not_to change(UserVerification, :count)
@@ -105,50 +113,83 @@ RSpec.describe Login::UserVerifier do
                   user_verification.reload
                 end.not_to change(user_verification, :user_account)
               end
+
+              it 'returns the existing user_verification' do
+                expect(subject).to eq(user_verification)
+              end
             end
 
             context 'and this user account is not already associated with the user_verification' do
-              let(:user_account) { UserAccount.new(icn: 'some-other-icn') }
               let(:other_user_account) { UserAccount.new(icn: user.icn) }
-              let(:expected_log_message) do
-                "[Login::UserVerifier] Deprecating UserAccount id=#{user_account.id}, " \
-                  "Updating UserVerification id=#{user_verification.id} with " \
-                  "UserAccount id=#{other_user_account.id}"
-              end
-              let(:expected_verified_at_time) { Time.zone.now }
 
-              before do
-                UserVerification.create!(authn_identifier_type => 'some-other-authn-identifier',
-                                         user_account: other_user_account)
-              end
+              context 'and the current user_verification is not verified' do
+                let(:user_account) { UserAccount.new(icn: nil) }
+                let(:verified_at) { nil }
+                let(:expected_log_message) do
+                  "[Login::UserVerifier] Deprecating UserAccount id=#{user_account.id}, " \
+                    "Updating UserVerification id=#{user_verification.id} with " \
+                    "UserAccount id=#{other_user_account.id}"
+                end
+                let(:expected_verified_at_time) { Time.zone.now }
 
-              it 'sets the user_verification verified_at time to now' do
-                expect do
+                before do
+                  UserVerification.create!(authn_identifier_type => 'some-other-authn-identifier',
+                                           user_account: other_user_account)
+                end
+
+                it 'sets the user_verification verified_at time to now' do
+                  expect do
+                    subject
+                    user_verification.reload
+                  end.to change(user_verification, :verified_at).from(verified_at).to(expected_verified_at_time)
+                end
+
+                it 'changes user_verification user_account associations' do
+                  expect do
+                    subject
+                    user_verification.reload
+                  end.to change(user_verification, :user_account).from(user_account).to(other_user_account)
+                end
+
+                it 'creates a deprecated user account' do
+                  expect { subject }.to change(DeprecatedUserAccount, :count).by(1)
+                end
+
+                it 'writes a log to rails logger' do
+                  expect(Rails.logger).to receive(:info).with(expected_log_message)
                   subject
-                  user_verification.reload
-                end.to change(user_verification, :verified_at).from(nil).to(expected_verified_at_time)
-              end
+                end
 
-              it 'changes user_verification user_account associations' do
-                expect do
+                it 'sets the deprecated user account to the initial user_verification user_account' do
                   subject
-                  user_verification.reload
-                end.to change(user_verification, :user_account).from(user_account).to(other_user_account)
+                  deprecated_account = DeprecatedUserAccount.find_by(user_verification: user_verification).user_account
+                  expect(deprecated_account).to eq(user_account)
+                end
+
+                it 'returns the existing user_verification' do
+                  expect(subject).to eq(user_verification)
+                end
               end
 
-              it 'creates a deprecated user account' do
-                expect { subject }.to change(DeprecatedUserAccount, :count).by(1)
-              end
+              context 'and the current user_verification is verified' do
+                let(:user_account) { UserAccount.new(icn: 'some-other-icn') }
+                let(:verified_at) { Time.zone.now - 1.day }
+                let(:expected_error) { Login::Errors::VerifiedUserAccountMismatch }
+                let(:expected_message) do
+                  "[Login::UserVerifier] User Account Mismatch for UserVerification id=#{user_verification.id}, " \
+                    "UserAccount id=#{user_account.id}, icn=#{user_account.icn}, " \
+                    "conflicts with UserAccount id=#{other_user_account.id} icn=#{other_user_account.icn}"
+                end
 
-              it 'writes a log to rails logger' do
-                expect(Rails.logger).to receive(:info).with(expected_log_message)
-                subject
-              end
+                before do
+                  UserVerification.create!(authn_identifier_type => 'some-other-authn-identifier',
+                                           user_account: other_user_account)
+                end
 
-              it 'sets the deprecated user account to the initial user_verification user_account' do
-                subject
-                deprecated_account = DeprecatedUserAccount.find_by(user_verification: user_verification).user_account
-                expect(deprecated_account).to eq(user_account)
+                it 'raises a verified user account mismatch error with user account mismatch message' do
+                  expect(Rails.logger).to receive(:info).with(expected_message)
+                  expect { subject }.to raise_exception(expected_error)
+                end
               end
             end
           end
@@ -168,12 +209,12 @@ RSpec.describe Login::UserVerifier do
               expect do
                 subject
                 user_verification.reload
-              end.to change(user_verification, :verified_at).from(nil).to(expected_verified_at_time)
+              end.to change(user_verification, :verified_at).from(verified_at).to(expected_verified_at_time)
             end
-          end
 
-          it 'returns user_verification' do
-            expect(subject).to eq(user_verification)
+            it 'returns the existing user_verification' do
+              expect(subject).to eq(user_verification)
+            end
           end
         end
 
@@ -202,6 +243,10 @@ RSpec.describe Login::UserVerifier do
               user_account = UserVerification.where(authn_identifier_type => authn_identifier).first.user_account
               expect(user_account).not_to be_nil
             end
+
+            it 'returns created user_verification' do
+              expect(subject).to eq(UserVerification.last)
+            end
           end
 
           context 'and user_account matching icn already exists' do
@@ -216,10 +261,10 @@ RSpec.describe Login::UserVerifier do
               account_icn = UserVerification.where(authn_identifier_type => authn_identifier).first.user_account
               expect(account_icn).to eq existing_user_account
             end
-          end
 
-          it 'returns created user_verification' do
-            expect(subject).to eq(UserVerification.last)
+            it 'returns created user_verification' do
+              expect(subject).to eq(UserVerification.last)
+            end
           end
         end
       end
@@ -260,7 +305,7 @@ RSpec.describe Login::UserVerifier do
     end
 
     context 'when user credential is mhv' do
-      let(:authn_context) { 'myhealthevet' }
+      let(:login_value) { 'mhv' }
       let(:authn_identifier) { user.mhv_correlation_id }
       let(:authn_identifier_type) { :mhv_uuid }
 
@@ -269,7 +314,7 @@ RSpec.describe Login::UserVerifier do
     end
 
     context 'when user credential is idme' do
-      let(:authn_context) { LOA::IDME_LOA1_VETS }
+      let(:login_value) { 'idme' }
       let(:authn_identifier) { user.idme_uuid }
       let(:authn_identifier_type) { :idme_uuid }
 
@@ -280,19 +325,11 @@ RSpec.describe Login::UserVerifier do
         let(:idme_uuid_identifier) { authn_identifier }
         let(:logingov_uuid_identifier) { authn_identifier }
         let(:expected_log) { "[Login::UserVerifier] Nil identifier for type=#{authn_identifier_type}" }
-        let(:expected_error_log) do
-          "[Login::UserVerifier] UserVerification cannot be created or updated, error=#{expected_error.message}"
-        end
-        let(:expected_error) { Login::Errors::UserVerificationNotCreatedError.new }
+        let(:expected_error) { Login::Errors::UserVerificationNotCreatedError }
 
-        it 'logs messages to rails logger' do
+        it 'logs messages to rails logger and raises User Verification Not Created error' do
           expect(Rails.logger).to receive(:info).with(expected_log).ordered
-          expect(Rails.logger).to receive(:info).with(expected_error_log).ordered
-          subject
-        end
-
-        it 'returns nil' do
-          expect(subject).to be nil
+          expect { subject }.to raise_exception(expected_error)
         end
       end
 
@@ -300,7 +337,7 @@ RSpec.describe Login::UserVerifier do
     end
 
     context 'when user credential is dslogon' do
-      let(:authn_context) { 'dslogon' }
+      let(:login_value) { 'dslogon' }
       let(:authn_identifier) { user.identity.edipi }
       let(:authn_identifier_type) { :dslogon_uuid }
 
@@ -309,7 +346,7 @@ RSpec.describe Login::UserVerifier do
     end
 
     context 'when user credential is logingov' do
-      let(:authn_context) { IAL::LOGIN_GOV_IAL1 }
+      let(:login_value) { 'logingov' }
       let(:authn_identifier) { user.logingov_uuid }
       let(:authn_identifier_type) { :logingov_uuid }
 
@@ -319,41 +356,14 @@ RSpec.describe Login::UserVerifier do
 
     context 'when user credential is some other arbitrary value' do
       let(:login_value) { 'banana' }
-      let(:user) { create(:user, sign_in: { service_name: login_value }) }
       let(:expected_log) do
         "[Login::UserVerifier] Unknown or missing login_type for user=#{user.uuid}, login_type=#{login_value}"
       end
-      let(:expected_error) { Login::Errors::UnknownLoginTypeError.new }
-      let(:expected_error_log) do
-        "[Login::UserVerifier] UserVerification cannot be created or updated, error=#{expected_error.message}"
-      end
+      let(:expected_error) { Login::Errors::UnknownLoginTypeError }
 
-      it 'logs an unknown credential message' do
+      it 'logs messages to rails logger and raises Unknown Login Type error' do
         expect(Rails.logger).to receive(:info).with(expected_log).ordered
-        expect(Rails.logger).to receive(:info).with(expected_error_log).ordered
-        subject
-      end
-    end
-
-    context 'when an arbitrary error is raised' do
-      let(:authn_context) { 'dslogon' }
-      let(:expected_error_message) { 'Some expected error message' }
-      let(:expected_error) { StandardError.new(expected_error_message) }
-      let(:expected_log) do
-        "[Login::UserVerifier] UserVerification cannot be created or updated, error=#{expected_error_message}"
-      end
-
-      before do
-        allow(UserVerification).to receive(:find_by).and_raise(expected_error)
-      end
-
-      it 'rescues the error' do
-        expect { subject }.not_to raise_exception
-      end
-
-      it 'logs a UserVerification cannot be created log' do
-        expect(Rails.logger).to receive(:info).with(expected_log)
-        subject
+        expect { subject }.to raise_exception(expected_error)
       end
     end
   end

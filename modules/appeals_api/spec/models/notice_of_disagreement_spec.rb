@@ -43,7 +43,7 @@ describe AppealsApi::NoticeOfDisagreement, type: :model do
         it 'throws an error' do
           expect(notice_of_disagreement.errors.count).to be 1
           expect(notice_of_disagreement.errors.first.attribute).to eq(:'/data/attributes/hearingTypePreference')
-          expect(notice_of_disagreement.errors.first.options[:detail]).to eq(
+          expect(notice_of_disagreement.errors.first.message).to eq(
             "If '/data/attributes/boardReviewOption' 'hearing' is selected, '/data/attributes/hearingTypePreference' must also be present"
           )
         end
@@ -62,7 +62,7 @@ describe AppealsApi::NoticeOfDisagreement, type: :model do
         it 'throws an error' do
           expect(notice_of_disagreement.errors.count).to be 1
           expect(notice_of_disagreement.errors.first.attribute).to eq(:'/data/attributes/hearingTypePreference')
-          expect(notice_of_disagreement.errors.first.options[:detail]).to eq(
+          expect(notice_of_disagreement.errors.first.message).to eq(
             "If '/data/attributes/boardReviewOption' 'direct_review' or 'evidence_submission' is selected, '/data/attributes/hearingTypePreference' must not be selected"
           )
         end
@@ -149,9 +149,11 @@ describe AppealsApi::NoticeOfDisagreement, type: :model do
     it { expect(notice_of_disagreement.board_review_option).to eq 'hearing' }
   end
 
-  describe '#update_status!' do
-    let(:notice_of_disagreement) { create(:notice_of_disagreement) }
+  describe '#stamp_text' do
+    it { expect(notice_of_disagreement.stamp_text).to eq 'Doe - 6789' }
+  end
 
+  describe '#update_status!' do
     it 'error status' do
       notice_of_disagreement.update_status!(status: 'error', code: 'code', detail: 'detail')
 
@@ -173,146 +175,165 @@ describe AppealsApi::NoticeOfDisagreement, type: :model do
                          'Validation failed: Status is not included in the list')
     end
 
-    it 'emits an event' do
-      handler = instance_double(AppealsApi::Events::Handler)
-      allow(AppealsApi::Events::Handler).to receive(:new).and_return(handler)
-      allow(handler).to receive(:handle!)
-
-      notice_of_disagreement.update_status!(status: 'pending')
-
-      expect(handler).to have_received(:handle!).exactly(1).times
-    end
-
-    it 'sends an email when emailAddressText is present' do
-      Timecop.freeze(Time.zone.now) do
+    context 'when incoming and current statuses are different' do
+      it 'enqueues the status updated job' do
+        expect(AppealsApi::StatusUpdatedJob.jobs.size).to eq 0
         notice_of_disagreement.update_status!(status: 'submitted')
-
-        expect(AppealsApi::EventsWorker.jobs.size).to eq(2)
-
-        status_event = AppealsApi::EventsWorker.jobs.first
-        expect(status_event['args']).to eq([
-                                             'nod_status_updated',
-                                             {
-                                               'from' => 'pending',
-                                               'to' => 'submitted',
-                                               'status_update_time' => Time.zone.now.iso8601,
-                                               'statusable_id' => notice_of_disagreement.id
-                                             }
-                                           ])
-
-        email_event = AppealsApi::EventsWorker.jobs.last
-        expect(email_event['args']).to eq([
-                                            'nod_received',
-                                            {
-                                              'email_identifier' => {
-                                                'id_type' => 'email',
-                                                'id_value' => notice_of_disagreement.email
-                                              },
-                                              'first_name' => 'Jäñe',
-                                              'date_submitted' =>
-                                              notice_of_disagreement.created_at.in_time_zone('America/Chicago').iso8601,
-                                              'guid' => notice_of_disagreement.id
-                                            }
-                                          ])
+        expect(AppealsApi::StatusUpdatedJob.jobs.size).to eq 1
       end
     end
 
-    it 'successfully gets the ICN when email isn\'t present' do
-      notice_of_disagreement = described_class.create!(
-        auth_headers: auth_headers,
-        form_data: form_data.deep_merge({
-                                          'data' => {
-                                            'attributes' => {
-                                              'veteran' => {
-                                                'emailAddressText' => nil
-                                              }
-                                            }
-                                          }
-                                        })
-      )
+    context 'when incoming and current statuses are the same' do
+      it 'does not enqueues the status updated job' do
+        expect(AppealsApi::StatusUpdatedJob.jobs.size).to eq 0
+        notice_of_disagreement.update_status!(status: 'pending')
+        expect(AppealsApi::StatusUpdatedJob.jobs.size).to eq 0
+      end
+    end
 
-      params = { event_type: :nod_received, opts: {
-        email_identifier: { id_value: '1013062086V794840', id_type: 'ICN' },
-        first_name: notice_of_disagreement.veteran_first_name,
-        date_submitted: notice_of_disagreement.created_at.in_time_zone('America/Chicago').iso8601,
-        guid: notice_of_disagreement.id
-      } }
+    context "when status is 'submitted' and claimant or veteran email data present" do
+      it 'enqueues the appeal received job' do
+        expect(AppealsApi::AppealReceivedJob.jobs.size).to eq 0
+        notice_of_disagreement.update_status!(status: 'submitted')
+        expect(AppealsApi::AppealReceivedJob.jobs.size).to eq 1
+      end
+    end
 
-      stub_mpi
+    context "when status is not 'submitted' but claimant or veteran email data present" do
+      it 'does not enqueue the appeal received job' do
+        expect(AppealsApi::AppealReceivedJob.jobs.size).to eq 0
+        notice_of_disagreement.update_status!(status: 'pending')
+        expect(AppealsApi::AppealReceivedJob.jobs.size).to eq 0
+      end
+    end
 
-      handler = instance_double(AppealsApi::Events::Handler)
-      allow(AppealsApi::Events::Handler).to receive(:new).and_call_original
-      allow(AppealsApi::Events::Handler).to receive(:new).with(params).and_return(handler)
-      allow(handler).to receive(:handle!)
+    context 'when veteran appellant without email provided' do
+      it 'gets the ICN and enqueues the appeal received job' do
+        nod = described_class.create!(
+          auth_headers: auth_headers,
+          api_version: 'V1',
+          form_data: form_data.deep_merge(
+            { 'data' => { 'attributes' => { 'veteran' => { 'emailAddressText' => nil } } } }
+          )
+        )
 
-      notice_of_disagreement.update_status!(status: 'submitted')
+        expect(AppealsApi::AppealReceivedJob.jobs.size).to eq 0
+        nod.update_status!(status: 'submitted')
+        expect(AppealsApi::AppealReceivedJob.jobs.size).to eq 1
 
-      expect(AppealsApi::Events::Handler).to have_received(:new).exactly(2).times
+        email_identifier = AppealsApi::AppealReceivedJob.jobs.last['args'].first['email_identifier']
+        expect(email_identifier.values).to include 'ICN'
+      end
+    end
+
+    context 'when auth_headers are blank' do
+      before do
+        notice_of_disagreement.save
+        notice_of_disagreement.update_columns form_data_ciphertext: nil, auth_headers_ciphertext: nil # rubocop:disable Rails/SkipsModelValidations
+        notice_of_disagreement.reload
+      end
+
+      it 'does not enqueue the appeal received job' do
+        expect(AppealsApi::AppealReceivedJob.jobs.size).to eq 0
+        notice_of_disagreement.update_status!(status: 'submitted')
+        expect(AppealsApi::AppealReceivedJob.jobs.size).to eq 0
+      end
     end
   end
 
   describe 'V2 methods' do
-    let(:extra_notice_of_disagreement_v2) { create(:extra_notice_of_disagreement_v2, :board_review_hearing) }
+    context 'when validating veteran and non-veteran claimant' do
+      let(:nod_with_non_veteran_claimant) { build(:extra_notice_of_disagreement_v2, :board_review_hearing) }
 
-    describe '#veteran' do
-      subject { extra_notice_of_disagreement_v2.veteran }
+      let(:appeal) { nod_with_non_veteran_claimant }
 
-      it { expect(subject.class).to eq AppealsApi::Appellant }
-    end
+      it_behaves_like 'shared model validations', validations: %i[veteran_birth_date_is_in_the_past
+                                                                  contestable_issue_dates_are_in_the_past
+                                                                  required_claimant_data_is_present
+                                                                  claimant_birth_date_is_in_the_past],
+                                                  required_claimant_headers: described_class.required_nvc_headers
 
-    describe '#claimant' do
-      subject { extra_notice_of_disagreement_v2.claimant }
+      describe '#veteran' do
+        subject { nod_with_non_veteran_claimant.veteran }
 
-      it { expect(subject.class).to eq AppealsApi::Appellant }
-    end
+        it { expect(subject.class).to eq AppealsApi::Appellant }
+      end
 
-    describe '#signing_appellant' do
-      let(:appellant_type) { extra_notice_of_disagreement_v2.signing_appellant.send(:type) }
+      describe '#claimant' do
+        subject { nod_with_non_veteran_claimant.claimant }
 
-      it { expect(appellant_type).to eq :claimant }
-    end
+        it { expect(subject.class).to eq AppealsApi::Appellant }
+      end
 
-    describe '#appellant_local_time' do
-      it do
-        appellant_local_time = extra_notice_of_disagreement_v2.appellant_local_time
-        created_at = extra_notice_of_disagreement_v2.created_at
+      describe '#signing_appellant' do
+        let(:appellant_type) { nod_with_non_veteran_claimant.signing_appellant.send(:type) }
 
-        expect(appellant_local_time).to eq created_at.in_time_zone('America/Chicago')
+        it { expect(appellant_type).to eq :claimant }
+      end
+
+      describe '#stamp_text' do
+        it { expect(nod_with_non_veteran_claimant.stamp_text).to eq 'Doe - 987654321' }
+      end
+
+      describe '#appellant_local_time' do
+        it do
+          nod_with_non_veteran_claimant.save
+
+          appellant_local_time = nod_with_non_veteran_claimant.appellant_local_time
+          created_at = nod_with_non_veteran_claimant.created_at
+
+          expect(appellant_local_time).to eq created_at.in_time_zone('America/Chicago')
+        end
       end
     end
 
-    describe '#extension_request?' do
-      it { expect(extra_notice_of_disagreement_v2.extension_request?).to eq true }
-    end
+    context 'when validating form data' do
+      let(:extra_notice_of_disagreement_v2) { build(:extra_notice_of_disagreement_v2, :board_review_hearing) }
 
-    describe '#extension_reason' do
-      it { expect(extra_notice_of_disagreement_v2.extension_reason).to eq 'good cause substantive reason' }
-    end
+      describe '#validate_api_version_presence' do
+        it 'throws an error when api_version is blank' do
+          nod_blank_api_version = FactoryBot.build(:extra_notice_of_disagreement_v2, api_version: '')
 
-    describe '#appealing_vha_denial?' do
-      it { expect(extra_notice_of_disagreement_v2.appealing_vha_denial?).to eq true }
-    end
-
-    describe '#validate_extension_request' do
-      let(:auth_headers) { fixture_as_json 'valid_10182_headers.json', version: 'v2' }
-      let(:form_data) { fixture_as_json 'valid_10182_minimum.json', version: 'v2' }
-      let(:invalid_notice_of_disagreement) do
-        build(:minimal_notice_of_disagreement_v2, form_data: form_data, auth_headers: auth_headers, api_version: 'v2')
+          expect(nod_blank_api_version.valid?).to be false
+          expect(nod_blank_api_version.errors.size).to eq 1
+          expect(nod_blank_api_version.errors.first.message).to include 'api_version attribute'
+        end
       end
 
-      context 'when extension reason provided, but extension request is false' do
-        before do
-          form_data['data']['attributes']['extensionReason'] = 'I need an extension please'
+      describe '#requesting_extension?' do
+        it { expect(extra_notice_of_disagreement_v2.requesting_extension?).to eq true }
+      end
 
-          invalid_notice_of_disagreement.valid?
+      describe '#extension_reason' do
+        it { expect(extra_notice_of_disagreement_v2.extension_reason).to eq 'good cause substantive reason' }
+      end
+
+      describe '#appealing_vha_denial?' do
+        it { expect(extra_notice_of_disagreement_v2.appealing_vha_denial?).to eq true }
+      end
+
+      describe '#validate_requesting_extension' do
+        let(:auth_headers) { fixture_as_json 'valid_10182_headers.json', version: 'v2' }
+        let(:form_data) { fixture_as_json 'valid_10182_minimum.json', version: 'v2' }
+        let(:invalid_notice_of_disagreement) do
+          build(:minimal_notice_of_disagreement_v2, form_data: form_data, auth_headers: auth_headers, api_version: 'v2')
         end
 
-        it 'throws an error' do
-          expect(invalid_notice_of_disagreement.errors.count).to be 1
-          expect(invalid_notice_of_disagreement.errors.first.attribute).to eq(:'/data/attributes/extensionRequest')
-          expect(invalid_notice_of_disagreement.errors.first.options[:detail]).to eq(
-            "If '/data/attributes/extensionReason' present, then '/data/attributes/extensionRequest' must equal true"
-          )
+        context 'when extension reason provided, but extension request is false' do
+          before do
+            form_data['data']['attributes']['extensionReason'] = 'I need an extension please'
+
+            invalid_notice_of_disagreement.valid?
+          end
+
+          it 'throws an error' do
+            expect(invalid_notice_of_disagreement.errors.size).to eq 1
+            expect(invalid_notice_of_disagreement.errors.first.attribute).to eq(:'/data/attributes/requestingExtension')
+            expect(invalid_notice_of_disagreement.errors.first.message).to eq(
+              "If '/data/attributes/extensionReason' present, then " \
+              "'/data/attributes/requestingExtension' must equal true"
+            )
+          end
         end
       end
     end

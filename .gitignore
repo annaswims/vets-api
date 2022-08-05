@@ -56,6 +56,7 @@ log/*
 config/settings.local.yml
 config/settings/*.local.yml
 config/environments/*.local.yml
+.talismanrc
 
 # Ignore certificates directory
 config/certs
@@ -71,6 +72,7 @@ modules/**/Gemfile.lock
 
 # Ignore JetBrains ide files
 .idea
+*.iml
 
 # ctags (vim/neovim/emacs)
 tags

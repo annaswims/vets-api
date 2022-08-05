@@ -4,21 +4,27 @@ require 'sidekiq'
 require 'evss/disability_compensation_form/service_exception'
 require 'evss/disability_compensation_form/service'
 require 'sentry_logging'
+require 'claims_api/claim_logger'
 
 module ClaimsApi
   class ClaimEstablisher
     include Sidekiq::Worker
     include SentryLogging
 
-    def perform(auto_claim_id)
+    def perform(auto_claim_id) # rubocop:disable Metrics/MethodLength
       auto_claim = ClaimsApi::AutoEstablishedClaim.find(auto_claim_id)
 
+      orig_form_data = auto_claim.form_data
       form_data = auto_claim.to_internal
       auth_headers = auto_claim.auth_headers
 
       response = service(auth_headers).submit_form526(form_data)
+      ClaimsApi::Logger.log('526',
+                            claim_id: auto_claim_id,
+                            vbms_id: response.claim_id)
       auto_claim.evss_id = response.claim_id
       auto_claim.status = ClaimsApi::AutoEstablishedClaim::ESTABLISHED
+      auto_claim.evss_response = nil
       auto_claim.save!
 
       queue_flash_updater(auth_headers, auto_claim.flashes, auto_claim_id)
@@ -26,11 +32,13 @@ module ClaimsApi
     rescue ::EVSS::DisabilityCompensationForm::ServiceException => e
       auto_claim.status = ClaimsApi::AutoEstablishedClaim::ERRORED
       auto_claim.evss_response = e.messages
+      auto_claim.form_data = orig_form_data
       auto_claim.save
       log_exception_to_sentry(e)
     rescue ::Common::Exceptions::BackendServiceException => e
       auto_claim.status = ClaimsApi::AutoEstablishedClaim::ERRORED
       auto_claim.evss_response = [{ 'key' => e.status_code, 'severity' => 'FATAL', 'text' => e.original_body }]
+      auto_claim.form_data = orig_form_data
       auto_claim.save
       log_exception_to_sentry(e)
     end

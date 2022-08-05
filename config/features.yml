@@ -12,6 +12,10 @@
 # Sorted using http://yaml-sorter.herokuapp.com/
 
 features:
+  burial_claim_confirmation_email:
+    actor_type: user
+    description: Enables burial claim form email submission confirmation
+    enable_in_development: true
   caregiver_sigi_enabled:
     actor_type: user
     description: Whether Self-Identifying Gender Identity is enabled for caregiver.
@@ -24,9 +28,18 @@ features:
     actor_type: user
     description: Enables American Indian SIGI question page.
     enable_in_development: true
-  can_upload_10_10cg_poa:
-    actor_type: cookie_id
-    description: Allows users to upload POA documentation when completing the 10-10CG.
+  hca_medicare_claim_number_enabled:
+    actor_type: user
+    description: Enables a form field for Medicare Claim Number.
+    enable_in_development: true
+  hca_short_form_enabled:
+    actor_type: user
+    description: Enables Short Form for users with or self discloser of high disability.
+    enable_in_development: true
+  hca_enrollment_status_override_enabled:
+    actor_type: user
+    description: Enables override of enrollment status for a user, to allow multiple submissions with same user.
+    enable_in_development: false
   cerner_allow_partial_facilities:
     actor_type: user
     description: This will allow cerner facilities to be set to partially cerner or all cerner.
@@ -61,49 +74,9 @@ features:
     actor_type: user
     description: Enables the health care check-in experiences
     enable_in_development: true
-  check_in_experience_emergency_contact_enabled:
-    actor_type: user
-    description: Enables the health care check-in experiences to show the emergency contact page.
-    enable_in_development: true
   check_in_experience_pre_check_in_enabled:
     actor_type: user
     description: Enables the health care check-in experiences to show the pre-check-in experience.
-    enable_in_development: true
-  check_in_experience_demographics_confirmation_enabled:
-    actor_type: user
-    description: Enables the health care pre-check-in experiences to send demographics confirmation.
-    enable_in_development: true
-  check_in_experience_editing_day_of_enabled:
-    actor_type: user
-    description: Enables editing of demographics for the day of check-in experience.
-    enable_in_development: true
-  check_in_experience_editing_pre_check_in_enabled:
-    actor_type: user
-    description: Enables editing of demographics for the pre-check-in experience.
-    enable_in_development: true
-  check_in_experience_update_information_page_enabled:
-    actor_type: user
-    description: Enables the Update Information question in the health care check-in experience application
-    enable_in_development: false
-  check_in_experience_no_demographics_confirmation_for_unverified_enabled:
-    actor_type: user
-    description: Enables the health care pre-check-in experiences to send demographics confirmation.
-    enable_in_development: true
-  check_in_experience_logging_enabled:
-    actor_type: user
-    description: Enables additional logging before and after an action.
-    enable_in_development: true
-  check_in_experience_set_pre_checkin_status:
-    actor_type: user
-    description: Enables setting pre check-in started status by calling CHIP
-    enable_in_development: true
-  check_in_experience_refresh_pre_checkin:
-    actor_type: user
-    description: Enables pre check-in refresh by calling CHIP
-    enable_in_development: true
-  check_in_experience_lorota_401_mapping_enabled:
-    actor_type: user
-    description: Enables mapping of LoROTA 401 error to 401 response
     enable_in_development: true
   check_in_experience_day_of_demographics_flags_enabled:
     actor_type: user
@@ -117,10 +90,45 @@ features:
     actor_type: user
     description: Enables language translation for the pre-check-in experience
     enable_in_development: true
+  check_in_experience_translation_disclaimer_spanish_enabled:
+    actor_type: user
+    description: Enables disclaimer for possible untranslated content on spanish pages
+    enable_in_development: true
+  check_in_experience_lorota_security_updates_enabled:
+    actor_type: user
+    description: Enables DOB instead of last 4 of SSN.
+    enable_in_development: false
+  check_in_experience_mock_enabled:
+    actor_type: user
+    description: Enables downstream responses to be returned via betamocks
+    enable_in_development: false
+  check_in_experience_phone_appointments_enabled:
+    actor_type: user
+    description: Enables telephone appointments for check-in
+    enable_in_development: false
+  check_in_experience_504_error_mapping_enabled:
+    actor_type: user
+    description: Enables 504 mapping for CHIP endpoint in check-in & pre-checkin
+    enable_in_development: true
+  ch31_vbms_form_confirmation_email:
+    actor_type: user
+    description: Enables Ch31 form email submission confirmation after central mail
+    enable_in_development: true
+  ch31_central_mail_form_confirmation_email:
+    actor_type: user
+    description: Enables Ch31 form email submission confirmation after vbms
+    enable_in_development: true
   coe_access:
     actor_type: user
     description: Feature gates the certificate of eligibility application
     enable_in_development: true
+  combined_debt_portal_access:
+    actor_type: user
+    description: Enables users to interact with combined debt portal experience
+    enable_in_development: true
+  combined_financial_status_report:
+    actor_type: user
+    description: Enables users to submit FSR forms for VHA and VBA debts
   communication_preferences:
     actor_type: user
     description: Allow user to access backend communication_preferences API
@@ -178,6 +186,9 @@ features:
   decision_review_sc_email:
     actor_type: user
     description: Send email notification for successful SC submission
+  decision_review_hlr_status_update_throttling:
+    actor_type: user
+    description: Throttles requests to CMP when updating HLR statuses
   dependency_verification:
     actor_type: user
     description: Feature gates the dependency verification modal for updating the diaries service.
@@ -203,17 +214,13 @@ features:
   direct_deposit_vanotify:
     actor_type: user
     description: Send direct deposit emails using VaNotify service
-  disability_hypertension_compensation_fast_track:
-    actor_type: user
-    description: Fast tracks 526 disability compensation hypertension claims by submitting additional health data
-    enable_in_development: true
-  disability_hypertension_compensation_fast_track_add_rrd:
-    actor_type: user
-    description: Fast tracks 526 disability compensation claims by submitting additional health data and adding the RRD special issue to the claim.
-    enable_in_development: true
   disability_compensation_flashes:
     actor_type: user
     description: enables sending flashes to BGS for disability_compensation submissions.
+    enable_in_development: true
+  disability_compensation_pif_fail_notification:
+    actor_type: user
+    description: enables sending notifications to vets if their 526 claim submission fails with PIF in Use Error
     enable_in_development: true
   education_reports_cleanup:
     actor_type: user
@@ -306,6 +313,10 @@ features:
     actor_type: user
     description: Form 10182 Notice of Disagreement - Request a board appeal
     enable_in_development: true
+  form686c_confirmation_email:
+    actor_type: user
+    description: Form 686c - Email submission confirmation
+    enable_in_development: true
   fsr_confirmation_email:
     actor_type: user
     description: Enables notifications to be sent via email upon FSR submission
@@ -337,25 +348,13 @@ features:
     actor_type: user
     description: Enable/disable in progress form reminders (sent via VaNotify)
     enable_in_development: true
-  login_gov:
-    actor_type: cookie_id
-    description: Enables/disables the usage of the new service provider Login.gov (VSP Identity)
+  in_progress_form_reminder_age_param:
+    actor_type: user
+    description: Enable/disable in progress form reminder age param
     enable_in_development: true
-  login_gov_disable:
-    actor_type: cookie_id
-    description: Disables the usage of the new service provider Login.gov (VSP Identity)
-    enable_in_development: true
-  login_gov_create_account:
-    actor_type: cookie_id
-    description: Enables/disables the usage of the new service provider Login.gov to create an account (VSP Identity)
-    enable_in_development: true
-  login_gov_mhv:
-    actor_type: cookie_id
-    description: Enables/disables the Login.gov button for MHV (VSP Identity)
-    enable_in_development: true
-  login_gov_myvahealth:
-    actor_type: cookie_id
-    description: Enables/disables the Login.gov button for MyVAHealth (VSP Identity)
+  in_progress_form_reminder_1010ez:
+    actor_type: user
+    description: Enable/disable 1010ez in progress form reminders (sent via VaNotify)
     enable_in_development: true
   loop_pages:
     actor_type: user
@@ -369,13 +368,29 @@ features:
     actor_type: user
     description: This will show new 508 compliant medical statement views
     enable_in_development: true
+  medical_copays_api_key_change:
+    actor_type: user
+    description: This will use new API key name when available
+    enable_in_development: true
   mega_menu_mobile_v2:
     actor_type: user
     description: Separates mobile mega menu from desktop mega menu
     enable_in_development: true
   mhv_to_logingov_account_transition:
     actor_type: cookie_id
-    description: Enables/disables MHV to Login.gov account transfer experience
+    description: Enables/disables MHV to Login.gov account transfer experience (Identity)
+    enable_in_development: false
+  mhv_to_logingov_account_transition_modal:
+    actor_type: cookie_id
+    description: Enables/disables MHV to Login.gov account transfer modal experience (Identity)
+    enable_in_development: false
+  mhv_to_logingov_account_transition_banner:
+    actor_type: cookie_id
+    description: Enables/disables MHV to Login.gov account transfer banner experience (Identity)
+    enable_in_development: false
+  mhv_to_logingov_account_transition_urgent:
+    actor_type: cookie_id
+    description: Enables/disables MHV to Login.gov account transfer urgent experience (Identity)
     enable_in_development: false
   mobile_api:
     actor_type: user
@@ -383,6 +398,18 @@ features:
   mobile_appointment_requests:
     actor_type: user
     description: enables a user to include pending appointment requests in the mobile/v0/appointments endpoint
+    enable_in_development: true
+  mobile_appointment_use_VAOS_MFS:
+    actor_type: user
+    description: Finds facilities using VAOS's Mobile Facility Service.
+    enable_in_development: false
+  mobile_appointment_use_VAOS_v2:
+    actor_type: user
+    description: Enables a user to use VAOS v2 endpoints rather then v0
+    enable_in_development: false
+  mobile_precache_appointments:
+    actor_type: user
+    description: enables us to easily turn off pre-caching appointments if our requests are overwhelming the upstream service
     enable_in_development: true
   multiple_address_10_10ez:
     actor_type: cookie_id
@@ -399,13 +426,12 @@ features:
       Toggle for the entire pre-entry covid 19 self-screener available at /covid19screener and to be used by visitors
       to VHA facilities in lieu of manual screening with a VHA employee.
       This toggle is owned by Patrick B. and the rest of the CTO Health Products team.
+  profile_get_military_info_from_vaprofile:
+    actor_type: user
+    description: When enabled, the profile page will get military service history from VA Profile instead of eMIS.
   profile_notification_settings:
     actor_type: user
     description: Turns on the Notification Settings section of the VA.gov Profile
-    enable_in_development: true
-  profile_enhancements:
-    actor_type: user
-    description: Used to show any enhancement for the profile
     enable_in_development: true
   profile_schema_forms:
     actor_type: user
@@ -415,17 +441,32 @@ features:
     actor_type: user
     description: Shows a modal that allows addresses to be duplicated from home to mailing and vice versa
     enable_in_development: true
-  profile_show_fax_number:
+  profile_show_bad_address_indicator:
     actor_type: user
-    description: Show/hide the fax number UI on the profile page
+    description: Show/Hide the "Bad Address" indicator in the profile page.
     enable_in_development: true
-  profile_show_gender:
+  profile_force_bad_address_indicator:
     actor_type: user
-    description: Show/hide the gender field UI on the profile page
-    enable_in_development: true
+    description: Allows to force the BAI experience for UAT testing
+    enable_in_development: false
+  profile_show_pronouns_and_sexual_orientation:
+    actor_type: user
+    description: Show/hide Pronouns and Sexual Orientation fields on profile page
   profile_show_receive_text_notifications:
     actor_type: user
     description: https://www.va.gov/profile/ show Receive Text Notifications
+    enable_in_development: true
+  profile_use_vaos_v2_api:
+    description: "Use the new VAOS v2 API endpoints"
+    enable_in_development: true
+    actor_type: user
+  profile_use_vafsc:
+    description: "Use VA Forms System Core for forms instead of schema based forms"
+    actor_type: user
+    enable_in_development: true
+  pw_ehr_cta_drupal_source_of_truth:
+    actor_type: user
+    description: Enabling Public Websites-managed EHR CTAs to use Drupal EHR data, including for Cerner cutovers
     enable_in_development: true
   request_locked_pdf_password:
     actor_type: user
@@ -435,6 +476,14 @@ features:
     actor_type: user
     description: Fast tracks 526 disability compensation asthma claims by submitting additional health data
     enable_in_development: true
+  rrd_asthma_release_pdf:
+    actor_type: user
+    description: For 526 disability compensation asthma claims, add RRD PDF and set RRD special issue to route to RVSRs
+    enable_in_development: true
+  my_va_redirect:
+    actor_type: user
+    description: After authentication redirects a user to the My VA page if they are on the homepage
+    enable_in_development: true
   rrd_hypertension_compensation:
     actor_type: user
     description: Fast tracks 526 disability compensation hypertension claims by submitting additional health data
@@ -442,6 +491,14 @@ features:
   rrd_add_special_issue:
     actor_type: user
     description: Fast tracks 526 disability compensation claims by adding the RRD special issue to the claim.
+    enable_in_development: true
+  rrd_mas_disability_tracking:
+    actor_type: user
+    description: Enables Slack notifications for MAS-specific disabilities
+    enable_in_development: true
+  rrd_mas_notification:
+    actor_type: user
+    description: Notifies MAS service that a MAS-relevant claim has come through
     enable_in_development: true
   search_representative:
     actor_type: user
@@ -506,10 +563,20 @@ features:
     actor_type: user
     description: Allows for frontend to have progressivley enhanced backend endpoints to consume in staging.
     enable_in_development: true
+  show_updated_toe_app:
+    actor_type: user
+    description: This determines when the form should be displayed.
+  show_updated_fry_dea_app:
+    actor_type: user
+    description: This determines when the form should be displayed
   show_medical_copays:
     actor_type: user
     description: Enables the medical copays application on route /manage-va-debt/medical-copays/
     enable_in_development: true
+  sign_in_service_enabled:
+    actor_type: cookie_id
+    description: Enables the ability to use OAuth authentication via the Sign in Service (Identity)
+    enable_in_development: false
   medical_copays_zero_debt:
     actor_type: user
     description: Enables zero debt balances feature on the medical copays application
@@ -533,23 +600,15 @@ features:
   show_new_view_test_lab_results_page:
     actor_type: user
     description: This will show the non-Cerner-user and Cerner-user content for the page /health-care/view-test-and-lab-results/
+  show_updated_fry_dea_app:
+    actor_type: user
+    description: Show the new version of the Fry/DEA form.
   spool_testing_error_2:
     actor_type: user
     description: Enables Slack notifications for CreateDailySpoolFiles
   spool_testing_error_3:
     actor_type: user
     description: Enables email notifications for CreateDailySpoolFiles errors
-  ssoe:
-    actor_type: cookie_id
-    description: Enables ssoe, as opposed to saml authentication wrapped by id.me
-    enable_in_development: true
-  ssoe_ebenefits_links:
-    actor_type: user
-    description: Enable eBenefits links to be proxied through eauth.va.gov, this allows users with SSOe sessions to stay logged in.
-  ssoe_inbound:
-    actor_type: cookie_id
-    description: Enables automatic establishment/disconnection of vets-api session based on a user's SSOe session status
-    enable_in_development: true
   stem_automated_decision:
     actor_type: user
     description: Add automated decision to 10203 application workflow
@@ -561,6 +620,13 @@ features:
   va_global_downtime_notification:
     actor_type: user
     description: Enables global downtime notification- do not use in production
+  va_home_preview:
+    actor_type: user
+    description: Allows user testing for Homepage redesign - do not use in production
+  va_online_filter36_vats:
+    actor_type: user
+    description: Update the filtering logic from 24 months to 36 months for a given clinic in the direct appointment schedule flow
+    enable_in_development: true
   va_online_scheduling:
     actor_type: user
     description: Allows veterans to view their VA and Community Care appointments
@@ -613,10 +679,18 @@ features:
     actor_type: user
     enable_in_development: true
     description: Toggle for health apartment proof of concept
+  va_online_scheduling_clinic_location:
+    actor_type: user
+    enable_in_development: true
+    description: Toggle for display of clinic location on appointment detail page
   va_online_scheduling_status_improvement:
     actor_type: user
     enable_in_development: true
     description: Toggle for homepage status improvement
+  va_online_scheduling_vaos_v2_next:
+    actor_type: user
+    enable_in_development: true
+    description: Toggle for tickets with the label vaos-v2-next will be behind this flag
   va_view_dependents_access:
     actor_type: user
     description: Allows us to gate the View/ Modify dependents content in a progressive rollout
@@ -652,3 +726,14 @@ features:
   check_va_inbox_enabled:
     actor_type: user
     description: Enables check inbox link
+  dhp_connected_devices_fitbit:
+    actor_type: user
+    description: Enables linking between VA.gov account and fitbit account
+    enable_in_development: true
+  show_expandable_vamc_alert:
+    actor_type: user
+    description: Allows expandable alerts to be visible in vamc
+  payment_history:
+    actor_type: user
+    description: Allows manual enabling/disabling payment history when BGS is acting up (5 min response times)
+    enable_in_development: true

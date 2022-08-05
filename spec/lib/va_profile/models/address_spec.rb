@@ -102,6 +102,11 @@ describe VAProfile::Models::Address do
         address.province = 'Quebec'
         expect(address.valid?).to eq(false)
       end
+
+      it 'international_postal_code is not required' do
+        address.international_postal_code = nil
+        expect(address.valid?).to eq(true)
+      end
     end
 
     context 'when address_type is international' do
@@ -137,10 +142,10 @@ describe VAProfile::Models::Address do
         expect(address.valid?).to eq(false)
       end
 
-      it 'international_postal_code is required' do
+      it 'international_postal_code is not required' do
         expect(address.valid?).to eq(true)
         address.international_postal_code = ''
-        expect(address.valid?).to eq(false)
+        expect(address.valid?).to eq(true)
       end
 
       it 'ensures international_postal_code is < 35 characters' do
@@ -175,6 +180,32 @@ describe VAProfile::Models::Address do
         expect(address.valid?).to eq(true)
         address.province = 'PQ'
         expect(address.valid?).to eq(false)
+      end
+    end
+
+    context 'when address pou is correspondence' do
+      it 'correspondence? is true' do
+        address.address_pou = VAProfile::Models::Address::CORRESPONDENCE
+        expect(address.correspondence?).to eq(true)
+      end
+
+      it 'bad address is false' do
+        address.address_pou = VAProfile::Models::Address::CORRESPONDENCE
+        json = JSON.parse(address.in_json)
+        expect(json['bio']['badAddress']).to eq(false)
+      end
+    end
+
+    context 'when address pou is residence' do
+      it 'correspondence? is false' do
+        address.address_pou = VAProfile::Models::Address::RESIDENCE
+        expect(address.correspondence?).to eq(false)
+      end
+
+      it 'bad address is nil' do
+        address.address_pou = VAProfile::Models::Address::RESIDENCE
+        json = JSON.parse(address.in_json)
+        expect(json['bio']['badAddress']).to eq(nil)
       end
     end
   end

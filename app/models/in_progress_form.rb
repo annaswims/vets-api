@@ -3,6 +3,8 @@
 require 'json_marshal/marshaller'
 
 class InProgressForm < ApplicationRecord
+  belongs_to :user_account, dependent: nil, optional: true
+
   class CleanUUID < ActiveRecord::Type::String
     def cast(value)
       super(value.to_s.delete('-'))
@@ -11,7 +13,7 @@ class InProgressForm < ApplicationRecord
     alias serialize cast
   end
 
-  attr_accessor :skip_exipry_update
+  attr_accessor :skip_exipry_update, :real_user_uuid
 
   RETURN_URL_SQL = "CAST(metadata -> 'returnUrl' AS text)"
   scope :has_attempted_submit, lambda {
@@ -30,12 +32,13 @@ class InProgressForm < ApplicationRecord
   attribute :user_uuid, CleanUUID.new
   serialize :form_data, JsonMarshal::Marshaller
   has_kms_key
-  encrypts :form_data, key: :kms_key, **lockbox_options
+  has_encrypted :form_data, key: :kms_key, **lockbox_options
   validates(:form_data, presence: true)
   validates(:user_uuid, presence: true)
   validate(:id_me_user_uuid)
   before_save :serialize_form_data
   before_save :set_expires_at, unless: :skip_exipry_update
+  after_save :log_hca_email_diff
 
   def self.form_for_user(form_id, user)
     InProgressForm.find_by(form_id: form_id, user_uuid: user.uuid)
@@ -76,6 +79,10 @@ class InProgressForm < ApplicationRecord
   end
 
   private
+
+  def log_hca_email_diff
+    HCA::LogEmailDiffJob.perform_async(id, real_user_uuid) if form_id == '1010ez'
+  end
 
   # Some IDs we get from ID.me are 20, 21, 22 or 23 char hex strings
   # > we started off with just 22 random hex chars (from openssl random bytes) years

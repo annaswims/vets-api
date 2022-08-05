@@ -2,6 +2,7 @@
 
 require 'evss/disability_compensation_form/service_exception'
 require 'evss/disability_compensation_form/gateway_timeout'
+require 'sentry_logging'
 
 module EVSS
   module DisabilityCompensationForm
@@ -16,12 +17,38 @@ module EVSS
       # This callback cannot be tested due to the limitations of `Sidekiq::Testing.fake!`
       # :nocov:
       sidekiq_retries_exhausted do |msg, _ex|
-        job_exhausted(msg, STATSD_KEY_PREFIX)
-        submission = Form526Submission.find msg['args'].first
-        submission.submit_with_birls_id_that_hasnt_been_tried_yet!(
-          silence_errors_and_log_to_sentry: true,
-          extra_content_for_sentry: { job_class: msg['class'].demodulize, job_id: msg['jid'] }
-        )
+        submission = nil
+        next_birls_jid = nil
+
+        # log, mark Form526JobStatus for submission as "exhausted"
+        begin
+          job_exhausted(msg, STATSD_KEY_PREFIX)
+        rescue => e
+          log_exception_to_sentry(e)
+        end
+
+        # Submit under different birls if avail
+        begin
+          submission = Form526Submission.find msg['args'].first
+          next_birls_jid = submission.submit_with_birls_id_that_hasnt_been_tried_yet!(
+            silence_errors_and_log_to_sentry: true,
+            extra_content_for_sentry: { job_class: msg['class'].demodulize, job_id: msg['jid'] }
+          )
+        rescue => e
+          log_exception_to_sentry(e)
+        end
+
+        # if no more unused birls to attempt submit with, give up, let vet know
+        begin
+          notify_enabled = Flipper.enabled?(:disability_compensation_pif_fail_notification)
+          if submission && next_birls_jid.nil? && msg['error_message'] == 'PIF in use' && notify_enabled
+            first_name = submission.get_first_name&.capitalize || 'Sir or Madam'
+            params = submission.personalization_parameters(first_name)
+            Form526SubmissionFailedEmailJob.perform_async(params)
+          end
+        rescue => e
+          log_exception_to_sentry(e)
+        end
       end
       # :nocov:
 
@@ -39,23 +66,24 @@ module EVSS
           response = service.submit_form526(submission.form_to_json(Form526Submission::FORM_526))
           response_handler(response)
         end
-        send_hypertension_fast_track_pilot_email(submission) if submission.rrd_process_selector.rrd_applicable?
+        send_rrd_completed_notification(submission) if submission.rrd_job_selector.rrd_applicable?
+        submission.notify_mas if submission.forward_to_mas?
       rescue Common::Exceptions::BackendServiceException,
              Common::Exceptions::GatewayTimeout,
              Breakers::OutageException,
              EVSS::DisabilityCompensationForm::ServiceUnavailableException => e
-        retryable_error_handler(e)
+        retryable_error_handler(submission, e)
       rescue EVSS::DisabilityCompensationForm::ServiceException => e
         # retry submitting the form for specific upstream errors
-        retry_form526_error_handler!(e)
+        retry_form526_error_handler!(submission, e)
       rescue => e
-        non_retryable_error_handler(e)
+        non_retryable_error_handler(submission, e)
       end
 
       private
 
-      def send_hypertension_fast_track_pilot_email(submission)
-        HypertensionFastTrackPilotMailer.build(submission).deliver_now
+      def send_rrd_completed_notification(submission)
+        RrdCompletedMailer.build(submission).deliver_now
       end
 
       def response_handler(response)
@@ -63,19 +91,25 @@ module EVSS
         submission.save
       end
 
-      def retryable_error_handler(error)
+      def retryable_error_handler(_submission, error)
         # update JobStatus, log and metrics in JobStatus#retryable_error_handler
         super(error)
         raise error
       end
 
-      def non_retryable_error_handler(error)
+      def non_retryable_error_handler(submission, error)
         # update JobStatus, log and metrics in JobStatus#non_retryable_error_handler
         super(error)
+        send_rrd_alert(submission, error, 'non-retryable') if submission.rrd_job_selector.rrd_applicable?
         submission.submit_with_birls_id_that_hasnt_been_tried_yet!(
           silence_errors_and_log_to_sentry: true,
           extra_content_for_sentry: { job_class: self.class.to_s.demodulize, job_id: jid }
         )
+      end
+
+      def send_rrd_alert(submission, error, subtitle)
+        message = "RRD could not submit the claim to EVSS: #{subtitle}<br/>"
+        submission.send_rrd_alert_email("RRD submission to EVSS error: #{subtitle}", message, error)
       end
 
       def service(_auth_headers)
@@ -89,11 +123,11 @@ module EVSS
       #
       # @param error [EVSS::DisabilityCompensationForm::ServiceException]
       #
-      def retry_form526_error_handler!(error)
+      def retry_form526_error_handler!(submission, error)
         if error.retryable?
-          retryable_error_handler(error)
+          retryable_error_handler(submission, error)
         else
-          non_retryable_error_handler(error)
+          non_retryable_error_handler(submission, error)
         end
       end
     end

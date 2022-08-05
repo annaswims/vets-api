@@ -3,12 +3,12 @@
 module CheckIn
   module V2
     class PreCheckInsController < CheckIn::ApplicationController
-      before_action :before_logger, only: %i[show create], if: :additional_logging?
-      after_action :after_logger, only: %i[show create], if: :additional_logging?
+      before_action :before_logger, only: %i[show create]
+      after_action :after_logger, only: %i[show create]
 
       def show
         pre_check_in_session = CheckIn::V2::Session.build(
-          data: { uuid: params[:id], check_in_type: params[:checkInType] }, jwt: session[:jwt]
+          data: { uuid: params[:id], check_in_type: params[:checkInType] }, jwt: low_auth_token
         )
 
         unless pre_check_in_session.authorized?
@@ -23,7 +23,7 @@ module CheckIn
       def create
         pre_check_in_session = CheckIn::V2::Session.build(
           data: { uuid: permitted_params[:uuid], check_in_type: permitted_params[:check_in_type] },
-          jwt: session[:jwt]
+          jwt: low_auth_token
         )
 
         unless pre_check_in_session.authorized?

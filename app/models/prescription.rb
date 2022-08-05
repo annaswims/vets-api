@@ -49,11 +49,12 @@ class Prescription < Common::Base
   attribute :quantity, Integer
   attribute :expiration_date, Common::UTCTime
   attribute :prescription_number, String
+  attribute :sig, String
   attribute :prescription_name, String, sortable: { order: 'ASC', default: true }
   attribute :dispensed_date, Common::UTCTime, sortable: { order: 'DESC' }
   attribute :station_number, String
-  attribute :is_refillable, Boolean
-  attribute :is_trackable, Boolean
+  attribute :is_refillable, Boolean, filterable: %w[eq not_eq]
+  attribute :is_trackable, Boolean, filterable: %w[eq not_eq]
 
   alias refillable? is_refillable
   alias trackable? is_trackable

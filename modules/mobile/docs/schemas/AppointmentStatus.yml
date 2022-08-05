@@ -1,0 +1,10 @@
+type: string
+description: Required for VA and CC Requests
+enum:
+  - proposed
+  - cancelled
+  - pending
+  - booked
+  - arrived
+  - noshow
+  - fulfilled

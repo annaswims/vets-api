@@ -189,6 +189,38 @@ RSpec.describe User, type: :model do
     end
   end
 
+  describe '#common_name' do
+    let(:user) do
+      build(:user,
+            common_name: common_name,
+            first_name: first_name,
+            middle_name: middle_name,
+            last_name: last_name,
+            suffix: suffix)
+    end
+    let(:first_name) { 'some-first-name' }
+    let(:middle_name) { 'some-middle-name' }
+    let(:last_name) { 'some-last-name' }
+    let(:suffix) { 'some-suffix' }
+
+    context 'when common name is defined in the identity object' do
+      let(:common_name) { 'some-common-name' }
+
+      it 'returns the defined common name' do
+        expect(user.common_name).to eq(common_name)
+      end
+    end
+
+    context 'when common name is not defined in the identity object' do
+      let(:common_name) { nil }
+      let(:expected_common_name) { "#{first_name} #{middle_name} #{last_name} #{suffix}" }
+
+      it 'returns an expected generated common name string' do
+        expect(user.common_name).to eq(expected_common_name)
+      end
+    end
+  end
+
   describe '#ssn_mismatch?', :skip_mvi do
     let(:user) { build(:user, :loa3) }
     let(:mvi_profile) { build(:mvi_profile, ssn: mismatched_ssn) }
@@ -322,9 +354,24 @@ RSpec.describe User, type: :model do
     end
 
     describe 'invalidate_mpi_cache' do
-      it 'clears the user mpi cache' do
-        expect_any_instance_of(MPIData).to receive(:destroy)
-        subject.invalidate_mpi_cache
+      before { allow_any_instance_of(MPIData).to receive(:cached?).and_return(cache_exists) }
+
+      context 'when mpi object exists with cached mpi response' do
+        let(:cache_exists) { true }
+
+        it 'clears the user mpi cache' do
+          expect_any_instance_of(MPIData).to receive(:destroy)
+          subject.invalidate_mpi_cache
+        end
+      end
+
+      context 'when mpi object does not exist with cached mpi response' do
+        let(:cache_exists) { false }
+
+        it 'does not attempt to clear the user mpi cache' do
+          expect_any_instance_of(MPIData).not_to receive(:destroy)
+          subject.invalidate_mpi_cache
+        end
       end
     end
 
@@ -956,6 +1003,33 @@ RSpec.describe User, type: :model do
     end
   end
 
+  describe '#deceased_date' do
+    let!(:user) { described_class.new(build(:user, :mhv, mhv_icn: 'some-mhv-icn')) }
+
+    context 'and MPI Profile deceased date does not exist' do
+      before do
+        allow_any_instance_of(MPI::Models::MviProfile).to receive(:deceased_date).and_return nil
+      end
+
+      it 'returns nil' do
+        expect(user.deceased_date).to eq nil
+      end
+    end
+
+    context 'and MPI Profile deceased date does exist' do
+      let(:mvi_profile) { build(:mvi_profile, deceased_date: deceased_date) }
+      let(:deceased_date) { '20200202' }
+
+      before do
+        stub_mpi(mvi_profile)
+      end
+
+      it 'returns iso8601 parsed date from the MPI Profile deceased_date attribute' do
+        expect(user.deceased_date).to eq Date.parse(deceased_date).iso8601
+      end
+    end
+  end
+
   describe '#relationships' do
     let(:user) { described_class.new(build(:user_with_relationship)) }
 
@@ -1045,6 +1119,141 @@ RSpec.describe User, type: :model do
             expect(user.relationships).to eq nil
           end
         end
+      end
+    end
+  end
+
+  describe '#user_verification' do
+    let(:user) do
+      described_class.new(build(:user,
+                                authn_context: authn_context,
+                                logingov_uuid: logingov_uuid,
+                                idme_uuid: idme_uuid,
+                                edipi: edipi,
+                                mhv_correlation_id: mhv_correlation_id))
+    end
+    let!(:user_verification) { Login::UserVerifier.new(user).perform }
+    let(:authn_context) { LOA::IDME_LOA1_VETS }
+    let(:logingov_uuid) { 'some-logingov-uuid' }
+    let(:idme_uuid) { 'some-idme-uuid' }
+    let(:edipi) { 'some-edipi' }
+    let(:mhv_correlation_id) { 'some-mhv-correlation-id' }
+
+    it 'returns expected user_verification' do
+      expect(user.user_verification).to eq(user_verification)
+    end
+
+    context 'when user is logged in with mhv' do
+      let(:authn_context) { 'myhealthevet' }
+
+      context 'and there is an mhv_correlation_id' do
+        let(:mhv_correlation_id) { 'some-mhv-correlation-id' }
+
+        it 'returns user verification with a matching mhv_correlation_id' do
+          expect(user.user_verification.mhv_uuid).to eq(mhv_correlation_id)
+        end
+      end
+
+      context 'and there is not an mhv_correlation_id' do
+        let(:mhv_correlation_id) { nil }
+
+        it 'returns user verification with a matching idme_uuid' do
+          expect(user.user_verification.idme_uuid).to eq(idme_uuid)
+        end
+      end
+    end
+
+    context 'when user is logged in with dslogon' do
+      let(:authn_context) { 'dslogon' }
+
+      context 'and there is an edipi' do
+        let(:edipi) { 'some-edipi' }
+
+        it 'returns user verification with a matching edipi' do
+          expect(user.user_verification.dslogon_uuid).to eq(edipi)
+        end
+      end
+
+      context 'and there is not an edipi' do
+        let(:edipi) { nil }
+
+        it 'returns user verification with a matching idme_uuid' do
+          expect(user.user_verification.idme_uuid).to eq(idme_uuid)
+        end
+      end
+    end
+
+    context 'when user is logged in with logingov' do
+      let(:authn_context) { IAL::LOGIN_GOV_IAL1 }
+      let(:logingov_uuid) { 'some-logingov-uuid' }
+
+      it 'returns user verification with a matching logingov uuid' do
+        expect(user.user_verification.logingov_uuid).to eq(logingov_uuid)
+      end
+    end
+
+    context 'when user is logged in with idme' do
+      let(:authn_context) { LOA::IDME_LOA1_VETS }
+      let(:idme_uuid) { 'some-idme-uuid' }
+
+      it 'returns user verification with a matching idme_uuid' do
+        expect(user.user_verification.idme_uuid).to eq(idme_uuid)
+      end
+    end
+  end
+
+  describe '#user_account' do
+    let(:user) { described_class.new(build(:user)) }
+    let!(:user_account) { Login::UserVerifier.new(user).perform.user_account }
+
+    it 'returns expected user_account' do
+      expect(user.user_account).to eq(user_account)
+    end
+  end
+
+  describe '#inherited_proof_verified' do
+    let(:user) { described_class.new(build(:user)) }
+    let(:user_account) { Login::UserVerifier.new(user).perform.user_account }
+
+    context 'when Inherited Proof Verified User Account exists and matches current user_account' do
+      let!(:inherited_proof_verified) { create(:inherited_proof_verified_user_account, user_account: user_account) }
+
+      it 'returns true' do
+        expect(user.inherited_proof_verified).to be true
+      end
+    end
+
+    context 'when no Inherited Proof Verified User Account is found' do
+      it 'returns false' do
+        expect(user.inherited_proof_verified).to be false
+      end
+    end
+  end
+
+  describe '#mpi_add_person_implicit_search' do
+    subject { user.mpi_add_person_implicit_search }
+
+    let(:user) { create(:user, :loa3) }
+
+    before do
+      allow_any_instance_of(MPI::Service).to receive(:add_person_implicit_search)
+    end
+
+    context 'when loa3? is true' do
+      before { stub_mpi_not_found }
+
+      it 'makes a call to MPI to create a new user' do
+        expect_any_instance_of(MPI::Service).to receive(:add_person_implicit_search)
+        subject
+      end
+    end
+
+    context 'when loa3? is false' do
+      let(:user) { create(:user) }
+
+      it 'does not make a call to MPI to create a new user' do
+        expect_any_instance_of(MPI::Service).not_to receive(:add_person_implicit_search)
+        subject
       end
     end
   end

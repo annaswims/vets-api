@@ -19,7 +19,7 @@ module SignIn
         iss: Constants::AccessToken::ISSUER,
         aud: Constants::AccessToken::MOBILE_AUDIENCE,
         client_id: Constants::AccessToken::MOBILE_CLIENT_ID,
-        jti: random_number,
+        jti: access_token.uuid,
         sub: access_token.user_uuid,
         exp: access_token.expiration_time.to_i,
         iat: access_token.created_time.to_i,
@@ -32,12 +32,8 @@ module SignIn
       }
     end
 
-    def random_number
-      SecureRandom.hex
-    end
-
     def jwt_encode_access_token
-      JWT.encode(payload, private_key, Constants::AccessToken::JWT_ENCODE_ALROGITHM)
+      JWT.encode(payload, private_key, Constants::AccessToken::JWT_ENCODE_ALGORITHM)
     end
 
     def private_key

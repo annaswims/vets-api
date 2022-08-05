@@ -2,17 +2,18 @@
 
 module SignIn
   class SessionCreator
-    attr_reader :user_account
+    attr_reader :validated_credential
 
-    def initialize(user_account:)
-      @user_account = user_account
+    def initialize(validated_credential:)
+      @validated_credential = validated_credential
     end
 
     def perform
       SessionContainer.new(session: session,
                            refresh_token: refresh_token,
                            access_token: access_token,
-                           anti_csrf_token: anti_csrf_token)
+                           anti_csrf_token: anti_csrf_token,
+                           client_id: client_id)
     end
 
     private
@@ -48,7 +49,7 @@ module SignIn
     def create_new_access_token
       SignIn::AccessToken.new(
         session_handle: handle,
-        user_uuid: user_account.id,
+        user_uuid: user_uuid,
         refresh_token_hash: refresh_token_hash,
         parent_refresh_token_hash: parent_refresh_token_hash,
         anti_csrf_token: anti_csrf_token,
@@ -59,7 +60,7 @@ module SignIn
     def create_new_refresh_token(parent_refresh_token_hash: nil)
       SignIn::RefreshToken.new(
         session_handle: handle,
-        user_uuid: user_account.id,
+        user_uuid: user_uuid,
         parent_refresh_token_hash: parent_refresh_token_hash,
         anti_csrf_token: anti_csrf_token
       )
@@ -67,6 +68,9 @@ module SignIn
 
     def create_new_session
       SignIn::OAuthSession.create!(user_account: user_account,
+                                   user_verification: user_verification,
+                                   client_id: client_id,
+                                   credential_email: credential_email,
                                    handle: handle,
                                    hashed_refresh_token: double_parent_refresh_token_hash,
                                    refresh_expiration: refresh_expiration_time,
@@ -83,6 +87,26 @@ module SignIn
 
     def get_hash(object)
       Digest::SHA256.hexdigest(object)
+    end
+
+    def client_id
+      @client_id ||= validated_credential.client_id
+    end
+
+    def user_verification
+      @user_verification ||= validated_credential.user_verification
+    end
+
+    def credential_email
+      @credential_email ||= validated_credential.credential_email
+    end
+
+    def user_account
+      @user_account ||= user_verification.user_account
+    end
+
+    def user_uuid
+      @user_uuid ||= user_verification.credential_identifier
     end
 
     def handle

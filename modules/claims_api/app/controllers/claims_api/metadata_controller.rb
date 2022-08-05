@@ -14,7 +14,6 @@ module ClaimsApi
           versions: []
         }
       }
-      metadata_output[:meta][:versions].push(version_0_docs)
       metadata_output[:meta][:versions].push(version_1_docs)
       if V2_DOCS_ENABLED
         metadata_output[:meta][:versions].each { |version| version[:status] = VERSION_STATUS[:previous] }
@@ -24,16 +23,6 @@ module ClaimsApi
     end
 
     private
-
-    def version_0_docs
-      {
-        version: '0.0.1',
-        internal_only: true,
-        status: VERSION_STATUS[:previous],
-        path: '/services/claims/docs/v0/api',
-        healthcheck: '/services/claims/v0/healthcheck'
-      }
-    end
 
     def version_1_docs
       {
@@ -50,8 +39,8 @@ module ClaimsApi
         version: '2.0.0',
         internal_only: false,
         status: VERSION_STATUS[:current],
-        path: '/services/benefits/docs/v2/api',
-        healthcheck: '/services/benefits/v2/healthcheck'
+        path: '/services/claims/docs/v2/api',
+        healthcheck: '/services/claims/v2/healthcheck'
       }
     end
   end

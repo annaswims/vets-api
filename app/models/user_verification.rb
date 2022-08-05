@@ -6,6 +6,21 @@ class UserVerification < ApplicationRecord
 
   validate :single_credential_identifier
 
+  def verified?
+    verified_at.present? && user_account.verified?
+  end
+
+  def credential_type
+    return SAML::User::IDME_CSID if idme_uuid.present?
+    return SAML::User::LOGINGOV_CSID if logingov_uuid.present?
+    return SAML::User::MHV_ORIGINAL_CSID if mhv_uuid.present?
+    return SAML::User::DSLOGON_CSID if dslogon_uuid.present?
+  end
+
+  def credential_identifier
+    idme_uuid || logingov_uuid || mhv_uuid || dslogon_uuid
+  end
+
   private
 
   # XOR operators between the four credential identifiers mean one, and only one, of these can be

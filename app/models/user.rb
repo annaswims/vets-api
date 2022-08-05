@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require 'beta_switch'
 require 'common/models/base'
 require 'common/models/redis_store'
 require 'evss/auth_headers'
@@ -13,7 +12,6 @@ require 'formatters/date_formatter'
 require 'va_profile/configuration'
 
 class User < Common::RedisStore
-  include BetaSwitch
   include Authorization
   extend Gem::Deprecate
 
@@ -38,6 +36,8 @@ class User < Common::RedisStore
   attribute :mhv_last_signed_in, Common::UTCTime # MHV audit logging
   attribute :account_uuid, String
   attribute :account_id, Integer
+  attribute :user_account_uuid, String
+  attribute :user_verification_id, Integer
 
   delegate :email, to: :identity, allow_nil: true
   delegate :loa3?, to: :identity, allow_nil: true
@@ -56,6 +56,26 @@ class User < Common::RedisStore
 
   def account_id
     @account_id ||= account&.id
+  end
+
+  def user_verification
+    @user_verification ||= get_user_verification
+  end
+
+  def user_account
+    @user_account ||= user_verification&.user_account
+  end
+
+  def user_verification_id
+    @user_verification_id ||= user_verification&.id
+  end
+
+  def user_account_uuid
+    @user_account_uuid ||= user_account&.id
+  end
+
+  def inherited_proof_verified
+    @inherited_proof_verified ||= InheritedProofVerifiedUserAccount.where(user_account_id: user_account_uuid).present?
   end
 
   def pciu_email
@@ -87,6 +107,10 @@ class User < Common::RedisStore
 
   def first_name
     identity.first_name.presence || first_name_mpi
+  end
+
+  def common_name
+    identity.common_name.presence || [first_name, middle_name, last_name, suffix].compact.join(' ')
   end
 
   def full_name_normalized
@@ -162,6 +186,10 @@ class User < Common::RedisStore
       country: address[:country],
       zip: address[:postal_code]
     }
+  end
+
+  def deceased_date
+    Formatters::DateFormatter.format_date(mpi_profile&.deceased_date)
   end
 
   def birth_date_mpi
@@ -241,14 +269,21 @@ class User < Common::RedisStore
 
   # MPI setter methods
 
-  def mpi_add_person
+  def mpi_add_person_proxy
     add_person_identity = identity
     add_person_identity.edipi = edipi
     add_person_identity.ssn = ssn
     add_person_identity.icn_with_aaid = icn_with_aaid
     add_person_identity.search_token = search_token
     mpi.user_identity = add_person_identity
-    mpi.add_person
+    mpi.add_person_proxy
+  end
+
+  def mpi_add_person_implicit_search
+    return unless loa3?
+
+    invalidate_mpi_cache
+    mpi.add_person_implicit_search
   end
 
   def set_mhv_ids(mhv_id)
@@ -260,9 +295,10 @@ class User < Common::RedisStore
   # Other MPI
 
   def invalidate_mpi_cache
-    mpi_cache = mpi
-    mpi_cache.mvi_response
-    mpi_cache.destroy
+    return unless mpi.mpi_response_is_cached?
+
+    mpi.destroy
+    @mpi = nil
   end
 
   # identity attributes
@@ -272,11 +308,16 @@ class User < Common::RedisStore
   delegate :idme_uuid, to: :identity, allow_nil: true
   delegate :logingov_uuid, to: :identity, allow_nil: true
   delegate :verified_at, to: :identity, allow_nil: true
-  delegate :common_name, to: :identity, allow_nil: true
   delegate :person_types, to: :identity, allow_nil: true, prefix: true
+  delegate :sign_in, to: :identity, allow_nil: true, prefix: true
 
   # mpi attributes
   delegate :birls_id, to: :mpi, prefix: true
+  delegate :mhv_ien, to: :mpi
+  delegate :mhv_iens, to: :mpi, prefix: true
+  delegate :participant_ids, to: :mpi, prefix: true
+  delegate :edipis, to: :mpi, prefix: true
+  delegate :birls_ids, to: :mpi, prefix: true
   delegate :icn, to: :mpi, prefix: true
   delegate :icn_with_aaid, to: :mpi
   delegate :vet360_id, to: :mpi
@@ -456,6 +497,21 @@ class User < Common::RedisStore
     return nil unless identity && mpi
 
     mpi.profile
+  end
+
+  # Get user_verification based on login method
+  # Default is idme, if login method and login uuid are not available,
+  # fall back to idme
+  def get_user_verification
+    case identity_sign_in&.dig(:service_name)
+    when SAML::User::MHV_ORIGINAL_CSID
+      return UserVerification.find_by(mhv_uuid: mhv_correlation_id) if mhv_correlation_id
+    when SAML::User::DSLOGON_CSID
+      return UserVerification.find_by(dslogon_uuid: identity.edipi) if identity.edipi
+    when SAML::User::LOGINGOV_CSID
+      return UserVerification.find_by(logingov_uuid: logingov_uuid)
+    end
+    UserVerification.find_by(idme_uuid: idme_uuid)
   end
 
   def get_relationships_array

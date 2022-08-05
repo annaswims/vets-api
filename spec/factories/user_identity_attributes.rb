@@ -7,6 +7,7 @@ FactoryBot.define do
     factory :user_identity_attrs do
       authn_context { 'http://idmanagement.gov/ns/assurance/loa/1/vets' }
       uuid { 'b2fab2b5-6af0-45e1-a9e2-394347af91ef' }
+      icn { '1013062086V794840' }
       email { 'abraham.lincoln@vets.gov' }
       first_name { 'abraham' }
       last_name { 'lincoln' }
@@ -37,7 +38,7 @@ FactoryBot.define do
       ssn { nil }
       mhv_icn { nil }
       mhv_account_type { 'Basic' }
-      sign_in { [[:service_name, 'myhealthevet']].to_h }
+      sign_in { [[:service_name, 'mhv']].to_h }
       loa { [[:current, LOA::ONE], [:highest, LOA::THREE]].to_h }
     end
 

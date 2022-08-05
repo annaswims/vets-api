@@ -4,33 +4,25 @@ require 'rails_helper'
 require 'sidekiq/testing'
 
 RSpec.describe RapidReadyForDecision::Form526AsthmaJob, type: :worker do
-  subject { described_class }
-
-  before do
-    Sidekiq::Worker.clear_all
+  around do |example|
+    VCR.use_cassette('evss/claims/claims_without_open_compensation_claims', &example)
   end
 
-  let(:user) { FactoryBot.create(:disabilities_compensation_user, icn: '2000163') }
-  let(:auth_headers) do
-    EVSS::DisabilityCompensationAuthHeaders.new(user).add_headers(EVSS::AuthHeaders.new(user).to_h)
-  end
-  let(:submission) do
-    create(:form526_submission, :with_uploads,
-           user_uuid: user.uuid,
-           auth_headers_json: auth_headers.to_json)
-  end
+  let(:submission) { create(:form526_submission, :asthma_claim_for_increase) }
 
-  describe '#perform', :vcr do
+  describe '#perform' do
     subject { RapidReadyForDecision::Form526AsthmaJob.perform_async(submission.id) }
+
+    around do |example|
+      VCR.use_cassette('rrd/asthma', &example)
+    end
 
     context 'success' do
       it 'finishes successfully' do
         Sidekiq::Testing.inline! do
           expect { subject }.not_to raise_error
-          last_email = ActionMailer::Base.deliveries.last
-          expect(last_email.subject).to eq 'RRD claim - Offramped'
-          expect(last_email.body).to include submission.id
-          expect(last_email.body).to include 'API returned 24 medication requests'
+          submission.reload
+          expect(submission.form.dig('rrd_metadata', 'med_stats', 'medications_count')).to eq(11)
         end
       end
 

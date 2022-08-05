@@ -24,7 +24,7 @@ module AppealsApi
             form_fields.central_office_hearing => form_data.central_office_hearing,
             form_fields.video_conference_hearing => form_data.video_conference_hearing,
             form_fields.virtual_tele_hearing => form_data.virtual_tele_hearing,
-            form_fields.extension_request => form_data.extension_request,
+            form_fields.requesting_extension => form_data.requesting_extension,
             form_fields.appealing_vha_denial => form_data.appealing_vha_denial,
             form_fields.additional_issues => form_data.additional_pages,
             form_fields.date_signed => form_data.date_signed
@@ -76,9 +76,9 @@ module AppealsApi
             pdf.text_box(
               form_data.rep_name,
               text_opts.merge(
-                at: [350, 563],
-                width: 195,
-                height: 24
+                at: [348, 570],
+                width: 200,
+                height: 44
               )
             )
 
@@ -106,11 +106,11 @@ module AppealsApi
 
           @additional_pages_pdf ||= Prawn::Document.new(skip_page_creation: true)
 
-          NoticeOfDisagreement::V2::Pages::AdditionalContent.new(
+          Pages::LongDataAndExtraIssues.new(
             @additional_pages_pdf, form_data
           ).build!
 
-          NoticeOfDisagreement::V2::Pages::TimeExtensionReason.new(
+          Pages::TimeExtensionReason.new(
             @additional_pages_pdf, form_data
           ).build!
 
@@ -129,41 +129,16 @@ module AppealsApi
           [1, '4-end', '2-3']
         end
 
-        def stamp(stamped_pdf_path)
-          stamper = CentralMail::DatestampPdf.new(stamped_pdf_path)
-
-          bottom_stamped_path = stamper.run(
-            text: "API.VA.GOV #{notice_of_disagreement.created_at.utc.strftime('%Y-%m-%d %H:%M%Z')}",
-            x: 5,
-            y: 775,
-            text_only: true
-          )
-
-          name_stamp_path = "#{Common::FileHelpers.random_file_path}.pdf"
-          Prawn::Document.generate(name_stamp_path, margin: [0, 0]) do |pdf|
-            pdf.text_box form_data.stamp_text,
-                         at: [205, 778],
-                         align: :center,
-                         valign: :center,
-                         overflow: :shrink_to_fit,
-                         min_font_size: 8,
-                         width: 215,
-                         height: 10
-          end
-
-          CentralMail::DatestampPdf.new(nil).stamp(bottom_stamped_path, name_stamp_path)
-        end
-
         private
 
         attr_accessor :notice_of_disagreement
 
         def form_fields
-          @form_fields ||= NoticeOfDisagreement::V2::FormFields.new
+          @form_fields ||= FormFields.new
         end
 
         def form_data
-          @form_data ||= NoticeOfDisagreement::V2::FormData.new(notice_of_disagreement)
+          @form_data ||= FormData.new(notice_of_disagreement)
         end
 
         def fill_first_five_issue_dates!(options)
@@ -178,10 +153,12 @@ module AppealsApi
 
           options
         end
+        # rubocop:disable Layout/LineLength
 
         def additional_pages?
-          form_data.contestable_issues.count > 5 || form_data.long_preferred_email? || form_data.extension_request?
+          form_data.contestable_issues.count > 5 || form_data.long_preferred_email? || form_data.requesting_extension? || form_data.long_rep_name?
         end
+        # rubocop:enable Layout/LineLength
 
         # rubocop:disable Metrics/MethodLength
         def insert_issues_into_text_boxes(pdf, text_opts)

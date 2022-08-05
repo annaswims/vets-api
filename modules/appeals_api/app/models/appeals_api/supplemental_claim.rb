@@ -7,6 +7,8 @@ module AppealsApi
   class SupplementalClaim < ApplicationRecord
     include ScStatus
     include PdfOutputPrep
+    include ModelValidations
+    required_claimant_headers %w[X-VA-Claimant-First-Name X-VA-Claimant-Last-Name]
 
     attr_readonly :auth_headers
     attr_readonly :form_data
@@ -28,119 +30,93 @@ module AppealsApi
     serialize :auth_headers, JsonMarshal::Marshaller
     serialize :form_data, JsonMarshal::Marshaller
     has_kms_key
-    encrypts :auth_headers, :form_data, key: :kms_key, **lockbox_options
+    has_encrypted :auth_headers, :form_data, key: :kms_key, **lockbox_options
 
     has_many :evidence_submissions, as: :supportable, dependent: :destroy
     has_many :status_updates, as: :statusable, dependent: :destroy
     # the controller applies the JSON Schemas in modules/appeals_api/config/schemas/
     # further validations:
     validate(
-      :birth_date_is_a_date,
-      :birth_date_is_in_the_past,
-      :contestable_issue_dates_are_valid_dates,
+      :veteran_birth_date_is_in_the_past,
+      :required_claimant_data_is_present,
+      :validate_claimant_type,
+      :contestable_issue_dates_are_in_the_past,
+      :validate_retrieve_from_date_range,
       if: proc { |a| a.form_data.present? }
     )
 
-    def pdf_structure(version)
+    def pdf_structure(pdf_version)
       Object.const_get(
-        "AppealsApi::PdfConstruction::SupplementalClaim::#{version.upcase}::Structure"
+        "AppealsApi::PdfConstruction::SupplementalClaim::#{pdf_version.upcase}::Structure"
       ).new(self)
     end
 
-    def veteran_first_name
-      auth_headers['X-VA-First-Name']
+    def veteran
+      @veteran ||= Appellant.new(
+        type: :veteran,
+        auth_headers: auth_headers,
+        form_data: data_attributes&.dig('veteran')
+      )
     end
 
-    def veteran_middle_initial
-      auth_headers['X-VA-Middle-Initial']
+    def claimant
+      @claimant ||= Appellant.new(
+        type: :claimant,
+        auth_headers: auth_headers,
+        form_data: data_attributes&.dig('claimant')
+      )
     end
 
-    def veteran_last_name
-      auth_headers['X-VA-Last-Name']
+    def signing_appellant
+      claimant.signing_appellant? ? claimant : veteran
+    end
+
+    def appellant_local_time
+      signing_appellant.timezone ? created_at.in_time_zone(signing_appellant.timezone) : created_at.utc
     end
 
     def full_name
-      "#{veteran_first_name} #{veteran_middle_initial} #{veteran_last_name}".squeeze(' ').strip
-    end
+      first_name = signing_appellant.first_name
+      middle_initial = signing_appellant.middle_initial
+      last_name = signing_appellant.last_name
 
-    def ssn
-      auth_headers['X-VA-SSN']
-    end
-
-    def file_number
-      auth_headers['X-VA-File-Number']
+      "#{first_name} #{middle_initial} #{last_name}".squeeze(' ').strip
     end
 
     def veteran_dob_month
-      birth_date.strftime '%m'
+      veteran.birth_date.strftime '%m'
     end
 
     def veteran_dob_day
-      birth_date.strftime '%d'
+      veteran.birth_date.strftime '%d'
     end
 
     def veteran_dob_year
-      birth_date.strftime '%Y'
+      veteran.birth_date.strftime '%Y'
     end
 
-    def veteran_service_number
-      auth_headers['X-VA-Service-Number']
-    end
-
-    def insurance_policy_number
-      auth_headers['X-VA-Insurance-Policy-Number']
-    end
-
-    def mailing_address_number_and_street
-      address_combined
-    end
-
-    def mailing_address_city
-      veteran.dig('address', 'city') || ''
-    end
-
-    def mailing_address_state
-      veteran.dig('address', 'stateCode') || ''
-    end
-
-    def mailing_address_country
-      veteran.dig('address', 'countryCodeISO2') || ''
-    end
-
-    def zip_code
-      if zip_code_5 == '00000'
-        veteran.dig('address', 'internationalPostalCode') || '00000'
-      else
-        zip_code_5
-      end
-    end
-
-    def zip_code_5
-      veteran.dig('address', 'zipCode5') || '00000'
-    end
-
-    def phone
-      veteran_phone.to_s
-    end
-
-    def veteran_phone_data
-      veteran&.dig('phone')
-    end
-
-    def email
-      veteran&.dig('email')&.strip
+    def signing_appellant_zip_code
+      signing_appellant.zip_code_5 || '00000'
     end
 
     def consumer_name
-      auth_headers&.dig('X-Consumer-Username')
+      auth_headers['X-Consumer-Username']
     end
 
     def consumer_id
-      auth_headers&.dig('X-Consumer-ID')
+      auth_headers['X-Consumer-ID']
     end
 
     def benefit_type
-      data_attributes&.dig('benefitType')&.strip
+      data_attributes['benefitType']&.strip
+    end
+
+    def claimant_type
+      data_attributes['claimantType']&.strip
+    end
+
+    def claimant_type_other_text
+      data_attributes['claimantTypeOtherValue']&.strip
     end
 
     def contestable_issues
@@ -169,7 +145,7 @@ module AppealsApi
     end
 
     def soc_opt_in
-      data_attributes&.dig('socOptIn')
+      data_attributes['socOptIn']
     end
 
     def new_evidence
@@ -185,29 +161,47 @@ module AppealsApi
     end
 
     def date_signed
-      veterans_local_time.strftime('%m/%d/%Y')
+      appellant_local_time.strftime('%m/%d/%Y')
     end
 
+    def stamp_text
+      "#{veteran.last_name.truncate(35)} - #{veteran.ssn.last(4)}"
+    end
+
+    # rubocop:disable Metrics/MethodLength
     def update_status!(status:, code: nil, detail: nil)
-      handler = Events::Handler.new(event_type: :sc_status_updated, opts: {
-                                      from: self.status,
-                                      to: status,
-                                      status_update_time: Time.zone.now.iso8601,
-                                      statusable_id: id
-                                    })
-
-      email_handler = Events::Handler.new(event_type: :sc_received, opts: {
-                                            email_identifier: email_identifier,
-                                            first_name: veteran_first_name,
-                                            date_submitted: veterans_local_time.iso8601,
-                                            guid: id
-                                          })
-
+      current_status = self.status
       update!(status: status, code: code, detail: detail)
 
-      handler.handle!
-      email_handler.handle! if status == 'submitted' && email_identifier.present?
+      if status != current_status
+        AppealsApi::StatusUpdatedJob.perform_async(
+          {
+            status_event: 'sc_status_updated',
+            from: current_status,
+            to: status.to_s,
+            status_update_time: Time.zone.now.iso8601,
+            statusable_id: id
+          }
+        )
+      end
+
+      return if auth_headers.blank? # Go no further if we've removed PII
+
+      if status == 'submitted' && email_present?
+        AppealsApi::AppealReceivedJob.perform_async(
+          {
+            receipt_event: 'sc_received',
+            email_identifier: email_identifier,
+            first_name: veteran.first_name,
+            date_submitted: appellant_local_time.iso8601,
+            guid: id,
+            claimant_email: claimant.email,
+            claimant_first_name: claimant.first_name
+          }
+        )
+      end
     end
+    # rubocop:enable Metrics/MethodLength
 
     def lob
       {
@@ -219,23 +213,32 @@ module AppealsApi
         'veteranReadinessAndEmployment' => 'VRE',
         'loanGuaranty' => 'CMP',
         'education' => 'EDU',
-        'nationalCemeteryAdministration' => 'NCA'
+        'nationalCemeteryAdministration' => 'CMP'
       }[benefit_type]
     end
 
     private
 
+    #  Must supply non-veteran claimantType if claimant fields present
+    def validate_claimant_type
+      return unless claimant_type == 'veteran' && signing_appellant.claimant?
+
+      source = '/data/attributes/claimantType'
+
+      errors.add source, I18n.t('appeals_api.errors.sc_incorrect_claimant_type')
+    end
+
     def mpi_veteran
       AppealsApi::Veteran.new(
-        ssn: ssn,
-        first_name: veteran_first_name,
-        last_name: veteran_last_name,
-        birth_date: birth_date.iso8601
+        ssn: veteran.ssn,
+        first_name: veteran.first_name,
+        last_name: veteran.last_name,
+        birth_date: veteran.birth_date.iso8601
       )
     end
 
     def email_identifier
-      return { id_type: 'email', id_value: email } if email.present?
+      return { id_type: 'email', id_value: signing_appellant.email } if signing_appellant.email.present?
 
       icn = mpi_veteran.mpi_icn
 
@@ -246,86 +249,21 @@ module AppealsApi
       form_data&.dig('data', 'attributes')
     end
 
-    def veteran
-      data_attributes&.dig('veteran')
-    end
-
     def evidence_submission
-      form_data&.dig('data', 'attributes', 'evidenceSubmission')
+      data_attributes['evidenceSubmission']
     end
 
-    def birth_date_string
-      auth_headers&.dig('X-VA-Birth-Date')
+    # Used in shared model validations
+    def veteran_birth_date
+      veteran.birth_date
     end
 
-    def birth_date
-      self.class.date_from_string birth_date_string
-    end
-
-    def veteran_phone
-      AppealsApi::HigherLevelReview::Phone.new veteran&.dig('phone')
-    end
-
-    def veterans_local_time
-      veterans_timezone ? created_at.in_time_zone(veterans_timezone) : created_at.utc
-    end
-
-    def veterans_timezone
-      veteran&.dig('timezone').presence&.strip
-    end
-
-    # validation (header)
-    def birth_date_is_a_date
-      add_error("Veteran birth date isn't a date: #{birth_date_string.inspect}") unless birth_date
-    end
-
-    # validation (header)
-    def birth_date_is_in_the_past
-      return unless birth_date
-
-      add_error("Veteran birth date isn't in the past: #{birth_date}") unless self.class.past? birth_date
-    end
-
-    def contestable_issue_dates_are_valid_dates
-      return if contestable_issues.blank?
-
-      contestable_issues.each_with_index do |issue, index|
-        decision_date_invalid(issue, index)
-        decision_date_not_in_past(issue, index)
-      end
-    end
-
-    def decision_date_invalid(issue, issue_index)
-      return if issue.decision_date
-
-      add_decision_date_error "isn't a valid date: #{issue.decision_date_string.inspect}", issue_index
-    end
-
-    def decision_date_not_in_past(issue, issue_index)
-      return if issue.decision_date.nil? || issue.decision_date_past?
-
-      add_decision_date_error "isn't in the past: #{issue.decision_date_string.inspect}", issue_index
-    end
-
-    def add_decision_date_error(string, issue_index)
-      add_error "included[#{issue_index}].attributes.decisionDate #{string}"
-    end
-
-    def add_error(message)
-      errors.add(:base, message)
-    end
-
-    def address_combined
-      return unless veteran.dig('address', 'addressLine1')
-
-      @address_combined ||=
-        [veteran.dig('address', 'addressLine1'),
-         veteran.dig('address', 'addressLine2'),
-         veteran.dig('address', 'addressLine3')].compact.map(&:strip).join(' ')
+    def email_present?
+      claimant.email.present? || email_identifier.present?
     end
 
     def clear_memoized_values
-      @contestable_issues = @address_combined = nil
+      @contestable_issues = @veteran = @claimant = nil
     end
   end
 end

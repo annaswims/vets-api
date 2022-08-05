@@ -243,11 +243,11 @@ module SAML
 
       def sign_in
         sign_in = if authn_context == INBOUND_AUTHN_CONTEXT
-                    { service_name: csid == SAML::User::MHV_ORIGINAL_CSID ? SAML::User::MHV_MAPPED_CSID : csid }
+                    { service_name: csid }
                   else
                     SAML::User::AUTHN_CONTEXTS.fetch(authn_context).fetch(:sign_in)
                   end
-        sign_in.merge(account_type: account_type)
+        sign_in.merge(account_type: account_type, auth_broker: SAML::URLService::BROKER_CODE)
       end
 
       def to_hash
@@ -324,8 +324,7 @@ module SAML
 
         @mhv_outbound_redirect ||= begin
           tracker = SAMLRequestTracker.find(@tracker_uuid)
-          skip_dupe_id_validation = tracker&.payload_attr(:skip_dupe_id_validation)
-          %w[true mhv].include?(skip_dupe_id_validation)
+          %w[mhv myvahealth].include?(tracker&.payload_attr(:application))
         end
       end
 

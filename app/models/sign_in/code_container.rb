@@ -8,8 +8,11 @@ module SignIn
 
     attribute :code_challenge, String
     attribute :code, String
-    attribute :user_account_uuid, String
+    attribute :client_id, String
+    attribute :user_verification_id, Integer
+    attribute :credential_email, String
 
-    validates(:code_challenge, :code, :user_account_uuid, presence: true)
+    validates(:client_id, inclusion: { in: Constants::ClientConfig::CLIENT_IDS })
+    validates(:code_challenge, :code, :user_verification_id, presence: true)
   end
 end

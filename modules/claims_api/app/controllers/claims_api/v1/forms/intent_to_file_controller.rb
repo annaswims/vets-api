@@ -27,6 +27,7 @@ module ClaimsApi
           check_for_invalid_burial_submission! if form_type == 'burial'
 
           bgs_response = bgs_service.intent_to_file.insert_intent_to_file(intent_to_file_options)
+          ClaimsApi::Logger.log('itf', detail: 'Submitted to BGS')
           render json: bgs_response,
                  serializer: ClaimsApi::IntentToFileSerializer
         rescue Savon::SOAPFault => e
@@ -69,14 +70,31 @@ module ClaimsApi
         private
 
         def intent_to_file_options
-          {
+          options = {
             intent_to_file_type_code: ClaimsApi::IntentToFile::ITF_TYPES_TO_BGS_TYPES[form_type],
-            participant_claimant_id: form_attributes['participant_claimant_id'] || target_veteran.participant_id,
             participant_vet_id: form_attributes['participant_vet_id'] || target_veteran.participant_id,
             received_date: Time.zone.now.strftime('%Y-%m-%dT%H:%M:%S%:z'),
             submitter_application_icn_type_code: ClaimsApi::IntentToFile::SUBMITTER_CODE,
             ssn: target_veteran.ssn
           }
+
+          handle_claimant_fields(options: options, form_attributes: form_attributes, target_veteran: target_veteran)
+        end
+
+        # BGS requires at least 1 of 'participant_claimant_id' or 'claimant_ssn'
+        def handle_claimant_fields(options:, form_attributes:, target_veteran:)
+          claimant_ssn = form_attributes['claimant_ssn']
+          participant_claimant_id = form_attributes['participant_claimant_id']
+
+          options[:claimant_ssn] = claimant_ssn if claimant_ssn
+          options[:participant_claimant_id] = participant_claimant_id if participant_claimant_id
+
+          # if neither field was provided, then default to sending 'participant_claimant_id'
+          if options[:claimant_ssn].blank? && options[:participant_claimant_id].blank?
+            options[:participant_claimant_id] = target_veteran.participant_id
+          end
+
+          options
         end
 
         def active?(itf)
@@ -122,7 +140,7 @@ module ClaimsApi
         end
 
         def request_includes_claimant_id?
-          form_attributes['participant_claimant_id'].present?
+          form_attributes['participant_claimant_id'].present? || form_attributes['claimant_ssn'].present?
         end
       end
     end

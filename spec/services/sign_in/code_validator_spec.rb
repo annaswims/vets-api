@@ -17,9 +17,10 @@ RSpec.describe SignIn::CodeValidator do
     context 'when code container that matches code does not exist' do
       let(:code) { 'some-arbitrary-code' }
       let(:expected_error) { SignIn::Errors::CodeInvalidError }
+      let(:expected_error_message) { 'Code is not valid' }
 
       it 'raises a code invalid error' do
-        expect { subject }.to raise_exception(expected_error)
+        expect { subject }.to raise_exception(expected_error, expected_error_message)
       end
     end
 
@@ -28,18 +29,19 @@ RSpec.describe SignIn::CodeValidator do
         create(:code_container,
                code: code_container_code,
                code_challenge: code_challenge,
-               user_account_uuid: user_account_uuid)
+               user_verification_id: user_verification_id)
       end
       let(:code_container_code) { code }
       let(:code_challenge) { 'some-code-challenge' }
-      let(:user_account_uuid) { 'some-user-account-uuid' }
+      let(:user_verification_id) { 'some-user-verification-uuid' }
 
       context 'and code verifier does not match code challenge in code container' do
         let(:code_verifier) { 'some-arbitrary-code-verifier' }
         let(:expected_error) { SignIn::Errors::CodeChallengeMismatchError }
+        let(:expected_error_message) { 'Code Verifier is not valid' }
 
         it 'raises a code challenge mismatch error' do
-          expect { subject }.to raise_exception(expected_error)
+          expect { subject }.to raise_exception(expected_error, expected_error_message)
         end
       end
 
@@ -53,38 +55,57 @@ RSpec.describe SignIn::CodeValidator do
         context 'and grant type does not match the supported grant type' do
           let(:grant_type) { 'some-arbitrary-grant-type' }
           let(:expected_error) { SignIn::Errors::GrantTypeValueError }
+          let(:expected_error_message) { 'Grant Type is not valid' }
 
           it 'raises a grant type value error' do
-            expect { subject }.to raise_exception(expected_error)
+            expect { subject }.to raise_exception(expected_error, expected_error_message)
           end
         end
 
         context 'and grant type does match the supported grant type' do
           let(:grant_type) { SignIn::Constants::Auth::GRANT_TYPE }
 
-          context 'and user account uuid in code container does not match with a user account' do
-            let(:user_account_uuid) { 'some-arbitrary-user-account-uuid' }
+          context 'and user verification uuid in code container does not match with a user verification' do
+            let(:user_verification_id) { 'some-arbitrary-user-verification-uuid' }
             let(:expected_error) { ActiveRecord::RecordNotFound }
-            let(:expected_error_message) { "Couldn't find UserAccount with 'id'=#{user_account_uuid}" }
+            let(:expected_error_message) { "Couldn't find UserVerification with 'id'=#{user_verification_id}" }
 
-            it 'raises a user account not found error' do
+            it 'raises a user verification not found error' do
               expect { subject }.to raise_exception(expected_error, expected_error_message)
             end
           end
 
-          context 'and user account uuid in code condainter does match an existing user account' do
-            let(:user_account) { create(:user_account) }
-            let(:user_account_uuid) { user_account.id }
+          context 'and user verification uuid in code condainter does match an existing user verification' do
+            let(:user_verification) { create(:user_verification) }
+            let(:user_verification_id) { user_verification.id }
+            let(:expected_email) { code_container.credential_email }
+            let(:expected_client_id) { code_container.client_id }
+            let(:expected_validated_credential) do
+              SignIn::ValidatedCredential.new(user_verification: user_verification,
+                                              credential_email: expected_email,
+                                              client_id: expected_client_id)
+            end
 
-            it 'returns the expected user account' do
-              expect(subject).to eq(user_account)
+            it 'returns a validated credential object with expected attributes' do
+              expect(subject).to have_attributes(credential_email: expected_email,
+                                                 client_id: expected_client_id,
+                                                 user_verification: user_verification)
+            end
+
+            it 'returns a validated credential object with expected credential email' do
+              expect(subject.credential_email).to eq(expected_email)
+            end
+
+            it 'returns a validated credential object with expected client_id' do
+              expect(subject.client_id).to eq(expected_client_id)
             end
           end
         end
       end
 
       it 'destroys the found code container regardless of errors raised' do
-        expect { try(subject) }.to raise_error.and change { SignIn::CodeContainer.find(code_container_code) }.to(nil)
+        expect { try(subject) }.to raise_error(StandardError)
+          .and change { SignIn::CodeContainer.find(code_container_code) }.to(nil)
       end
     end
   end

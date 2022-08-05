@@ -13,15 +13,18 @@ Rails.application.routes.draw do
       constraints: ->(request) { V1::SessionsController::REDIRECT_URLS.include?(request.path_parameters[:type]) }
   get '/v1/sessions/ssoe_logout', to: 'v1/sessions#ssoe_slo_callback'
 
-  get '/sign_in/:type/authorize',
-      to: 'sign_in#authorize',
-      constraints: ->(request) { SignInController::REDIRECT_URLS.include?(request.path_parameters[:type]) }
-  get '/sign_in/:type/callback',
-      to: 'sign_in#callback',
-      constraints: ->(request) { SignInController::REDIRECT_URLS.include?(request.path_parameters[:type]) }
-  post '/sign_in/refresh', to: 'sign_in#refresh'
-  post '/sign_in/token', to: 'sign_in#token'
-  get '/sign_in/introspect', to: 'sign_in#introspect'
+  get '/v0/sign_in/authorize', to: 'v0/sign_in#authorize'
+  get '/v0/sign_in/callback', to: 'v0/sign_in#callback'
+  post '/v0/sign_in/refresh', to: 'v0/sign_in#refresh'
+  post '/v0/sign_in/revoke', to: 'v0/sign_in#revoke'
+  post '/v0/sign_in/token', to: 'v0/sign_in#token'
+  get '/v0/sign_in/introspect', to: 'v0/sign_in#introspect'
+  get '/v0/sign_in/logout', to: 'v0/sign_in#logout'
+  get '/v0/sign_in/revoke_all_sessions', to: 'v0/sign_in#revoke_all_sessions'
+
+  get '/inherited_proofing/auth', to: 'inherited_proofing#auth'
+  get '/inherited_proofing/user_attributes', to: 'inherited_proofing#user_attributes'
+  get '/inherited_proofing/callback', to: 'inherited_proofing#callback'
 
   namespace :v0, defaults: { format: 'json' } do
     resources :onsite_notifications, only: %i[create index update]
@@ -31,15 +34,20 @@ Rails.application.routes.draw do
     resources :disability_compensation_in_progress_forms, only: %i[index show update destroy]
     resource :claim_documents, only: [:create]
     resource :claim_attachments, only: [:create], controller: :claim_documents
-    resources :debts, only: :index
+    resources :debts, only: %i[index show]
     resources :debt_letters, only: %i[index show]
     resources :education_career_counseling_claims, only: :create
     resources :veteran_readiness_employment_claims, only: :create
     resource :virtual_agent_token, only: [:create], controller: :virtual_agent_token
     resources :preferred_facilities, only: %i[index create destroy]
 
+    get 'form1095_bs/download_pdf/:tax_year', to: 'form1095_bs#download_pdf'
+    get 'form1095_bs/download_txt/:tax_year', to: 'form1095_bs#download_txt'
+    get 'form1095_bs/available_forms', to: 'form1095_bs#available_forms'
+
     resources :medical_copays, only: %i[index show]
     get 'medical_copays/get_pdf_statement_by_id/:statement_id', to: 'medical_copays#get_pdf_statement_by_id'
+    post 'medical_copays/send_new_statements_notifications', to: 'medical_copays#send_new_statements_notifications'
 
     resources :apps, only: %i[index show]
     scope_default = { category: 'unknown_category' }
@@ -76,7 +84,6 @@ Rails.application.routes.draw do
 
     resource :user, only: [:show]
     resource :post911_gi_bill_status, only: [:show]
-    resource :vso_appointments, only: [:create]
 
     resource :education_benefits_claims, only: %i[create show] do
       collection do
@@ -235,11 +242,6 @@ Rails.application.routes.draw do
       resources :preneed_attachments, only: :create
     end
 
-    namespace :vic do
-      resources :profile_photo_attachments, only: %i[create show]
-      resources :supporting_documentation_attachments, only: :create
-    end
-
     resources :gi_bill_feedbacks, only: %i[create show]
 
     resource :address, only: %i[show update] do
@@ -290,6 +292,8 @@ Rails.application.routes.draw do
 
       resources :ch33_bank_accounts, only: %i[index]
       put 'ch33_bank_accounts', to: 'ch33_bank_accounts#update'
+      resource :gender_identities, only: :update
+      resource :preferred_names, only: :update
     end
 
     resources :search, only: :index
@@ -322,25 +326,6 @@ Rails.application.routes.draw do
 
     get 'feature_toggles', to: 'feature_toggles#index'
 
-    [
-      'profile',
-      'dashboard',
-      'veteran_id_card',
-      'all_claims',
-      FormProfile::EMIS_PREFILL_KEY
-    ].each do |feature|
-      resource(
-        :beta_registrations,
-        path: "/beta_registration/#{feature}",
-        only: %i[show create destroy],
-        defaults: { feature: feature }
-      )
-    end
-
-    namespace :coronavirus_chatbot do
-      resource :tokens, only: :create
-    end
-
     namespace :contact_us do
       resources :inquiries, only: %i[index create]
     end
@@ -349,6 +334,7 @@ Rails.application.routes.draw do
       get 'status'
       get 'download_coe'
       get 'documents'
+      get 'document_download'
       post 'submit_coe_claim'
       post 'document_upload'
     end
@@ -389,6 +375,16 @@ Rails.application.routes.draw do
       get 'contestable_issues(/:benefit_type)', to: 'contestable_issues#index'
     end
     resources :higher_level_reviews, only: %i[create show]
+
+    namespace :notice_of_disagreements do
+      get 'contestable_issues', to: 'contestable_issues#index'
+    end
+    resources :notice_of_disagreements, only: %i[create show]
+
+    namespace :supplemental_claims do
+      get 'contestable_issues(/:benefit_type)', to: 'contestable_issues#index'
+    end
+    resources :supplemental_claims, only: %i[create show]
   end
 
   root 'v0/example#index', module: 'v0'
@@ -401,8 +397,7 @@ Rails.application.routes.draw do
     mount AppsApi::Engine, at: '/apps'
     mount VBADocuments::Engine, at: '/vba_documents'
     mount AppealsApi::Engine, at: '/appeals'
-    mount ClaimsApi::Engine, at: '/claims', as: 'legacy_claims'
-    mount ClaimsApi::Engine, at: '/benefits'
+    mount ClaimsApi::Engine, at: '/claims'
     mount Veteran::Engine, at: '/veteran'
     mount VAForms::Engine, at: '/va_forms'
     mount VeteranVerification::Engine, at: '/veteran_verification'
@@ -413,11 +408,13 @@ Rails.application.routes.draw do
   mount CheckIn::Engine, at: '/check_in'
   mount CovidResearch::Engine, at: '/covid-research'
   mount CovidVaccine::Engine, at: '/covid_vaccine'
+  mount DebtsApi::Engine, at: '/debts_api'
   mount DhpConnectedDevices::Engine, at: '/dhp_connected_devices'
   mount FacilitiesApi::Engine, at: '/facilities_api'
   mount HealthQuest::Engine, at: '/health_quest'
   mount MebApi::Engine, at: '/meb_api'
   mount Mobile::Engine, at: '/mobile'
+  mount MyHealth::Engine, at: '/my_health', as: 'my_health'
   mount VAOS::Engine, at: '/vaos'
   # End Modules
 
@@ -426,6 +423,7 @@ Rails.application.routes.draw do
   require 'sidekiq/pro/web' if Gem.loaded_specs.key?('sidekiq-pro')
   require 'sidekiq-ent/web' if Gem.loaded_specs.key?('sidekiq-ent')
   require 'github_authentication/sidekiq_web'
+  require 'github_authentication/coverband_reporters_web'
 
   mount Sidekiq::Web, at: '/sidekiq'
 
@@ -434,6 +432,8 @@ Rails.application.routes.draw do
   mount TestUserDashboard::Engine, at: '/test_user_dashboard' if Settings.test_user_dashboard.env == 'staging'
 
   mount Flipper::UI.app(Flipper.instance) => '/flipper', constraints: Flipper::AdminUserConstraint.new
+
+  mount Coverband::Reporters::Web.new, at: '/coverband', constraints: GithubAuthentication::CoverbandReportersWeb.new
 
   # This globs all unmatched routes and routes them as routing errors
   match '*path', to: 'application#routing_error', via: %i[get post put patch delete]

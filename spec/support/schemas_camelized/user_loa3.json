@@ -56,10 +56,11 @@
             },
             "session": {
               "type": "object",
-              "required": ["ssoe", "transactionid"],
+              "required": ["ssoe", "transactionid", "authBroker"],
               "properties": {
                 "ssoe": { "type": "boolean"},
-                "transactionid": { "type": [ "string", null ] }
+                "transactionid": { "type": [ "string", null ] },
+                "authBroker": { "type": "string" }
               }
             },
             "services": {
@@ -97,7 +98,8 @@
                 "multifactor",
                 "verified",
                 "signIn",
-                "authnContext"
+                "authnContext",
+                "inheritedProofVerified"
               ],
               "properties": {
                 "email": {
@@ -162,11 +164,20 @@
                   "properties": {
                     "serviceName": {
                       "type": "string"
+                    },
+                    "authBroker": {
+                      "type": "string"
+                    },
+                    "clientId": {
+                      "type": "string"
                     }
                   }
                 },
                 "authnContext": {
                   "type": "string"
+                },
+                "inheritedProofVerified": {
+                  "type": "boolean"
                 }
               }
             },

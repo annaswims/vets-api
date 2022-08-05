@@ -16,7 +16,7 @@ describe AppealsApi::DecisionReviewReport do
         stuck_appeal_with_updates = create(opts[:record_type])
         unstuck_appeal = create(opts[:record_type])
       end
-      unstuck_appeal.update! status: :success, updated_at: 3.months.ago
+      unstuck_appeal.update! status: :complete, updated_at: 3.months.ago
       stuck_appeal_with_updates.update! status: :submitting, updated_at: 3.months.ago
 
       result = subject.send(opts[:method]).pluck(:id)
@@ -28,20 +28,18 @@ describe AppealsApi::DecisionReviewReport do
   end
 
   it 'can correctly calculate hlrs' do
-    create :higher_level_review, status: 'processing'
-    create :higher_level_review, status: 'processing'
-    create :higher_level_review, status: 'processing'
+    create_list :higher_level_review_v2, 3, status: 'processing'
 
-    create :higher_level_review, created_at: 1.week.ago, status: 'success'
-    create :higher_level_review, status: 'success'
-    create :higher_level_review, status: 'success'
+    create :higher_level_review_v2, created_at: 1.week.ago, status: 'success'
+    create :higher_level_review_v2, status: 'success'
+    create :higher_level_review_v2, status: 'complete'
 
-    create :higher_level_review, :status_error
+    create :higher_level_review_v2, status: 'error'
 
     subject = described_class.new(from: 5.days.ago, to: Time.now.utc)
 
     expect(subject.hlr_by_status_and_count).to eq({
-      'caseflow' => 0,
+      'complete' => 1,
       'error' => 1,
       'expired' => 0,
       'pending' => 0,
@@ -49,14 +47,14 @@ describe AppealsApi::DecisionReviewReport do
       'received' => 0,
       'submitted' => 0,
       'submitting' => 0,
-      'success' => 2,
+      'success' => 1,
       'uploaded' => 0
     })
   end
 
   describe '#faulty_hlr' do
-    let(:old_error) { create(:higher_level_review, :status_error, created_at: 1.year.ago) }
-    let(:recent_error) { create(:higher_level_review, :status_error, created_at: 1.day.ago) }
+    let(:old_error) { create(:higher_level_review_v2, status: 'error', created_at: 1.year.ago) }
+    let(:recent_error) { create(:higher_level_review_v2, status: 'error', created_at: 1.day.ago) }
 
     it 'will retrieve recent errored records if dates are provided' do
       subject = described_class.new(from: 5.days.ago, to: Time.now.utc)
@@ -72,34 +70,58 @@ describe AppealsApi::DecisionReviewReport do
   end
 
   describe '#stuck_hlr' do
-    it_behaves_like 'stuck appeals', record_type: :higher_level_review, method: :stuck_hlr
+    it 'ignores HLRv1 records' do
+      stuck_appeal_no_updates = nil
+      stuck_appeal_with_updates = nil
+      unstuck_appeal = nil
+
+      Timecop.freeze(1.year.ago) do
+        stuck_appeal_no_updates = create :higher_level_review_v1
+        stuck_appeal_with_updates = create :higher_level_review_v1
+        unstuck_appeal = create :higher_level_review_v1
+      end
+
+      unstuck_appeal.update! status: :complete, updated_at: 3.months.ago
+      stuck_appeal_with_updates.update! status: :submitting, updated_at: 3.months.ago
+
+      result = subject.stuck_hlr.pluck(:id)
+
+      expect(result).not_to include unstuck_appeal.id
+      expect(result).not_to include stuck_appeal_no_updates.id
+      expect(result).not_to include stuck_appeal_with_updates.id
+    end
+
+    it_behaves_like 'stuck appeals', record_type: :higher_level_review_v2, method: :stuck_hlr
   end
 
   describe '#total_hlr_successes' do
-    it 'shows correct count of all successful HLRs regardless of timeframe' do
-      create_list :higher_level_review, 5, created_at: 3.weeks.ago
-      create_list :higher_level_review, 5, status: 'success', created_at: 3.weeks.ago
-      expect(subject.total_hlr_successes).to eq 5
+    it 'shows correct count of all successful HLRs regardless timeframe' do
+      # NOTE: HLRv1's "final status" is 'success', while HLRv2's is 'complete'
+      create_list :higher_level_review_v1, 1, created_at: 3.weeks.ago # Ignored
+      create_list :higher_level_review_v1, 2, status: 'success', created_at: 3.weeks.ago # Added to total
+      create_list :higher_level_review_v2, 4, status: 'success', created_at: 4.weeks.ago # Ignored
+      create_list :higher_level_review_v2, 8, status: 'complete', created_at: 4.weeks.ago # Added to total
+      expect(subject.total_hlr_successes).to eq 10
     end
   end
 
   it 'can correctly calculate nods' do
     create :notice_of_disagreement, created_at: 1.week.ago, status: 'success'
     create :notice_of_disagreement, status: 'success'
-    create :notice_of_disagreement, status: 'success'
+    create :notice_of_disagreement, status: 'complete'
 
     create :notice_of_disagreement, :status_error
 
     subject = described_class.new(from: 5.days.ago, to: Time.now.utc)
 
     expect(subject.nod_by_status_and_count).to eq({
+      'complete' => 1,
       'error' => 1,
       'pending' => 0,
       'processing' => 0,
       'submitted' => 0,
       'submitting' => 0,
-      'success' => 2,
-      'caseflow' => 0
+      'success' => 1
     })
   end
 
@@ -127,7 +149,7 @@ describe AppealsApi::DecisionReviewReport do
   describe '#total_nod_successes' do
     it 'shows correct count of all successful NODs regardless of timeframe' do
       create_list :notice_of_disagreement, 5, created_at: 3.weeks.ago
-      create_list :notice_of_disagreement, 5, status: 'success', created_at: 3.weeks.ago
+      create_list :notice_of_disagreement, 5, status: 'complete', created_at: 3.weeks.ago
       expect(subject.total_nod_successes).to eq 5
     end
   end
@@ -141,8 +163,8 @@ describe AppealsApi::DecisionReviewReport do
 
     subject = described_class.new(from: 5.days.ago, to: Time.now.utc)
 
-    expect(subject.sc_by_status_and_count).to eq({
-      'caseflow' => 0,
+    expect(subject.sc_by_status_and_count).to match_array({
+      'complete' => 0,
       'error' => 1,
       'pending' => 0,
       'processing' => 0,
@@ -176,7 +198,7 @@ describe AppealsApi::DecisionReviewReport do
   describe '#total_sc_successes' do
     it 'shows correct count of all successful SCs regardless of timeframe' do
       create_list :supplemental_claim, 5, created_at: 3.weeks.ago
-      create_list :supplemental_claim, 5, :status_success, created_at: 3.weeks.ago
+      create_list :supplemental_claim, 5, status: 'complete', created_at: 3.weeks.ago
       expect(subject.total_sc_successes).to eq 5
     end
   end
@@ -219,19 +241,18 @@ describe AppealsApi::DecisionReviewReport do
       end
 
       describe '#faulty_evidence_submission' do
-        let(:recent_error) { create(:evidence_submission, :status_error, created_at: 1.day.ago) }
-        let(:old_error) { create(:evidence_submission, :status_error, created_at: 1.year.ago) }
+        let!(:recent_error) { create(:evidence_submission, :status_error, created_at: 1.day.ago) }
+        let!(:old_error) { create(:evidence_submission, :status_error, created_at: 1.year.ago) }
 
         it 'will retrieve recent errored records if dates are provided' do
           subject = described_class.new(from: 5.days.ago, to: Time.now.utc)
-
           expect(subject.faulty_evidence_submission).to eq([recent_error])
         end
 
         it 'will retrieve all errored records if no dates are provided' do
           subject = described_class.new(from: nil, to: nil)
 
-          expect(subject.faulty_evidence_submission).to eq([recent_error])
+          expect(subject.faulty_evidence_submission).to eq([recent_error, old_error])
         end
       end
     end
@@ -279,8 +300,8 @@ describe AppealsApi::DecisionReviewReport do
 
       describe '#faulty_evidence_submission' do
         let!(:recent_evidence_submission_error) { create(:evidence_submission, :status_error, created_at: 1.day.ago) }
-        let(:recent_error) { create(:sc_evidence_submission, :status_error, created_at: 1.day.ago) }
-        let(:old_error) { create(:sc_evidence_submission, :status_error, created_at: 1.year.ago) }
+        let!(:recent_error) { create(:sc_evidence_submission, :status_error, created_at: 1.day.ago) }
+        let!(:old_error) { create(:sc_evidence_submission, :status_error, created_at: 1.year.ago) }
 
         it 'will retrieve recent errored records if dates are provided' do
           subject = described_class.new(from: 5.days.ago, to: Time.now.utc)
@@ -291,7 +312,7 @@ describe AppealsApi::DecisionReviewReport do
         it 'will retrieve all errored records if no dates are provided' do
           subject = described_class.new(from: nil, to: nil)
 
-          expect(subject.sc_faulty_evidence_submission).to eq([recent_error])
+          expect(subject.sc_faulty_evidence_submission).to eq([recent_error, old_error])
         end
       end
     end

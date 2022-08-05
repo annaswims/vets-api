@@ -13,28 +13,27 @@ module AppealsApi
             @supplemental_claim = supplemental_claim
           end
 
-          delegate :veteran_first_name, :veteran_middle_initial, :veteran_last_name, :ssn, :file_number,
-                   :full_name, :veteran_dob_month, :veteran_dob_year, :veteran_dob_day, :veteran_service_number,
-                   :insurance_policy_number, :mailing_address_number_and_street,
-                   :mailing_address_apartment_or_unit_number, :mailing_address_city_and_box, :mailing_address_state,
-                   :mailing_address_country, :zip_code_5, :phone, :email, :contestable_issues, :soc_opt_in,
-                   :new_evidence_locations, :new_evidence_dates, :date_signed,
+          delegate :veteran_dob_month, :veteran_dob_day, :veteran_dob_year, :signing_appellant_zip_code,
+                   :insurance_policy_number, :date_signed, :signing_appellant, :appellant_local_time,
+                   :contestable_issues, :soc_opt_in, :new_evidence_locations, :claimant_type_other_text,
+                   :new_evidence_dates, :claimant, :veteran,
                    to: :supplemental_claim
 
-          def ssn_first_three
-            ssn.first(3)
-          end
+          delegate :first_name, :last_name,
+                   to: :veteran, prefix: true
 
-          def ssn_middle_two
-            ssn[3..4]
-          end
+          delegate :first_name, :last_name,
+                   to: :claimant, prefix: true
 
-          def ssn_last_four
-            ssn.last(4)
-          end
+          delegate :number_and_street, :city, :email,
+                   to: :signing_appellant, prefix: true
 
           def benefit_type
             benefit_type_form_codes[supplemental_claim.benefit_type]
+          end
+
+          def claimant_type
+            claimant_type_form_codes[supplemental_claim.claimant_type]
           end
 
           def soc_ssoc_opt_in
@@ -56,15 +55,17 @@ module AppealsApi
           end
 
           def signature_of_veteran_claimant_or_rep
-            "#{full_name[0...180]} - Signed by digital authentication to api.va.gov"
+            return 'See attached page for signature of veteran claimant or rep' if long_signature?
+
+            "#{signing_appellant.full_name[0...180]} - Signed by digital authentication to api.va.gov"
+          end
+
+          def long_signature?
+            signing_appellant.full_name.length > 70
           end
 
           def print_name_veteran_claimaint_or_rep
-            full_name[0...180]
-          end
-
-          def stamp_text
-            "#{veteran_last_name.truncate(35)} - #{ssn_last_four}"
+            signing_appellant.full_name[0...180]
           end
 
           def new_evidence_locations
@@ -73,6 +74,41 @@ module AppealsApi
 
           def new_evidence_dates
             evidence_records.map(&:dates)
+          end
+
+          def veteran_ssn_first_three
+            # form only calls for veteran ssn data
+            veteran.ssn[0..2]
+          end
+
+          def veteran_ssn_middle_two
+            # form only calls for veteran ssn data
+            veteran.ssn[3..4]
+          end
+
+          def veteran_ssn_last_four
+            # form only calls for veteran ssn data
+            veteran.ssn[5..8]
+          end
+
+          def signing_appellant_phone
+            signing_appellant.phone_formatted.to_s
+          end
+
+          def signing_appellant_state
+            signing_appellant.state_code
+          end
+
+          def signing_appellant_zip_code
+            if signing_appellant.zip_code_5 == '00000'
+              signing_appellant.international_postal_code || '00000'
+            else
+              signing_appellant.zip_code_5
+            end
+          end
+
+          def long_appellant_email?
+            signing_appellant.email.length > 120
           end
 
           private
@@ -103,10 +139,20 @@ module AppealsApi
               'fiduciary' => 3,
               'lifeInsurance' => 4,
               'education' => 5,
-              'readinessAndEmployment' => 6,
+              'veteranReadinessAndEmployment' => 6,
               'loanGuaranty' => 7,
               'veteransHealthAdministration' => 8,
               'nationalCemeteryAdministration' => 9
+            }
+          end
+
+          def claimant_type_form_codes
+            {
+              'veteran' => 1,
+              'spouse_of_veteran' => 2,
+              'child_of_veteran' => 3,
+              'parent_of_veteran' => 4,
+              'other' => 5
             }
           end
         end
