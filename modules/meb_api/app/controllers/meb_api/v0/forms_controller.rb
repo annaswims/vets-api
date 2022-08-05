@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require 'dgi/forms/service/sponsor_service'
-require 'dgi/forms/service/claimant_service'
-
 module MebApi
   module V0
     class FormsController < MebApi::V0::BaseController

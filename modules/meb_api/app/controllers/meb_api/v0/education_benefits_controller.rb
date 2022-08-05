@@ -1,11 +1,5 @@
 # frozen_string_literal: true
 
-require 'dgi/eligibility/service'
-require 'dgi/automation/service'
-require 'dgi/submission/service'
-require 'dgi/toe/service'
-require 'dgi/enrollment/service'
-
 module MebApi
   module V0
     class EducationBenefitsController < MebApi::V0::BaseController
@@ -100,28 +94,6 @@ module MebApi
         response = enrollment_service.submit_enrollment(params[:enrollment_verifications])
 
         render json: response, serializer: SubmitEnrollmentSerializer
-      end
-
-      private
-
-      def eligibility_service
-        MebApi::DGI::Eligibility::Service.new(@current_user)
-      end
-
-      def automation_service
-        MebApi::DGI::Automation::Service.new(@current_user)
-      end
-
-      def submission_service
-        MebApi::DGI::Submission::Service.new(@current_user)
-      end
-
-      def toe_letter_service
-        MebApi::DGI::Toe::Service.new(@current_user)
-      end
-
-      def enrollment_service
-        MebApi::DGI::Enrollment::Service.new(@current_user)
       end
     end
   end

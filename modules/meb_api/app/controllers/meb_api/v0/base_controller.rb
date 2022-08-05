@@ -3,6 +3,15 @@
 require 'dgi/claimant/service'
 require 'dgi/letters/service'
 require 'dgi/status/service'
+require 'dgi/eligibility/service'
+require 'dgi/automation/service'
+require 'dgi/submission/service'
+require 'dgi/enrollment/service'
+
+require 'dgi/forms/service/sponsor_service'
+require 'dgi/forms/service/claimant_service'
+require 'dgi/forms/service/submission_service'
+require 'dgi/forms/service/letter_service'
 
 module MebApi
   module V0
