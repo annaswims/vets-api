@@ -49,69 +49,44 @@ RSpec.describe 'appointments', type: :request do
 
       Timecop.return
     end
-
-    let(:start_date) { Time.zone.parse('2021-01-01T00:00:00Z').iso8601 }
-    let(:end_date) { Time.zone.parse('2023-01-01T00:00:00').iso8601 }
-    let(:params) { { startDate: start_date, endDate: end_date } }
-
     # let!(:appointment_v0_cancelled) do
 
     context 'request VAOS v2 VA cancelled appointment' do
+      let(:start_date) { Time.zone.parse('2021-01-01T00:00:00Z').iso8601 }
+      let(:end_date) { Time.zone.parse('2023-01-01T00:00:00Z').iso8601 }
+      let(:params) { { startDate: start_date, endDate: end_date } }
+
       it 'returned appointment is identical to VAOS v0 version' do
         VCR.use_cassette('appointments/VAOS_v2/get_appointment_200_va_cancelled',
                          match_requests_on: %i[method uri]) do
           get '/mobile/v0/appointments', headers: iam_headers, params: params
         end
-        appointment_v0_cancelled = JSON.parse(File.read(Rails.root.join('modules', 'mobile', 'spec', 'support',
-                                                                        'fixtures', 'va_v0_cancelled_appointment.json')))
+        appt_v0_cancelled = JSON.parse(File.read(Rails.root.join('modules', 'mobile', 'spec', 'support',
+                                                                 'fixtures', 'va_v0_cancelled_appointment.json')))
         response_v2 = response.parsed_body.dig('data', 0)
 
-        #Ids will be different due to coming from different Backend systems, so only need to compare attributes
-        expect(response_v2['attributes']).to eq(appointment_v0_cancelled['attributes'])
+        expect(response.body).to match_json_schema('appointments')
+        expect(response_v2['attributes']).to eq(appt_v0_cancelled['attributes'])
       end
     end
 
-    context 'request VAOS v2 CC Booked appointment' do
-      it 'returned appointment is identical to VAOS v0 version' do
-        VCR.use_cassette('appointments/VAOS_v2/get_appointment_200_cc_booked',
+    context 'request all VAOS v2 appointments' do
+      let(:start_date) { Time.zone.parse('1991-01-01T00:00:00Z').iso8601 }
+      let(:end_date) { Time.zone.parse('2023-01-01T00:00:00Z').iso8601 }
+      let(:params) { { page: { number: 1, size: 9999 }, startDate: start_date, endDate: end_date } }
+
+      it 'processes all appointments without error' do
+        VCR.use_cassette('appointments/VAOS_v2/get_all_appointment_200_ruben',
                          match_requests_on: %i[method uri]) do
           get '/mobile/v0/appointments', headers: iam_headers, params: params
         end
-        appointment_v0_cancelled = JSON.parse(File.read(Rails.root.join('modules', 'mobile', 'spec', 'support',
-                                                                        'fixtures', 'va_v0_cancelled_appointment.json')))
-        response_v2 = response.parsed_body.dig('data', 0)
+        expect(response).to have_http_status(:ok)
+        expect(JSON.parse(response.body)['data'].size).to eq(1233)
 
-        #Ids will be different due to coming from different Backend systems, so only need to compare attributes
-        expect(response_v2['attributes']).to eq(appointment_v0_cancelled['attributes'])
+        # VAOS v2 appointment is only different from appointments by allowing some fields to be nil.
+        # This is due to bad staging data.
+        expect(response.body).to match_json_schema('VAOS_v2_appointments')
       end
     end
   end
-
-  #
-  # let(:start_date) { Time.zone.parse('2021-01-01T00:00:00Z').iso8601 }
-  # let(:end_date) { Time.zone.parse('2023-01-01T00:00:00').iso8601 }
-  # let(:params) { { startDate: start_date, endDate: end_date } }
-  #
-  # context 'requests a list of appointments' do
-  #   it 'has access and returns va appointments and honors includes' do
-  #     VCR.use_cassette('appointments/VAOS_v2/get_appointments_200', match_requests_on: %i[method uri]) do
-  #       VCR.use_cassette('appointments/get_facility_clinics_200', match_requests_on: %i[method uri]) do
-  #         VCR.use_cassette('appointments/VAOS_v2/get_facility_200', match_requests_on: %i[method uri]) do
-  #           VCR.use_cassette('appointments/VAOS_v2/mobile_ppms_service/get_provider_200', match_requests_on: %i[method uri]) do
-  #               get '/mobile/v0/appointments', headers: iam_headers, params: params
-  #             end
-  #           end
-  #         end
-  #       end
-  #     binding.pry
-  #     data = JSON.parse(response.body)['data']
-  #     expect(response).to have_http_status(:ok)
-  #     expect(response.body).to be_a(String)
-  #     expect(data.size).to eq(23)
-  #     expect(data[0]['attributes']['serviceName']).to eq('service_name')
-  #     expect(data[0]['attributes']['physicalLocation']).to eq('physical_location')
-  #     expect(data[0]['attributes']['location']).to eq(mock_facility)
-  #     expect(response).to match_camelized_response_schema('vaos/v2/appointments', { strict: false })
-  #   end
-  # end
 end

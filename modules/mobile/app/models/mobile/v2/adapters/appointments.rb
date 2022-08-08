@@ -201,7 +201,7 @@ module Mobile
             if cc_location.present?
               location[:name] = cc_location[:practice_name]
               location[:address] = {
-                street: cc_location.dig(:address, :line).join(' ').strip,
+                street: cc_location.dig(:address, :line)&.join(' ')&.strip,
                 city: cc_location.dig(:address, :city),
                 state: cc_location.dig(:address, :state),
                 zip_code: cc_location.dig(:address, :postal_code)
