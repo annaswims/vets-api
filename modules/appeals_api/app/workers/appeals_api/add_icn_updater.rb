@@ -7,7 +7,7 @@ module AppealsApi
     include Sidekiq::Worker
 
     def perform(submission)
-      submission.update!(vetearn_icn: target_veteran.mpi_icn)
+      submission.update!(veteran_icn: target_veteran.mpi_icn)
     end
 
     private
