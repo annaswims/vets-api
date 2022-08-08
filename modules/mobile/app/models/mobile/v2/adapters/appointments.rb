@@ -59,10 +59,10 @@ module Mobile
 
         # rubocop:disable Metrics/MethodLength
         def build_appointment_model(appointment_hash)
-          facility_id = Mobile::V0::Appointment.toggle_non_prod_id!(
+          facility_id = Mobile::V0::Appointment.convert_non_prod_id!(
             appointment_hash[:location_id]
           )
-          sta6aid = Mobile::V0::Appointment.toggle_non_prod_id!(
+          sta6aid = Mobile::V0::Appointment.convert_non_prod_id!(
             appointment_hash[:location_id]
           )
           type = parse_by_appointment_type(appointment_hash, appointment_hash[:kind])
@@ -288,9 +288,7 @@ module Mobile
           if va?(type)
             appointment_hash[:service_name] || appointment_hash[:physical_location]
           else
-            appointment_hash.dig(
-              :extension, :cc_location, :practice_name
-            )
+            appointment_hash.dig(:extension, :cc_location, :practice_name)
           end
         end
 
