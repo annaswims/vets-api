@@ -33,7 +33,8 @@ class AppealsApi::V2::DecisionReviews::SupplementalClaimsController < AppealsApi
 
     sc.save
 
-    AppealsApi::PdfSubmitJob.perform_async(sc.id, 'AppealsApi::SupplementalClaim', 'V2')
+    pdf_version = 'v2'
+    AppealsApi::PdfSubmitJob.perform_async(sc.id, 'AppealsApi::SupplementalClaim', pdf_version)
 
     render json: AppealsApi::SupplementalClaimSerializer.new(sc).serializable_hash
   end
@@ -43,24 +44,12 @@ class AppealsApi::V2::DecisionReviews::SupplementalClaimsController < AppealsApi
   end
 
   def schema
-    # TODO: Return full schema after we've validated all Non-Veteran Claimant functionality
     response = AppealsApi::JsonSchemaToSwaggerConverter.remove_comments(
       AppealsApi::FormSchemas.new(
         SCHEMA_ERROR_TYPE,
         schema_version: 'v2'
       ).schema(self.class::FORM_NUMBER)
     )
-
-    if Settings.modules_appeals_api.documentation.wip_docs&.include?(:sc_v2_claimant)
-      response.tap do |s|
-        attrs = s.dig(*%w[definitions scCreate properties data properties attributes])
-        attrs['properties'].delete('claimant')
-        attrs['properties']['claimantType']['enum'] = ['veteran']
-        attrs['properties'].delete('claimantTypeOtherValue')
-        attrs['allOf'].delete_at(3) # Remove 'if claimantType ~= NCV, require claimant'
-        attrs['allOf'].delete_at(2) # Remove 'if const "other", require claimantTypeOtherValue'
-      end
-    end
 
     render json: response
   end

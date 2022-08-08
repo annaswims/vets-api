@@ -8,9 +8,9 @@ RSpec.describe SignIn::SessionCreator do
   describe '#perform' do
     subject { session_creator.perform }
 
-    context 'when input object is a ValidatedCredentual' do
+    context 'when input object is a ValidatedCredential' do
       let(:validated_credential) { create(:validated_credential, client_id: client_id) }
-      let(:user_account) { validated_credential.user_verification.user_account }
+      let(:user_uuid) { validated_credential.user_verification.credential_identifier }
       let(:client_id) { SignIn::Constants::ClientConfig::CLIENT_IDS.last }
 
       context 'expected anti_csrf_token' do
@@ -28,7 +28,9 @@ RSpec.describe SignIn::SessionCreator do
       context 'expected session' do
         let(:expected_handle) { SecureRandom.uuid }
         let(:expected_created_time) { Time.zone.now }
-        let(:expected_user_uuid) { user_account.id }
+        let(:expected_token_uuid) { SecureRandom.uuid }
+        let(:expected_parent_token_uuid) { SecureRandom.uuid }
+        let(:expected_user_uuid) { user_uuid }
         let(:expected_expiration_time) do
           Time.zone.now + SignIn::Constants::RefreshToken::VALIDITY_LENGTH_MINUTES.minutes
         end
@@ -39,6 +41,7 @@ RSpec.describe SignIn::SessionCreator do
         let(:parent_refresh_token_hash) { Digest::SHA256.hexdigest(parent_refresh_token.to_json) }
         let(:refresh_token) do
           create(:refresh_token,
+                 uuid: expected_token_uuid,
                  user_uuid: expected_user_uuid,
                  parent_refresh_token_hash: parent_refresh_token_hash,
                  session_handle: expected_handle,
@@ -47,6 +50,7 @@ RSpec.describe SignIn::SessionCreator do
         end
         let(:parent_refresh_token) do
           create(:refresh_token,
+                 uuid: expected_parent_token_uuid,
                  user_uuid: expected_user_uuid,
                  parent_refresh_token_hash: nil,
                  session_handle: expected_handle,
@@ -72,12 +76,15 @@ RSpec.describe SignIn::SessionCreator do
 
       context 'expected refresh_token' do
         let(:expected_handle) { SecureRandom.uuid }
-        let(:expected_user_uuid) { user_account.id }
+        let(:expected_user_uuid) { user_uuid }
+        let(:expected_token_uuid) { SecureRandom.uuid }
+        let(:expected_parent_token_uuid) { SecureRandom.uuid }
         let(:expected_anti_csrf_token) { stubbed_random_number }
         let(:stubbed_random_number) { 'some-stubbed-random-number' }
         let(:expected_parent_refresh_token_hash) { Digest::SHA256.hexdigest(parent_refresh_token.to_json) }
         let(:refresh_token) do
           create(:refresh_token,
+                 uuid: expected_token_uuid,
                  user_uuid: expected_user_uuid,
                  parent_refresh_token_hash: parent_refresh_token_hash,
                  session_handle: expected_handle,
@@ -86,6 +93,7 @@ RSpec.describe SignIn::SessionCreator do
         end
         let(:parent_refresh_token) do
           create(:refresh_token,
+                 uuid: expected_parent_token_uuid,
                  user_uuid: expected_user_uuid,
                  parent_refresh_token_hash: nil,
                  session_handle: expected_handle,
@@ -109,12 +117,15 @@ RSpec.describe SignIn::SessionCreator do
 
       context 'expected access_token' do
         let(:expected_handle) { SecureRandom.uuid }
-        let(:expected_user_uuid) { user_account.id }
+        let(:expected_user_uuid) { user_uuid }
+        let(:expected_token_uuid) { SecureRandom.uuid }
+        let(:expected_parent_token_uuid) { SecureRandom.uuid }
         let(:expected_anti_csrf_token) { stubbed_random_number }
         let(:stubbed_random_number) { 'some-stubbed-random-number' }
         let(:expected_refresh_token_hash) { Digest::SHA256.hexdigest(refresh_token.to_json) }
         let(:refresh_token) do
           create(:refresh_token,
+                 uuid: expected_token_uuid,
                  user_uuid: expected_user_uuid,
                  parent_refresh_token_hash: expected_parent_refresh_token_hash,
                  session_handle: expected_handle,
@@ -123,6 +134,7 @@ RSpec.describe SignIn::SessionCreator do
         end
         let(:parent_refresh_token) do
           create(:refresh_token,
+                 uuid: expected_parent_token_uuid,
                  user_uuid: expected_user_uuid,
                  parent_refresh_token_hash: nil,
                  session_handle: expected_handle,

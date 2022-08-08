@@ -280,7 +280,7 @@ class User < Common::RedisStore
   end
 
   def mpi_add_person_implicit_search
-    return unless loa3? && !mpi_profile?
+    return unless loa3?
 
     invalidate_mpi_cache
     mpi.add_person_implicit_search
@@ -313,6 +313,11 @@ class User < Common::RedisStore
 
   # mpi attributes
   delegate :birls_id, to: :mpi, prefix: true
+  delegate :mhv_ien, to: :mpi
+  delegate :mhv_iens, to: :mpi, prefix: true
+  delegate :participant_ids, to: :mpi, prefix: true
+  delegate :edipis, to: :mpi, prefix: true
+  delegate :birls_ids, to: :mpi, prefix: true
   delegate :icn, to: :mpi, prefix: true
   delegate :icn_with_aaid, to: :mpi
   delegate :vet360_id, to: :mpi
@@ -499,7 +504,7 @@ class User < Common::RedisStore
   # fall back to idme
   def get_user_verification
     case identity_sign_in&.dig(:service_name)
-    when SAML::User::MHV_MAPPED_CSID
+    when SAML::User::MHV_ORIGINAL_CSID
       return UserVerification.find_by(mhv_uuid: mhv_correlation_id) if mhv_correlation_id
     when SAML::User::DSLOGON_CSID
       return UserVerification.find_by(dslogon_uuid: identity.edipi) if identity.edipi

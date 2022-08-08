@@ -33,7 +33,7 @@ describe 'LGY API' do
             VCR.use_cassette 'lgy/application_not_found' do
               get '/v0/coe/status'
               json_body = JSON.parse(response.body)
-              expect(json_body['data']['attributes']).to include 'status' => 'eligible'
+              expect(json_body['data']['attributes']).to include 'status' => 'ELIGIBLE'
             end
           end
         end
@@ -85,6 +85,35 @@ describe 'LGY API' do
             post('/v0/coe/document_upload', params: attachments)
             expect(response.status).to eq 200
           end
+        end
+      end
+    end
+
+    describe 'GET v0/coe/document_download' do
+      context 'when document exists' do
+        it 'response code is 200' do
+          lgy_service = double('LGY Service')
+          allow_any_instance_of(V0::CoeController).to receive(:lgy_service) { lgy_service }
+          expect(lgy_service).to receive(:get_document_url).and_return 'http://s3.aws.com/file'
+          get '/v0/coe/document_download/', params: { id: '123456789' }
+          expect(response).to have_http_status(:ok)
+        end
+
+        it 'response is in JSON format' do
+          lgy_service = double('LGY Service')
+          allow_any_instance_of(V0::CoeController).to receive(:lgy_service) { lgy_service }
+          expect(lgy_service).to receive(:get_document_url).and_return 'http://s3.aws.com/file'
+          get '/v0/coe/document_download/', params: { id: '123456789' }
+          expect(response.content_type).to eq('application/json; charset=utf-8')
+        end
+
+        it 'response url key is correct' do
+          lgy_service = double('LGY Service')
+          allow_any_instance_of(V0::CoeController).to receive(:lgy_service) { lgy_service }
+          expect(lgy_service).to receive(:get_document_url).and_return 'http://s3.aws.com/file'
+          get '/v0/coe/document_download/', params: { id: '123456789' }
+          json_body = JSON.parse(response.body)
+          expect(json_body['data']['attributes']).to eq 'url' => 'http://s3.aws.com/file'
         end
       end
     end

@@ -66,15 +66,12 @@ module SignIn
           uuid: user_info.sub,
           idme_uuid: user_info.sub,
           loa: { current: loa_current, highest: loa_highest },
-          sign_in: { service_name: get_service_name, auth_broker: SignIn::Constants::Auth::BROKER_CODE,
+          sign_in: { service_name: type, auth_broker: SignIn::Constants::Auth::BROKER_CODE,
                      client_id: client_id },
           csp_email: user_info.email,
+          multifactor: user_info.multifactor,
           authn_context: get_authn_context(credential_level.current_ial)
         }
-      end
-
-      def get_service_name
-        type == 'mhv' ? 'myhealthevet' : type
       end
 
       def get_authn_context(current_ial)
@@ -111,7 +108,8 @@ module SignIn
       def mhv_attributes(user_info)
         {
           mhv_correlation_id: user_info.mhv_uuid,
-          mhv_icn: user_info.mhv_icn
+          mhv_icn: user_info.mhv_icn,
+          mhv_assurance: user_info.mhv_assurance
         }
       end
 

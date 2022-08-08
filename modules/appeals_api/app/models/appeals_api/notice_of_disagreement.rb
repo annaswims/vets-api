@@ -44,8 +44,7 @@ module AppealsApi
 
     # the controller applies the JSON Schemas in modules/appeals_api/config/schemas/
     # further validations:
-    validate :date_formats_are_valid,
-             :veteran_birth_date_is_in_the_past,
+    validate :veteran_birth_date_is_in_the_past,
              :contestable_issue_dates_are_in_the_past,
              :validate_hearing_type_selection,
              if: proc { |a| a.form_data.present? }
@@ -61,9 +60,9 @@ module AppealsApi
     has_many :evidence_submissions, as: :supportable, dependent: :destroy
     has_many :status_updates, as: :statusable, dependent: :destroy
 
-    def pdf_structure(version)
+    def pdf_structure(pdf_version)
       Object.const_get(
-        "AppealsApi::PdfConstruction::NoticeOfDisagreement::#{version.upcase}::Structure"
+        "AppealsApi::PdfConstruction::NoticeOfDisagreement::#{pdf_version.upcase}::Structure"
       ).new(self)
     end
 
@@ -344,7 +343,7 @@ module AppealsApi
     end
 
     def version_2?
-      pii_present? && api_version == 'v2'
+      pii_present? && api_version.upcase == 'V2'
     end
 
     # After expunging pii, form_data is nil, update will fail unless validation skipped

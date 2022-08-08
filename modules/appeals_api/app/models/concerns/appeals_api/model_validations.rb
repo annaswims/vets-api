@@ -15,28 +15,6 @@ module AppealsApi
 
     # rubocop:disable Metrics/BlockLength
     included do
-      # TODO: Update our schema date definition(s) to keep this check from being necessary
-      def date_formats_are_valid
-        # check veteran birth date
-        vbd = auth_headers && auth_headers['X-VA-Birth-Date']
-        if vbd.present? && !valid_date?(vbd)
-          errors.add '', "Invalid date: #{vbd}", source: { header: 'X-VA-Birth-Date' }
-        end
-
-        # check claimant birth date
-        cbd = auth_headers && auth_headers['X-VA-Claimant-Birth-Date']
-        if cbd.present? && !valid_date?(cbd)
-          errors.add '', "Invalid date: #{cbd}", source: { header: 'X-VA-Claimant-Birth-Date' }
-        end
-
-        # check contestable issues dates
-        contestable_issues.each_with_index do |issue, index|
-          d = issue.decision_date_string
-          p = "/data/included[#{index}]/attributes/decisionDate"
-          errors.add p, "Invalid date: #{d}" unless valid_date?(d)
-        end
-      end
-
       # validation (header)
       def veteran_birth_date_is_in_the_past
         # don't add more errors to veteran birth date if one already exists
@@ -102,14 +80,35 @@ module AppealsApi
         add_date_error "/data/included[#{issue_index}]/attributes/decisionDate", issue.decision_date
       end
 
-      # expects date_str in YYYY-MM-DD format
-      def valid_date?(date_str)
-        Date.valid_date?(*date_str.split('-').map(&:to_i))
+      # validation (body)
+      def validate_retrieve_from_date_range
+        return if evidence_submission['retrieveFrom'].nil?
+
+        evidence_submission['retrieveFrom'].each_with_index do |retrieval_evidence, evidence_index|
+          retrieval_evidence['attributes']['evidenceDates'].each_with_index do |evidence_date, date_index|
+            schema_pointer = "/data/attributes/evidenceSubmission/retrieveFrom[#{evidence_index}]/attributes/evidenceDates[#{date_index}]" # rubocop:disable Layout/LineLength
+            start_date_str = evidence_date['startDate']
+            end_date_str = evidence_date['endDate']
+
+            start_date = Date.parse(start_date_str)
+            end_date = Date.parse(end_date_str)
+
+            valid_date_ranges = start_date <= end_date && start_date < Time.zone.today && end_date < Time.zone.today
+
+            add_date_range_error(schema_pointer, start_date, end_date) unless valid_date_ranges
+          end
+        end
       end
 
       def add_date_error(pointer, date_str, error_opts = {})
         errors.add pointer,
                    "Date must be in the past: #{date_str}",
+                   error_opts.merge(error_tpath: 'common.exceptions.detailed_schema_errors.range')
+      end
+
+      def add_date_range_error(pointer, start_date, end_date, error_opts = {})
+        errors.add pointer,
+                   "#{start_date} must before or the same day as #{end_date}. Both dates must also be in the past.",
                    error_opts.merge(error_tpath: 'common.exceptions.detailed_schema_errors.range')
       end
     end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_06_28_222858) do
+ActiveRecord::Schema.define(version: 2022_08_04_165221) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gin"
@@ -102,14 +102,6 @@ ActiveRecord::Schema.define(version: 2022_06_28_222858) do
     t.date "verified_decryptable_at"
   end
 
-  create_table "appeals_api_event_subscriptions", force: :cascade do |t|
-    t.string "topic"
-    t.string "callback"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
-    t.index ["topic", "callback"], name: "index_appeals_api_event_subscriptions_on_topic_and_callback"
-  end
-
   create_table "appeals_api_evidence_submissions", force: :cascade do |t|
     t.string "supportable_type"
     t.string "supportable_id"
@@ -139,6 +131,7 @@ ActiveRecord::Schema.define(version: 2022_06_28_222858) do
     t.text "auth_headers_ciphertext"
     t.text "encrypted_kms_key"
     t.date "verified_decryptable_at"
+    t.string "veteran_icn"
   end
 
   create_table "appeals_api_notice_of_disagreements", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -155,6 +148,7 @@ ActiveRecord::Schema.define(version: 2022_06_28_222858) do
     t.text "auth_headers_ciphertext"
     t.text "encrypted_kms_key"
     t.date "verified_decryptable_at"
+    t.string "veteran_icn"
   end
 
   create_table "appeals_api_status_updates", force: :cascade do |t|
@@ -182,6 +176,7 @@ ActiveRecord::Schema.define(version: 2022_06_28_222858) do
     t.text "encrypted_kms_key"
     t.boolean "evidence_submission_indicated"
     t.date "verified_decryptable_at"
+    t.string "veteran_icn"
   end
 
   create_table "async_transactions", id: :serial, force: :cascade do |t|
@@ -271,6 +266,13 @@ ActiveRecord::Schema.define(version: 2022_06_28_222858) do
     t.index ["source"], name: "index_claims_api_auto_established_claims_on_source"
   end
 
+  create_table "claims_api_intent_to_files", force: :cascade do |t|
+    t.string "status"
+    t.string "cid"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+  end
+
   create_table "claims_api_power_of_attorneys", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "status"
     t.string "current_poa"
@@ -289,6 +291,7 @@ ActiveRecord::Schema.define(version: 2022_06_28_222858) do
     t.text "source_data_ciphertext"
     t.text "encrypted_kms_key"
     t.date "verified_decryptable_at"
+    t.string "cid"
     t.index ["header_md5"], name: "index_claims_api_power_of_attorneys_on_header_md5"
   end
 
@@ -855,8 +858,8 @@ ActiveRecord::Schema.define(version: 2022_06_28_222858) do
     t.datetime "checkout_time"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.string "loa"
     t.text "services"
+    t.string "loa"
     t.uuid "idme_uuid"
     t.text "notes"
     t.string "mfa_code"

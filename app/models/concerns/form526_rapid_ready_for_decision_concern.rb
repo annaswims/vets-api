@@ -1,46 +1,32 @@
 # frozen_string_literal: true
 
+require 'mail_automation/client'
+
 module Form526RapidReadyForDecisionConcern
   extend ActiveSupport::Concern
 
   def send_rrd_alert_email(subject, message, error = nil, to = Settings.rrd.alerts.recipients)
-    body = <<~BODY
-      Environment: #{Settings.vsp_environment}<br/>
-      Form526Submission.id: #{id}<br/>
-      <br/>
-      #{message}<br/>
-    BODY
-    body += "<br/>Error backtrace:\n #{error.backtrace.join(",<br/>\n ")}" if error
-    ActionMailer::Base.mail(
-      from: ApplicationMailer.default[:from],
-      to: to,
-      subject: subject,
-      body: body
-    ).deliver_now
+    RrdAlertMailer.build(self, subject, message, error, to).deliver_now
   end
 
-  def send_to_mas_email
-    message = <<~BODY
-      #{disabilities.pluck('name', 'diagnosticCode').join(', ')}
-      <table border="1" cellspacing="1" cellpadding="5"><thead>
-          <tr>
-            <td>Benefit Claim Id</td>
-            <td>Submission Date</td>
-            <td>Submission Time</td>
-            <td>Submission ID</td>
-          </tr>
-        </thead><tbody>
-          <tr>
-            <td>#{submitted_claim_id}</td>
-            <td>#{created_at.to_date}</td>
-            <td>#{created_at.strftime '%H:%M:%S'}</td>
-            <td>#{id}</td>
-          </tr>
-        </tbody>
-      </table>
-    BODY
+  def notify_mas_tracking
+    RrdMasNotificationMailer.build(self).deliver_now
+  end
 
-    send_rrd_alert_email("MA claim - #{diagnostic_codes.join(', ')}", message, nil,
+  def notify_mas
+    notify_mas_tracking
+
+    if Flipper.enabled?(:rrd_mas_notification)
+      client = MailAutomation::Client.new({
+                                            file_number: birls_id,
+                                            claim_id: submitted_claim_id,
+                                            form526: form
+                                          })
+      response = client.initiate_apcas_processing
+      save_metadata(mas_packetId: response.dig('body', 'packetId'))
+    end
+  rescue => e
+    send_rrd_alert_email("Failure: MA claim - #{submitted_claim_id}", e.to_s, nil,
                          Settings.rrd.mas_tracking.recipients)
   end
 

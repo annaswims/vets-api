@@ -72,6 +72,17 @@ RSpec.describe 'Power of Attorney ', type: :request do
                 expect(parsed['data']['attributes']['status']).to eq('pending')
               end
             end
+
+            it "assigns a 'cid' (OKTA client_id)" do
+              with_okta_user(scopes) do |auth_header|
+                allow_any_instance_of(BGS::PersonWebService)
+                  .to receive(:find_by_ssn).and_return({ file_nbr: '123456789' })
+                post path, params: data, headers: headers.merge(auth_header)
+                token = JSON.parse(response.body)['data']['id']
+                poa = ClaimsApi::PowerOfAttorney.find(token)
+                expect(poa[:cid]).to eq('0oa1c01m77heEXUZt2p7')
+              end
+            end
           end
 
           context 'when Veteran is missing a participant_id' do
@@ -113,8 +124,8 @@ RSpec.describe 'Power of Attorney ', type: :request do
                     response_body = JSON.parse response.body
                     expect(response.status).to eq(422)
                     expect(response_body['errors'][0]['detail']).to eq(
-                      'Veteran is missing a participant ID. '\
-                      'Please contact the Digital Transformation Center (DTC) at 202-921-0911 for assistance.'
+                      "Unable to locate Veteran's Participant ID in Master Person Index (MPI)." \
+                      'Please submit an issue at ask.va.gov or call 1-800-MyVA411 (800-698-2411) for assistance.'
                     )
                   end
                 end
@@ -357,8 +368,8 @@ RSpec.describe 'Power of Attorney ', type: :request do
 
         context 'BGS response is invalid' do
           let(:error_detail) do
-            'Unable to locate Veteran file number for eFolder. '\
-              'Please contact the Digital Transformation Center (DTC) at 202-921-0911 for assistance.'
+            "Unable to locate Veteran's File Number in Master Person Index (MPI)." \
+              'Please submit an issue at ask.va.gov or call 1-800-MyVA411 (800-698-2411) for assistance.'
           end
 
           context "when the BGS response is 'nil'" do
@@ -413,6 +424,19 @@ RSpec.describe 'Power of Attorney ', type: :request do
                 expect(parsed['errors'].first['detail']).to eq(error_detail)
               end
             end
+          end
+        end
+      end
+
+      context 'when no attachment is provided to the PUT endpoint' do
+        it 'rejects the request for missing param' do
+          with_okta_user(scopes) do |auth_header|
+            allow_any_instance_of(BGS::PersonWebService)
+              .to receive(:find_by_ssn).and_return({ file_nbr: '123456789' })
+            put("#{path}/#{power_of_attorney.id}", headers: headers.merge(auth_header))
+            expect(response.status).to eq(400)
+            expect(response.parsed_body['errors'][0]['title']).to eq('Missing parameter')
+            expect(response.parsed_body['errors'][0]['detail']).to eq('Must include attachment')
           end
         end
       end
