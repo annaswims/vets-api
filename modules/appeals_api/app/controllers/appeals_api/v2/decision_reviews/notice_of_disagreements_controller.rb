@@ -24,6 +24,11 @@ class AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController < Appeals
   )['definitions']['nodCreateParameters']['properties'].keys
   SCHEMA_ERROR_TYPE = Common::Exceptions::DetailedSchemaErrors
 
+  def index
+    veteran_nods = AppealsApi::NoticeOfDisagreement.where(veteran_icn: target_veteran.mpi_icn)
+    render json: AppealsApi::NoticeOfDisagreementSerializer.new(veteran_nods).serializable_hash
+  end
+
   def create
     @notice_of_disagreement.save
     AppealsApi::PdfSubmitJob.perform_async(
@@ -31,6 +36,7 @@ class AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController < Appeals
       'AppealsApi::NoticeOfDisagreement',
       'v2'
     )
+    AppealsApi::AddIcnUpdater.perform_async(@notice_of_disagreement)
     render_notice_of_disagreement
   end
 
@@ -92,6 +98,23 @@ class AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController < Appeals
 
   def request_headers
     HEADERS.index_with { |key| request.headers[key] }.compact
+  end
+
+  def target_veteran
+    veteran ||= Appellant.new(
+      type: :veteran,
+      auth_headers: request_headers,
+      form_data: @json_body&.dig('data', 'attributes', 'veteran')
+    )
+
+    mpi_veteran ||= AppealsApi::Veteran.new(
+      ssn: veteran.ssn,
+      first_name: veteran.first_name,
+      last_name: veteran.last_name,
+      birth_date: veteran.birth_date.iso8601
+    )
+
+    mpi_veteran
   end
 
   def new_notice_of_disagreement

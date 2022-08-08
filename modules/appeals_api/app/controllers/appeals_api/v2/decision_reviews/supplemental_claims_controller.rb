@@ -20,6 +20,11 @@ class AppealsApi::V2::DecisionReviews::SupplementalClaimsController < AppealsApi
   )['definitions']['scCreateParameters']['properties'].keys
   SCHEMA_ERROR_TYPE = Common::Exceptions::DetailedSchemaErrors
 
+  def index
+    veteran_scs = AppealsApi::SupplementalClaim.where(veteran_icn: target_veteran.mpi_icn)
+    render json: AppealsApi::SupplementalClaimSerializer.new(veteran_scs).serializable_hash
+  end
+
   def create
     sc = AppealsApi::SupplementalClaim.new(
       auth_headers: request_headers,
@@ -35,6 +40,7 @@ class AppealsApi::V2::DecisionReviews::SupplementalClaimsController < AppealsApi
 
     pdf_version = 'v2'
     AppealsApi::PdfSubmitJob.perform_async(sc.id, 'AppealsApi::SupplementalClaim', pdf_version)
+    AppealsApi::AddIcnUpdater.perform_async(sc)
 
     render json: AppealsApi::SupplementalClaimSerializer.new(sc).serializable_hash
   end
@@ -98,6 +104,23 @@ class AppealsApi::V2::DecisionReviews::SupplementalClaimsController < AppealsApi
 
   def request_headers
     HEADERS.index_with { |key| request.headers[key] }.compact
+  end
+
+  def target_veteran
+    veteran ||= Appellant.new(
+      type: :veteran,
+      auth_headers: request_headers,
+      form_data: @json_body&.dig('data', 'attributes', 'veteran')
+    )
+
+    mpi_veteran ||= AppealsApi::Veteran.new(
+      ssn: veteran.ssn,
+      first_name: veteran.first_name,
+      last_name: veteran.last_name,
+      birth_date: veteran.birth_date.iso8601
+    )
+
+    mpi_veteran
   end
 
   def render_model_errors(model)

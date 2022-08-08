@@ -23,9 +23,15 @@ class AppealsApi::V2::DecisionReviews::HigherLevelReviewsController < AppealsApi
   )['definitions']['hlrCreateParameters']['properties'].keys
   SCHEMA_ERROR_TYPE = Common::Exceptions::DetailedSchemaErrors
 
+  def index
+    veteran_hlrs = AppealsApi::HigherLevelReview.where(veteran_icn: target_veteran.mpi_icn)
+    render json: AppealsApi::HigherLevelReviewSerializer.new(veteran_hlrs).serializable_hash
+  end
+
   def create
     @higher_level_review.save
     AppealsApi::PdfSubmitJob.perform_async(@higher_level_review.id, 'AppealsApi::HigherLevelReview', 'V2')
+    AppealsApi::AddIcnUpdater.perform_async(@higher_level_review)
     render_higher_level_review
   end
 
@@ -95,6 +101,23 @@ class AppealsApi::V2::DecisionReviews::HigherLevelReviewsController < AppealsApi
 
   def request_headers
     HEADERS.index_with { |key| request.headers[key] }.compact
+  end
+
+  def target_veteran
+    veteran ||= Appellant.new(
+      type: :veteran,
+      auth_headers: request_headers,
+      form_data: @json_body&.dig('data', 'attributes', 'veteran')
+    )
+
+    mpi_veteran ||= AppealsApi::Veteran.new(
+      ssn: veteran.ssn,
+      first_name: veteran.first_name,
+      last_name: veteran.last_name,
+      birth_date: veteran.birth_date.iso8601
+    )
+
+    mpi_veteran
   end
 
   def new_higher_level_review
