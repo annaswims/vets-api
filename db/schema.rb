@@ -266,6 +266,13 @@ ActiveRecord::Schema.define(version: 2022_08_04_165221) do
     t.index ["source"], name: "index_claims_api_auto_established_claims_on_source"
   end
 
+  create_table "claims_api_intent_to_files", force: :cascade do |t|
+    t.string "status"
+    t.string "cid"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+  end
+
   create_table "claims_api_power_of_attorneys", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "status"
     t.string "current_poa"
@@ -851,8 +858,8 @@ ActiveRecord::Schema.define(version: 2022_08_04_165221) do
     t.datetime "checkout_time"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.string "loa"
     t.text "services"
+    t.string "loa"
     t.uuid "idme_uuid"
     t.text "notes"
     t.string "mfa_code"
