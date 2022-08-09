@@ -6,7 +6,7 @@ Rails.application.configure do
   config.colorize_logging = false
 
   config.lograge.custom_options = lambda do |event|
-    { :params => event.payload[:params],
+    { time: event.time, :params => event.payload[:params],
       :level => event.payload[:level] }
   end
 end
