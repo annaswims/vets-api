@@ -243,8 +243,8 @@ module Swagger
           key :type, :object
           key :required, %i[true false]
 
-          property :true, type: %i[null integer]
-          property :false, type: %i[null integer]
+          property true, type: %i[null integer]
+          property false, type: %i[null integer]
         end
       end
     end
