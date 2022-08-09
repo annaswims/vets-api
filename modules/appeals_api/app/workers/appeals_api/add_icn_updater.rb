@@ -9,7 +9,12 @@ module AppealsApi
     def perform(appeal_id, appeal_class_str)
       appeal_class = Object.const_get(appeal_class_str)
       appeal = appeal_class.find(appeal_id)
-      appeal.update!(veteran_icn: target_veteran(appeal).mpi_icn)
+
+      if appeal.form_data.nil? && appeal.auth_headers.nil?
+        Rails.logger.error "#{appeal_class_str} missing PII. Can't retrieve ICN."
+      else
+        appeal.update!(veteran_icn: target_veteran(appeal).mpi_icn)
+      end
     end
 
     private
