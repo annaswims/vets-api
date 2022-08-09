@@ -152,7 +152,10 @@ module Mobile
         end
 
         def start_date_utc(appointment_hash)
-          DateTime.parse(appointment_hash[:start] || appointment_hash.dig(:requested_periods, 0, :start))
+          start = appointment_hash[:start] || appointment_hash.dig(:requested_periods, 0, :start)
+          return nil if start.nil?
+
+          DateTime.parse(start)
         end
 
         def parse_by_appointment_type(appointment_hash, type)
@@ -198,6 +201,7 @@ module Mobile
           case type
           when APPOINTMENT_TYPES[:cc]
             cc_location = appointment_hash.dig(:extension, :cc_location)
+
             if cc_location.present?
               location[:name] = cc_location[:practice_name]
               location[:address] = {
@@ -207,7 +211,9 @@ module Mobile
                 zip_code: cc_location.dig(:address, :postal_code)
               }
             end
-          when APPOINTMENT_TYPES[:va_video_connect_atlas], APPOINTMENT_TYPES[:va_video_connect_home], APPOINTMENT_TYPES[:va_video_connect_gfe]
+          when APPOINTMENT_TYPES[:va_video_connect_atlas],
+            APPOINTMENT_TYPES[:va_video_connect_home],
+            APPOINTMENT_TYPES[:va_video_connect_gfe]
             if telehealth
               address = telehealth.dig(:atlas, :address)
 
@@ -278,8 +284,9 @@ module Mobile
           return nil if Array.wrap(practitioners&.map { |prac| prac[:name] })&.compact == []
 
           practitioners_names = practitioners.map do |practitioner|
-            practitioner_name = "#{practitioner&.dig(:name, :given)&.join(' ')&.strip}, #{practitioner&.dig(:name, :family)}"
-            '' if practitioner_name == ', '
+            name = "#{practitioner&.dig(:name, :given)&.join(' ')&.strip}, #{practitioner&.dig(:name, :family)}"
+            '' if name == ', '
+            name
           end
           practitioners_names.join("\n").strip
         end

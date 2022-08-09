@@ -98,6 +98,7 @@ module Mobile
         (DateTime.now.utc.beginning_of_day + 1.year)
       end
 
+      # rubocop:disable Metrics/MethodLength
       def fetch_cached_or_service(validated_params)
         appointments = nil
         appointments = Mobile::V0::Appointment.get_cached(@current_user) if use_cache?(validated_params)
@@ -116,10 +117,7 @@ module Mobile
               pagination_params: { page: validated_params[:page_number], pageSize: validated_params[:page_size] }
             )
           else
-            appointments = appointments_proxy.get_appointments(
-              start_date: start_date,
-              end_date: end_date
-            )
+            appointments = appointments_proxy.get_appointments(start_date: start_date, end_date: end_date)
           end
 
           Mobile::V0::Appointment.set_cached(@current_user, appointments)
@@ -131,6 +129,7 @@ module Mobile
 
         appointments
       end
+      # rubocop:enable Metrics/MethodLength
 
       def paginate(appointments, validated_params)
         appointments = appointments.filter do |appointment|
