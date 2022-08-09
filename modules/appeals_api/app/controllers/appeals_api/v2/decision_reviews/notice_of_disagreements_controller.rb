@@ -26,7 +26,7 @@ class AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController < Appeals
   SCHEMA_ERROR_TYPE = Common::Exceptions::DetailedSchemaErrors
 
   def index
-    veteran_nods = AppealsApi::NoticeOfDisagreement.where(veteran_icn: target_veteran.mpi_icn)
+    veteran_nods = AppealsApi::NoticeOfDisagreement.where(veteran_icn: target_veteran.mpi_icn).order(created_at: :desc)
     render json: AppealsApi::NoticeOfDisagreementSerializer.new(veteran_nods).serializable_hash
   end
 

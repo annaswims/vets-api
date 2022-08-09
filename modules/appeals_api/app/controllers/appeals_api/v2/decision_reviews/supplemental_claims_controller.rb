@@ -22,7 +22,7 @@ class AppealsApi::V2::DecisionReviews::SupplementalClaimsController < AppealsApi
   SCHEMA_ERROR_TYPE = Common::Exceptions::DetailedSchemaErrors
 
   def index
-    veteran_scs = AppealsApi::SupplementalClaim.where(veteran_icn: target_veteran.mpi_icn)
+    veteran_scs = AppealsApi::SupplementalClaim.where(veteran_icn: target_veteran.mpi_icn).order(created_at: :desc)
     render json: AppealsApi::SupplementalClaimSerializer.new(veteran_scs).serializable_hash
   end
 
