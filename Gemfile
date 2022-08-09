@@ -91,6 +91,7 @@ gem 'kms_encrypted'
 gem 'levenshtein-ffi'
 gem 'liquid'
 gem 'lockbox'
+gem 'lograge' # Transforms logs to JSON
 gem 'mail'
 gem 'memoist'
 gem 'mimemagic'

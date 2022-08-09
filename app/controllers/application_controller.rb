@@ -21,6 +21,18 @@ class ApplicationController < ActionController::API
   skip_before_action :authenticate, only: %i[cors_preflight routing_error]
   skip_before_action :verify_authenticity_token, only: :routing_error
 
+  def append_info_to_payload(payload)
+      super
+      case 
+        when payload[:status] == 200
+          payload[:level] = "INFO"
+        when payload[:status] == 302
+          payload[:level] = "WARN"
+        else
+          payload[:level] = "ERROR"
+        end
+  end
+
   VERSION_STATUS = {
     draft: 'Draft Version',
     current: 'Current Version',
