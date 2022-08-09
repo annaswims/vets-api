@@ -41,7 +41,7 @@ class AppealsApi::V2::DecisionReviews::SupplementalClaimsController < AppealsApi
 
     pdf_version = 'v2'
     AppealsApi::PdfSubmitJob.perform_async(sc.id, 'AppealsApi::SupplementalClaim', pdf_version)
-    AppealsApi::AddIcnUpdater.perform_async(sc)
+    AppealsApi::AddIcnUpdater.perform_async(sc.id, 'AppealsApi::SupplementalClaim')
 
     render json: AppealsApi::SupplementalClaimSerializer.new(sc).serializable_hash
   end
