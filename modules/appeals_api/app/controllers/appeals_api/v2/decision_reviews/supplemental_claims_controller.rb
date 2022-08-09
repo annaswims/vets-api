@@ -6,6 +6,7 @@ class AppealsApi::V2::DecisionReviews::SupplementalClaimsController < AppealsApi
   include AppealsApi::JsonFormatValidation
   include AppealsApi::StatusSimulation
   include AppealsApi::CharacterUtilities
+  include AppealsApi::MpiVeteran
 
   skip_before_action :authenticate
   before_action :validate_json_format, if: -> { request.post? }
@@ -104,23 +105,6 @@ class AppealsApi::V2::DecisionReviews::SupplementalClaimsController < AppealsApi
 
   def request_headers
     HEADERS.index_with { |key| request.headers[key] }.compact
-  end
-
-  def target_veteran
-    veteran ||= Appellant.new(
-      type: :veteran,
-      auth_headers: request_headers,
-      form_data: @json_body&.dig('data', 'attributes', 'veteran')
-    )
-
-    mpi_veteran ||= AppealsApi::Veteran.new(
-      ssn: veteran.ssn,
-      first_name: veteran.first_name,
-      last_name: veteran.last_name,
-      birth_date: veteran.birth_date.iso8601
-    )
-
-    mpi_veteran
   end
 
   def render_model_errors(model)
