@@ -9,7 +9,7 @@ module DecisionReview
 
     sidekiq_options retry: 5
 
-    # Make a request to lighthosue to get the URL where we can upload the file,
+    # Make a request to lighthouse to get the URL where we can upload the file,
     # then get the file from S3 and send it to lighthouse
     #
     # @param appeal_submission_upload_id [String] The user uuid

@@ -12,20 +12,21 @@ module V1
     end
 
     def create
-      # we'll need to first save the claim
-      # then actually attempt to file the claim with lighthouse
-      # then update our records to show the claim was successfully posted
-      # otherwise, start a worker to continue making the request until it suceeds
-      sc_response_body = decision_review_service
-                         .create_supplemental_claim(request_body: request_body_hash, user: @current_user)
-                         .body
-      submitted_appeal_uuid = sc_response_body.dig('data', 'id')
+      # 1. save the claim
       ActiveRecord::Base.transaction do
         AppealSubmission.create!(user_uuid: @current_user.uuid, type_of_appeal: 'SC',
-                                 submitted_appeal_uuid: submitted_appeal_uuid)
+                                 submitted_appeal_uuid: nil)
+        #                        form_data ???)
+
+        # Would this need to be moved to the worker?
         # Clear in-progress form since submit was successful
         InProgressForm.form_for_user('20-0995', current_user)&.destroy!
       end
+      # 2. submit to lighthouse
+      DecisionReviewV1::Submit.perform_async('id from the record created above')
+      sc_response_body = decision_review_service
+                         .create_supplemental_claim(request_body: request_body_hash, user: @current_user)
+                         .body
       render json: sc_response_body
     rescue => e
       request = begin
