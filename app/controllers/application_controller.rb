@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require 'feature_flipper'
-require 'aes_256_cbc_encryptor'
+require "feature_flipper"
+require "aes_256_cbc_encryptor"
 
 class ApplicationController < ActionController::API
   include AuthenticationAndSSOConcerns
@@ -21,23 +21,11 @@ class ApplicationController < ActionController::API
   skip_before_action :authenticate, only: %i[cors_preflight routing_error]
   skip_before_action :verify_authenticity_token, only: :routing_error
 
-  def append_info_to_payload(payload)
-      super
-      case 
-        when payload[:status] == 200
-          payload[:level] = "INFO"
-        when payload[:status] == 302
-          payload[:level] = "WARN"
-        else
-          payload[:level] = "ERROR"
-        end
-  end
-
   VERSION_STATUS = {
-    draft: 'Draft Version',
-    current: 'Current Version',
-    previous: 'Previous Version',
-    deprecated: 'Deprecated Version'
+    draft: "Draft Version",
+    current: "Current Version",
+    previous: "Previous Version",
+    deprecated: "Deprecated Version",
   }.freeze
 
   def cors_preflight
@@ -57,13 +45,13 @@ class ApplicationController < ActionController::API
   attr_reader :current_user
 
   def set_csrf_header
-    response.set_header('X-CSRF-Token', form_authenticity_token)
+    response.set_header("X-CSRF-Token", form_authenticity_token)
   end
 
   def pagination_params
     {
       page: params[:page],
-      per_page: params[:per_page]
+      per_page: params[:per_page],
     }
   end
 
