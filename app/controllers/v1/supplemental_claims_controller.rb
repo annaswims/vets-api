@@ -24,10 +24,10 @@ module V1
       end
       # 2. submit to lighthouse
       DecisionReviewV1::Submit.perform_async('id from the record created above')
-      sc_response_body = decision_review_service
-                         .create_supplemental_claim(request_body: request_body_hash, user: @current_user)
-                         .body
-      render json: sc_response_body
+      #       sc_response_body = decision_review_service
+      #                          .create_supplemental_claim(request_body: request_body_hash, user: @current_user)
+      #                          .body
+      render json: 'id from submitted record'
     rescue => e
       request = begin
         { body: request_body_hash }
