@@ -11,7 +11,7 @@ module AppealsApi
       appeal = appeal_class.find(appeal_id)
 
       if appeal.form_data.nil? && appeal.auth_headers.nil?
-        Rails.logger.error "#{appeal_class_str} missing PII. Can't retrieve ICN."
+        Rails.logger.error "#{appeal_class_str} missing PII, can't retrieve ICN. Appeal ID:#{appeal_id}."
       else
         appeal.update!(veteran_icn: target_veteran(appeal).mpi_icn)
       end
