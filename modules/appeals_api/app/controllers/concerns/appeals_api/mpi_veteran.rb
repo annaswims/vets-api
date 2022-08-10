@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module AppealsApi
-  module MpiVeteran
+  module MPIVeteran
     extend ActiveSupport::Concern
 
     included do

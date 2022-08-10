@@ -7,7 +7,7 @@ class AppealsApi::V2::DecisionReviews::HigherLevelReviewsController < AppealsApi
   include AppealsApi::JsonFormatValidation
   include AppealsApi::StatusSimulation
   include AppealsApi::CharacterUtilities
-  include AppealsApi::MpiVeteran
+  include AppealsApi::MPIVeteran
 
   skip_before_action :authenticate
   before_action :validate_json_format, if: -> { request.post? }
@@ -32,7 +32,7 @@ class AppealsApi::V2::DecisionReviews::HigherLevelReviewsController < AppealsApi
   def create
     @higher_level_review.save
     AppealsApi::PdfSubmitJob.perform_async(@higher_level_review.id, 'AppealsApi::HigherLevelReview', 'V2')
-    AppealsApi::AddIcnUpdater.perform_async(@higher_level_review.id,'AppealsApi::HigherLevelReview')
+    AppealsApi::AddIcnUpdater.perform_async(@higher_level_review.id, 'AppealsApi::HigherLevelReview')
     render_higher_level_review
   end
 

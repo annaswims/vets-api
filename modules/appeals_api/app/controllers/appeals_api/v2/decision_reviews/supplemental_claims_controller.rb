@@ -6,7 +6,7 @@ class AppealsApi::V2::DecisionReviews::SupplementalClaimsController < AppealsApi
   include AppealsApi::JsonFormatValidation
   include AppealsApi::StatusSimulation
   include AppealsApi::CharacterUtilities
-  include AppealsApi::MpiVeteran
+  include AppealsApi::MPIVeteran
 
   skip_before_action :authenticate
   before_action :validate_json_format, if: -> { request.post? }
