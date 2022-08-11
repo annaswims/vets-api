@@ -41,7 +41,7 @@ describe AppealsApi::V2::DecisionReviews::HigherLevelReviewsController, type: :r
         # Returns HLRs in desc creation date, so expect 2 before 1
         expect(parsed['data'][0]['id']).to eq(uuid_2)
         expect(parsed['data'][1]['id']).to eq(uuid_1)
-        # Includes form_data even if it's nil
+        # Strips out form_data
         expect(parsed['data'][1]['attributes']['form_data']).to be_nil
       end
     end

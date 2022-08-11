@@ -25,8 +25,10 @@ class AppealsApi::V2::DecisionReviews::HigherLevelReviewsController < AppealsApi
   SCHEMA_ERROR_TYPE = Common::Exceptions::DetailedSchemaErrors
 
   def index
-    veteran_hlrs = AppealsApi::HigherLevelReview.where(veteran_icn: target_veteran.mpi_icn).order(created_at: :desc)
-    render json: AppealsApi::HigherLevelReviewSerializer.new(veteran_hlrs).serializable_hash
+    veteran_hlrs = AppealsApi::HigherLevelReview.where(veteran_icn: target_veteran.mpi_icn)
+                                                .order(created_at: :desc)
+    options = { params: { is_collection: true } }
+    render json: AppealsApi::HigherLevelReviewSerializer.new(veteran_hlrs, options).serializable_hash
   end
 
   def create
