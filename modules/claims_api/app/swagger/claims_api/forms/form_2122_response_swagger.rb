@@ -54,7 +54,7 @@ module ClaimsApi
 
           property :phoneNumber do
             key :type, :string
-            key :example, '555-5555'
+            key :example, '5555555'
             key :description, 'phone number'
           end
         end
