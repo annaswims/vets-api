@@ -25,6 +25,7 @@ module Mobile
 
       def facility_ids
         ids = params.require(:facilityIds)
+        ids = ids.map { |id| Mobile::V0::Appointment.convert_non_prod_id!(id) }
         ids.join(',')
       end
 
