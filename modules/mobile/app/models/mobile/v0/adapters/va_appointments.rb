@@ -76,9 +76,13 @@ module Mobile
 
         # rubocop:disable Metrics/MethodLength
         def build_appointment_model(appointment_hash)
-          facility_id = appointment_hash[:facility_id]
+          facility_id = Mobile::V0::Appointment.convert_to_non_prod_id!(
+            appointment_hash[:facility_id]
+          )
 
-          sta6aid = appointment_hash[:sta6aid]
+          sta6aid = Mobile::V0::Appointment.convert_to_non_prod_id!(
+            appointment_hash[:sta6aid]
+          )
 
           details, type = parse_by_appointment_type(appointment_hash)
           healthcare_service = healthcare_service(appointment_hash, details, type)
