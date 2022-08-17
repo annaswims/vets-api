@@ -12,7 +12,6 @@
     "nodCreateParameters": {
       "type": "object",
       "properties": {
-        "X-VA-SSN":             { "$ref": "#/definitions/X-VA-SSN" },
         "X-VA-First-Name":      { "$ref": "#/definitions/X-VA-First-Name" },
         "X-VA-Middle-Initial":  { "$ref": "#/definitions/X-VA-Middle-Initial" },
         "X-VA-Last-Name":       { "$ref": "#/definitions/X-VA-Last-Name" },
@@ -37,14 +36,6 @@
         "X-VA-File-Number",
         "X-VA-Birth-Date"
       ]
-    },
-
-    "X-VA-SSN": {
-      "type": "string",
-      "description": "SSN",
-      "pattern": "^[0-9]{9}",
-      "minLength": 9,
-      "maxLength": 9
     },
 
     "X-VA-First-Name": {
