@@ -68,7 +68,17 @@ module Mobile
       attribute :best_time_to_call, Types::Array.optional
       attribute :friendly_location_name, Types::String.optional
 
-      def self.convert_non_prod_id!(id)
+      def self.convert_to_non_prod_id!(id)
+        return id if Settings.hostname == 'api.va.gov' || id.nil?
+
+        match = id.match(/\A(442|552)/)
+        return id unless match
+
+        return id.sub(match[0], '983') if match[0] == '442'
+        return id.sub(match[0], '984') if match[0] == '552'
+      end
+
+      def self.convert_from_non_prod_id!(id)
         return id if Settings.hostname == 'api.va.gov' || id.nil?
 
         match = id.match(/\A(983|984)/)

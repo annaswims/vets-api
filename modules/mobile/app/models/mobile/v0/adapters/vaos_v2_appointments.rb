@@ -70,9 +70,7 @@ module Mobile
 
         # rubocop:disable Metrics/MethodLength
         def build_appointment_model(appointment_hash)
-          facility_id = Mobile::V0::Appointment.convert_non_prod_id!(
-            appointment_hash[:location_id]
-          )
+          facility_id = appointment_hash[:location_id]
           sta6aid = facility_id
           type = parse_by_appointment_type(appointment_hash, appointment_hash[:kind])
           start_date_utc = start_date_utc(appointment_hash)
