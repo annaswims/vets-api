@@ -5,9 +5,7 @@ module Mobile
     module_function
 
     def get_facilities(facility_ids)
-      facilities_service.get_facilities(ids: facility_ids.to_a.map do |id|
-                                               "vha_#{Mobile::V0::Appointment.convert_to_non_prod_id!(id)}"
-                                             end.join(','))
+      facilities_service.get_facilities(ids: facility_ids.to_a.map { |id| "vha_#{id}"}.join(','))
     end
 
     def get_facility_names(facility_ids)

@@ -18,7 +18,7 @@ module Mobile
 
         def mfs_parse(facility, user, user_location)
           Mobile::V0::FacilityInfo.new(
-            id: facility.id,
+            id: Mobile::V0::Appointment.convert_to_non_prod_id!(facility.id),
             name: facility[:name],
             city: facility[:physical_address][:city],
             state: facility[:physical_address][:state],
@@ -29,7 +29,7 @@ module Mobile
 
         def legacy_parse(facility, user, user_location)
           Mobile::V0::FacilityInfo.new(
-            id: facility.id[4, 3],
+            id: Mobile::V0::Appointment.convert_to_non_prod_id!(facility.id[4, 3]),
             name: facility[:name],
             city: facility[:address].dig('physical', 'city'),
             state: facility[:address].dig('physical', 'state'),
