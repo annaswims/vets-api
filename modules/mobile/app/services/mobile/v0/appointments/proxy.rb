@@ -24,10 +24,13 @@ module Mobile
         end
 
         def fetch_facilities_from_ids(facility_ids, include_children)
+          facility_ids = facility_ids.map do |facility|
+            Mobile::V0::Appointment.convert_from_non_prod_id!(facility)
+          end.uniq
+
           if Flipper.enabled?(:mobile_appointment_use_VAOS_MFS)
-            new_fetch_facilities(facility_ids.uniq, include_children)
+            new_fetch_facilities(facility_ids, include_children)
           else
-            facility_ids.map { |facility| Mobile::V0::Appointment.convert_from_non_prod_id!(facility) }.uniq
             legacy_fetch_facilities(facility_ids)
           end
         end
