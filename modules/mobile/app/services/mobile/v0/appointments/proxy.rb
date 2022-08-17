@@ -24,7 +24,6 @@ module Mobile
         end
 
         def fetch_facilities_from_ids(facility_ids, include_children)
-
           if Flipper.enabled?(:mobile_appointment_use_VAOS_MFS)
             new_fetch_facilities(facility_ids.uniq, include_children)
           else
