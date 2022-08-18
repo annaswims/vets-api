@@ -59,8 +59,8 @@ describe Mobile::V0::Adapters::VAAppointments do
     it 'has a location with a name (address to be filled in by facilities api)' do
       expect(booked_va[:location].to_h).to eq(
         {
-          id: '442',
-          name: 'CHEYENNE VAMC',
+          id: '983',
+          name: 'CHYSHR-Cheyenne VA Medical Center',
           address: {
             street: nil,
             city: nil,
@@ -105,11 +105,11 @@ describe Mobile::V0::Adapters::VAAppointments do
     end
 
     it 'has a facility_id' do
-      expect(booked_va[:facility_id]).to eq('442')
+      expect(booked_va[:facility_id]).to eq('983')
     end
 
     it 'has a sta6aid' do
-      expect(booked_va[:sta6aid]).to eq('442')
+      expect(booked_va[:sta6aid]).to eq('983')
     end
   end
 
@@ -139,8 +139,8 @@ describe Mobile::V0::Adapters::VAAppointments do
     it 'has a location with a name (address to be filled in by facilities api)' do
       expect(cancelled_va[:location].to_h).to eq(
         {
-          id: '442',
-          name: 'CHEYENNE VAMC',
+          id: '983',
+          name: 'CHYSHR-Cheyenne VA Medical Center',
           address: {
             street: nil,
             city: nil,
@@ -181,11 +181,11 @@ describe Mobile::V0::Adapters::VAAppointments do
     end
 
     it 'has a facility_id' do
-      expect(cancelled_va[:facility_id]).to eq('442')
+      expect(cancelled_va[:facility_id]).to eq('983')
     end
 
     it 'has a sta6aid' do
-      expect(cancelled_va[:sta6aid]).to eq('442')
+      expect(cancelled_va[:sta6aid]).to eq('983')
     end
   end
 
@@ -215,8 +215,8 @@ describe Mobile::V0::Adapters::VAAppointments do
     it 'has a location with a url and code' do
       expect(booked_video_home[:location].to_h).to eq(
         {
-          id: '442',
-          name: 'CHEYENNE VAMC',
+          id: '983',
+          name: 'CHYSHR-Cheyenne VA Medical Center',
           address: {
             street: nil,
             city: nil,
@@ -283,8 +283,8 @@ describe Mobile::V0::Adapters::VAAppointments do
     it 'has a location with an address and a code' do
       expect(booked_video_atlas[:location].to_h).to eq(
         {
-          id: '442',
-          name: 'CHEYENNE VAMC',
+          id: '983',
+          name: 'CHYSHR-Cheyenne VA Medical Center',
           address: {
             street: '114 Dewey Ave',
             city: 'Eureka',
@@ -351,8 +351,8 @@ describe Mobile::V0::Adapters::VAAppointments do
     it 'has a location with a url and code' do
       expect(booked_video_gfe[:location].to_h).to eq(
         {
-          id: '442',
-          name: 'CHEYENNE VAMC',
+          id: '983',
+          name: 'CHYSHR-Cheyenne VA Medical Center',
           address: {
             street: nil,
             city: nil,
@@ -486,11 +486,11 @@ describe Mobile::V0::Adapters::VAAppointments do
       let(:appointment_different_ids) { appointment_facility_station_ids.first }
 
       it 'has the expected facility id' do
-        expect(appointment_different_ids.facility_id).to eq('442')
+        expect(appointment_different_ids.facility_id).to eq('983')
       end
 
       it 'has the expected sta6aid' do
-        expect(appointment_different_ids.sta6aid).to eq('442GC')
+        expect(appointment_different_ids.sta6aid).to eq('983GC')
       end
     end
 
@@ -498,11 +498,11 @@ describe Mobile::V0::Adapters::VAAppointments do
       let(:appointment_same_ids) { appointment_facility_station_ids.last }
 
       it 'has the expected facility id' do
-        expect(appointment_same_ids.facility_id).to eq('442')
+        expect(appointment_same_ids.facility_id).to eq('983')
       end
 
       it 'has the expected sta6aid' do
-        expect(appointment_same_ids.sta6aid).to eq('442')
+        expect(appointment_same_ids.sta6aid).to eq('983')
       end
     end
   end

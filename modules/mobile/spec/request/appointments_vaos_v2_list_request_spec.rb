@@ -27,7 +27,7 @@ RSpec.describe 'vaos v2 appointments', type: :request do
   end
 
   let(:mock_facility) do
-    mock_facility = { id: '442',
+    mock_facility = { id: '983',
                       name: 'Cheyenne VA Medical Center',
                       physical_address: { type: 'physical',
                                           line: ['2360 East Pershing Boulevard'],

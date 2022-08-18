@@ -254,15 +254,15 @@ describe Mobile::V0::Adapters::AppointmentRequests do
 
     describe 'facility_id' do
       it 'is set to the facility code' do
-        expect(adapted_va_appt_request.facility_id).to eq('442')
+        expect(adapted_va_appt_request.facility_id).to eq('983')
       end
     end
 
     describe 'location' do
       it 'sets facility id and name but leaves everything else nil' do
         expected_location = {
-          id: '442',
-          name: 'CHEYENNE VAMC',
+          id: '983',
+          name: 'CHYSHR-Cheyenne VA Medical Center',
           address: { street: nil, city: nil, state: nil, zip_code: nil },
           lat: nil,
           long: nil,

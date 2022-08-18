@@ -26,7 +26,7 @@
     ["CANCELLED BY PATIENT", "FUTURE"]},
   "service_name":"Friendly Name Optometry",
   "location":
-  {"id":"442",
+  {"id":"983",
     "name":"Cheyenne VA Medical Center",
     "physical_address":
     {"type":"physical",
@@ -49,7 +49,7 @@
     "status":"booked",
     "service_type":"optometry",
     "patient_icn":"1012853802V084487",
-    "location_id":"442",
+    "location_id":"983",
     "clinic":"408",
     "start":"2018-03-07T15:00:00Z",
     "end":"2018-03-07T15:30:00Z",
@@ -75,7 +75,7 @@
         "FUTURE"]},
     "service_name":"Friendly Name Optometry",
     "location":
-    {"id":"442",
+    {"id":"983",
       "name":"Cheyenne VA Medical Center",
       "physical_address":
       {"type":"physical",
@@ -91,7 +91,7 @@
   {"id":"72106","identifier":[{"system":"http://med.va.gov/fhir/urn/vaos/hsrm/id","value":"256471||180||1"}],"kind":"cc","status":"booked","service_type":"primaryCare","patient_Icn":"1012846043V576341","location_id":"984","start":"2022-01-11T15:00:00Z","created":"2022-01-10T22:02:08Z","cancellation_reason":{"code":"other"},"cancellable":true,"extension":{"cc_location":{"practice_name": "CC practice name","address":{"line":["1601 Needmore Rd Ste 1"],"city":"Dayton","state":"OH","postal_code":"45414","text":"1601\nNeedmore Rd Ste 1\nDayton OH 45414"}}}},
   {"id":"72105","identifier":[{"system":"http://med.va.gov/fhir/urn/vaos/hsrm/id","value":"11812"}],"kind":"cc","status":"proposed","service_type":"primaryCare","patient_icn":"1012846043V576341","location_id":"984","practitioners":[],"created":"2022-01-10T20:49:00Z","requested_periods":[{"start":"2022-01-26T00:00:00Z"}],"contact":{"telecom":[{"type":"phone","value":"2566832029"},{"type":"email","value":"Aarathi.poldass@va.gov"}]},"preferred_times_for_phone_call":["Morning"],"preferred_location":{"city":"Juneau","state":"AK"},"cancellation_reason":{"code":"other"},"comment":"this is a comment","preferred_language":"French","cancellable":true,"extension":{"cc_location":{"address":{}}}},
   {"id":"50956","identifier":[{"system":"http://med.va.gov/fhir/urn/vaos/ars/id","value":"8a48d8a47ba18356017ba7b8f666001c"}],"service_name":"Friendly Name Optometry","location":
-  {"id":"442",
+  {"id":"983",
     "name":"Cheyenne VA Medical Center",
     "physical_address":
     {"type":"physical",
@@ -106,7 +106,7 @@
     "code":null}, "kind":"clinic","status":"proposed","service_type":"socialWork","patient_icn":"1012845331V153043","location_id":"983","reason":"RoutineFollow-up","requested_periods":[{"start":"2021-09-28T00:00:00Z","end":"2021-09-28T11:59:59.999Z"}],"contact":{"telecom":[{"type":"email","value":"Aarathi.poldass@va.gov"},{"type":"phone","value":"7175555555"}]},"preferred_times_for_phone_call":["Evening"],"cancellation_reason":{"code":"other"},"cancellable":true},
   {"id":"53352","identifier":[{"system":"http://med.va.gov/fhir/urn/vaos/ars/id","value":"8a48a6147be6a5c2017be74b99220000"}],"kind":"phone","service_name":"Friendly Name Optometry",
     "location":
-    {"id":"442",
+    {"id":"983",
       "name":"Cheyenne VA Medical Center",
       "physical_address":
       {"type":"physical",

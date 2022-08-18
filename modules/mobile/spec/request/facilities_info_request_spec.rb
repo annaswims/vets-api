@@ -105,8 +105,8 @@ RSpec.describe 'facilities info', type: :request do
             get '/mobile/v0/facilities-info/home', headers: iam_headers, params: params
             facilities = response.parsed_body.dig('data', 'attributes', 'facilities')
             expect(response).to have_http_status(:ok)
-            expect(facilities[0]['id']).to eq('442')
-            expect(facilities[1]['id']).to eq('552')
+            expect(facilities[0]['id']).to eq('983')
+            expect(facilities[1]['id']).to eq('984')
             expect(response.body).to match_json_schema('facilities_info')
           end
         end
@@ -177,8 +177,8 @@ RSpec.describe 'facilities info', type: :request do
             get '/mobile/v0/facilities-info/home', headers: iam_headers, params: params
             facilities = response.parsed_body.dig('data', 'attributes', 'facilities')
             expect(response).to have_http_status(:ok)
-            expect(facilities[0]['id']).to eq('442')
-            expect(facilities[1]['id']).to eq('552')
+            expect(facilities[0]['id']).to eq('983')
+            expect(facilities[1]['id']).to eq('984')
             expect(response.body).to match_json_schema('facilities_info')
           end
         end

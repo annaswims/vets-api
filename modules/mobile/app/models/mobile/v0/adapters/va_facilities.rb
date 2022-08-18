@@ -35,7 +35,7 @@ module Mobile
           facilities&.map do |facility|
             next if facility.id.nil?
 
-            facility.id = "vha_#{facility.id.delete('vha_')}"
+            facility.id = "vha_#{Mobile::V0::Appointment.convert_to_non_prod_id!(facility.id.delete('vha_'))}"
           end
           facilities&.index_by(&:id)
         end
