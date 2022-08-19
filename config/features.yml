@@ -24,6 +24,10 @@ features:
     actor_type: user
     description: Whether to use MuleSoft when submitting to CARMA.
     enable_in_development: true
+  caregiver_async:
+    actor_type: user
+    description: Submit 1010cg applications using a background job
+    enable_in_development: false
   hca_american_indian_enabled:
     actor_type: user
     description: Enables American Indian SIGI question page.
@@ -95,7 +99,7 @@ features:
     description: Enables disclaimer for possible untranslated content on spanish pages
     enable_in_development: true
   check_in_experience_lorota_security_updates_enabled:
-    actor_type: user
+    actor_type: cookie_id
     description: Enables DOB instead of last 4 of SSN.
     enable_in_development: false
   check_in_experience_mock_enabled:
@@ -129,6 +133,7 @@ features:
   combined_financial_status_report:
     actor_type: user
     description: Enables users to submit FSR forms for VHA and VBA debts
+    enable_in_development: true
   communication_preferences:
     actor_type: user
     description: Allow user to access backend communication_preferences API
@@ -453,6 +458,9 @@ features:
     actor_type: user
     description: Allows to force the BAI experience for UAT testing
     enable_in_development: false
+  profile_show_payments_notification_setting:
+    actor_type: user
+    description: Show/Hide the payments section of notifications in profile
   profile_show_pronouns_and_sexual_orientation:
     actor_type: user
     description: Show/hide Pronouns and Sexual Orientation fields on profile page
@@ -695,6 +703,10 @@ features:
     actor_type: user
     enable_in_development: true
     description: Toggle for tickets with the label vaos-v2-next will be behind this flag
+  va_online_scheduling_appointment_list:
+    actor_type: user
+    enable_in_development: true
+    description: Toggle for the new appointment List feature
   va_view_dependents_access:
     actor_type: user
     description: Allows us to gate the View/ Modify dependents content in a progressive rollout

@@ -92,10 +92,28 @@ module Form526RapidReadyForDecisionConcern
   end
 
   def forward_to_mas?
+    return false unless Flipper.enabled?(:rrd_mas_disability_tracking)
+
     # only use the first diagnostic code because we can only support single-issue claims
+
     diagnostic_codes.size == 1 &&
       RapidReadyForDecision::Constants::MAS_DISABILITIES.include?(diagnostic_codes.first) &&
-      Flipper.enabled?(:rrd_mas_disability_tracking)
+      disabilities.first['disabilityActionType']&.upcase == 'INCREASE' &&
+      !pending_eps?
+  end
+
+  def insert_classification_codes
+    submission_data = JSON.parse(form_json)
+    disabilities = submission_data.dig('form526', 'form526', 'disabilities')
+    disabilities.each do |disability|
+      mas_classification_code = RapidReadyForDecision::Constants::MAS_RELATED_CONTENTIONS[disability['diagnosticCode']]
+
+      unless mas_classification_code.nil? || disability['classificationCode']
+        disability['classificationCode'] = mas_classification_code
+      end
+    end
+    update!(form_json: JSON.dump(submission_data))
+    invalidate_form_hash
   end
 
   private
