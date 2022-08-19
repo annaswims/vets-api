@@ -26,6 +26,14 @@ module MPI
         ssn
       ].freeze
 
+      REQUIRED_ADDRESS_FIELDS = %i[
+        street_address_lines
+        city
+        state
+        postal_code
+        country
+      ].freeze
+
       def initialize(profile,
                      orch_search: false,
                      edipi: nil,
@@ -46,6 +54,9 @@ module MPI
       def required_fields_present?(profile)
         fields = FindProfileMessageFields.new(profile)
         fields.validate
+
+        # Address can be used in lieu of SSN
+        fields.missing_keys.delete('ssn') if fields.missing_address_keys.empty?
 
         raise ArgumentError, "required keys are missing: #{fields.missing_keys}" if fields.missing_keys.present?
         if fields.missing_values.present?
