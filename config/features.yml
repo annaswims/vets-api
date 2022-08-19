@@ -24,6 +24,10 @@ features:
     actor_type: user
     description: Whether to use MuleSoft when submitting to CARMA.
     enable_in_development: true
+  caregiver_async:
+    actor_type: user
+    description: Submit 1010cg applications using a background job
+    enable_in_development: false
   hca_american_indian_enabled:
     actor_type: user
     description: Enables American Indian SIGI question page.
@@ -95,7 +99,7 @@ features:
     description: Enables disclaimer for possible untranslated content on spanish pages
     enable_in_development: true
   check_in_experience_lorota_security_updates_enabled:
-    actor_type: user
+    actor_type: cookie_id
     description: Enables DOB instead of last 4 of SSN.
     enable_in_development: false
   check_in_experience_mock_enabled:
@@ -129,6 +133,7 @@ features:
   combined_financial_status_report:
     actor_type: user
     description: Enables users to submit FSR forms for VHA and VBA debts
+    enable_in_development: true
   communication_preferences:
     actor_type: user
     description: Allow user to access backend communication_preferences API
@@ -429,6 +434,10 @@ features:
   profile_get_military_info_from_vaprofile:
     actor_type: user
     description: When enabled, the profile page will get military service history from VA Profile instead of eMIS.
+  profile_hide_direct_deposit_comp_and_pen:
+    actor_type: user
+    description: Hides disability comp and pen section of the Profile - Direct Deposit page during a service outage
+    enable_in_development: true
   profile_notification_settings:
     actor_type: user
     description: Turns on the Notification Settings section of the VA.gov Profile
@@ -691,6 +700,10 @@ features:
     actor_type: user
     enable_in_development: true
     description: Toggle for tickets with the label vaos-v2-next will be behind this flag
+  va_online_scheduling_appointment_list:
+    actor_type: user
+    enable_in_development: true
+    description: Toggle for the new appointment List feature
   va_view_dependents_access:
     actor_type: user
     description: Allows us to gate the View/ Modify dependents content in a progressive rollout
@@ -736,4 +749,8 @@ features:
   payment_history:
     actor_type: user
     description: Allows manual enabling/disabling payment history when BGS is acting up (5 min response times)
+    enable_in_development: true
+  show_digital_form_1095b:
+    actor_type: user
+    description: Enables access to digital 1095-B form download
     enable_in_development: true

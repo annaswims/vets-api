@@ -1132,7 +1132,7 @@ RSpec.describe User, type: :model do
                                 edipi: edipi,
                                 mhv_correlation_id: mhv_correlation_id))
     end
-    let!(:user_verification) { Login::UserVerifier.new(user).perform }
+    let!(:user_verification) { Login::UserVerifier.new(user.identity).perform }
     let(:authn_context) { LOA::IDME_LOA1_VETS }
     let(:logingov_uuid) { 'some-logingov-uuid' }
     let(:idme_uuid) { 'some-idme-uuid' }
@@ -1204,7 +1204,7 @@ RSpec.describe User, type: :model do
 
   describe '#user_account' do
     let(:user) { described_class.new(build(:user)) }
-    let!(:user_account) { Login::UserVerifier.new(user).perform.user_account }
+    let!(:user_account) { Login::UserVerifier.new(user.identity).perform.user_account }
 
     it 'returns expected user_account' do
       expect(user.user_account).to eq(user_account)
@@ -1213,7 +1213,7 @@ RSpec.describe User, type: :model do
 
   describe '#inherited_proof_verified' do
     let(:user) { described_class.new(build(:user)) }
-    let(:user_account) { Login::UserVerifier.new(user).perform.user_account }
+    let(:user_account) { Login::UserVerifier.new(user.identity).perform.user_account }
 
     context 'when Inherited Proof Verified User Account exists and matches current user_account' do
       let!(:inherited_proof_verified) { create(:inherited_proof_verified_user_account, user_account: user_account) }
@@ -1253,6 +1253,34 @@ RSpec.describe User, type: :model do
 
       it 'does not make a call to MPI to create a new user' do
         expect_any_instance_of(MPI::Service).not_to receive(:add_person_implicit_search)
+        subject
+      end
+    end
+  end
+
+  describe '#mpi_update_profile' do
+    subject { user.mpi_update_profile }
+
+    let(:user) { create(:user, :loa3) }
+
+    before do
+      allow_any_instance_of(MPI::Service).to receive(:update_profile)
+    end
+
+    context 'when loa3? is true' do
+      before { stub_mpi_not_found }
+
+      it 'makes a call to MPI to update a user correlation profile' do
+        expect_any_instance_of(MPI::Service).to receive(:update_profile)
+        subject
+      end
+    end
+
+    context 'when loa3? is false' do
+      let(:user) { create(:user) }
+
+      it 'does not make a call to MPI to update a user correlation profile' do
+        expect_any_instance_of(MPI::Service).not_to receive(:update_profile)
         subject
       end
     end

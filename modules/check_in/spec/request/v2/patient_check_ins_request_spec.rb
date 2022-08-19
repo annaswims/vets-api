@@ -9,7 +9,6 @@ RSpec.describe 'V2::PatientCheckIns', type: :request do
   before do
     allow(Rails).to receive(:cache).and_return(memory_store)
     allow(Flipper).to receive(:enabled?).with('check_in_experience_enabled').and_return(true)
-    allow(Flipper).to receive(:enabled?).with('check_in_experience_lorota_security_updates_enabled').and_return(false)
     allow(Flipper).to receive(:enabled?).with('check_in_experience_mock_enabled').and_return(false)
     allow(Flipper).to receive(:enabled?).with('check_in_experience_504_error_mapping_enabled')
                                         .and_return(false)
@@ -140,6 +139,7 @@ RSpec.describe 'V2::PatientCheckIns', type: :request do
           'facility' => 'VEHU DIVISION',
           'kind' => 'clinic',
           'startTime' => '2021-12-23T08:30:00',
+          'stationNo' => 500,
           'status' => ''
         }
       end
@@ -289,6 +289,7 @@ RSpec.describe 'V2::PatientCheckIns', type: :request do
           'facility' => 'VEHU DIVISION',
           'kind' => 'clinic',
           'startTime' => '2021-12-23T08:30:00',
+          'stationNo' => 500,
           'status' => ''
         }
       end
@@ -322,11 +323,6 @@ RSpec.describe 'V2::PatientCheckIns', type: :request do
             }
           }
         }
-      end
-
-      before do
-        allow(Flipper).to receive(:enabled?).with('check_in_experience_lorota_security_updates_enabled')
-                                            .and_return(true)
       end
 
       it 'returns valid response' do
@@ -481,11 +477,6 @@ RSpec.describe 'V2::PatientCheckIns', type: :request do
       end
       let(:body) { { 'data' => 'Checkin successful', 'status' => 200 } }
       let(:success_resp) { Faraday::Response.new(body: body, status: 200) }
-
-      before do
-        allow(Flipper).to receive(:enabled?).with('check_in_experience_lorota_security_updates_enabled')
-                                            .and_return(true)
-      end
 
       it 'returns a successful response' do
         VCR.use_cassette 'check_in/lorota/token/token_200' do

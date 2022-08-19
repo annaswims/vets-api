@@ -46,7 +46,7 @@ module DebtManagementCenter
       def post(path, params)
         with_monitoring do
           connection.post(path) do |req|
-            req.body = Oj.dump(params)
+            req.body = params
           end
         end
       end
@@ -78,7 +78,7 @@ module DebtManagementCenter
         {
           'Host' => host,
           'Content-Type' => 'application/json',
-          'x-api-key' => settings.api_key
+          'apiKey' => settings.api_key
         }
       end
 

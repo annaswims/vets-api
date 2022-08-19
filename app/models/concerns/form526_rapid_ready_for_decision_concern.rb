@@ -2,49 +2,15 @@
 
 require 'mail_automation/client'
 
-# rubocop:disable Metrics/ModuleLength
 module Form526RapidReadyForDecisionConcern
   extend ActiveSupport::Concern
 
   def send_rrd_alert_email(subject, message, error = nil, to = Settings.rrd.alerts.recipients)
-    body = <<~BODY
-      Environment: #{Settings.vsp_environment}<br/>
-      Form526Submission.id: #{id}<br/>
-      <br/>
-      #{message}<br/>
-    BODY
-    body += "<br/>Error backtrace:\n #{error.backtrace.join(",<br/>\n ")}" if error
-    ActionMailer::Base.mail(
-      from: ApplicationMailer.default[:from],
-      to: to,
-      subject: subject,
-      body: body
-    ).deliver_now
+    RrdAlertMailer.build(self, subject, message, error, to).deliver_now
   end
 
   def notify_mas_tracking
-    message = <<~BODY
-      #{disabilities.pluck('name', 'diagnosticCode').join(', ')}
-      <table border="1" cellspacing="1" cellpadding="5"><thead>
-          <tr>
-            <td>Benefit Claim Id</td>
-            <td>Submission Date</td>
-            <td>Submission Time</td>
-            <td>Submission ID</td>
-          </tr>
-        </thead><tbody>
-          <tr>
-            <td>#{submitted_claim_id}</td>
-            <td>#{created_at.to_date}</td>
-            <td>#{created_at.strftime '%H:%M:%S'}</td>
-            <td>#{id}</td>
-          </tr>
-        </tbody>
-      </table>
-    BODY
-
-    send_rrd_alert_email("MA claim - #{diagnostic_codes.join(', ')}", message, nil,
-                         Settings.rrd.mas_tracking.recipients)
+    RrdMasNotificationMailer.build(self).deliver_now
   end
 
   def notify_mas
@@ -126,10 +92,28 @@ module Form526RapidReadyForDecisionConcern
   end
 
   def forward_to_mas?
+    return false unless Flipper.enabled?(:rrd_mas_disability_tracking)
+
     # only use the first diagnostic code because we can only support single-issue claims
+
     diagnostic_codes.size == 1 &&
       RapidReadyForDecision::Constants::MAS_DISABILITIES.include?(diagnostic_codes.first) &&
-      Flipper.enabled?(:rrd_mas_disability_tracking)
+      disabilities.first['disabilityActionType']&.upcase == 'INCREASE' &&
+      !pending_eps?
+  end
+
+  def insert_classification_codes
+    submission_data = JSON.parse(form_json)
+    disabilities = submission_data.dig('form526', 'form526', 'disabilities')
+    disabilities.each do |disability|
+      mas_classification_code = RapidReadyForDecision::Constants::MAS_RELATED_CONTENTIONS[disability['diagnosticCode']]
+
+      unless mas_classification_code.nil? || disability['classificationCode']
+        disability['classificationCode'] = mas_classification_code
+      end
+    end
+    update!(form_json: JSON.dump(submission_data))
+    invalidate_form_hash
   end
 
   private
@@ -144,4 +128,3 @@ module Form526RapidReadyForDecisionConcern
     rrd_pdf_added_for_uploading? && rrd_special_issue_set?
   end
 end
-# rubocop:enable Metrics/ModuleLength

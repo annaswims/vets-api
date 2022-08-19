@@ -22,7 +22,20 @@ RSpec.describe UserSessionForm, type: :model do
 
   context 'with ID.me UUID in SAML' do
     let(:saml_attributes) do
-      build(:ssoe_idme_mhv_premium)
+      build(:ssoe_idme_mhv_premium, va_eauth_gcIds: va_eauth_gc_ids)
+    end
+    let(:va_eauth_gc_ids) do
+      ['1012853550V207686^NI^200M^USVHA^P|'\
+       '552151510^PI^989^USVHA^A|'\
+       '943571^PI^979^USVHA^A|'\
+       '12345748^PI^200MH^USVHA^A|'\
+       '1012853550^PN^200PROV^USDVA^A|'\
+       '7219295^PI^983^USVHA^A|'\
+       '552161765^PI^984^USVHA^A|'\
+       '2107307560^NI^200DOD^USDOD^A|'\
+       '7b9b5861203244f0b99b02b771159044^PN^200VIDM^USDVA^A|'\
+       '0e1bb5723d7c4f0686f46ca4505642ad^PN^200VIDM^USDVA^A|'\
+       '12345748^PI^200MHS^USVHA^A']
     end
 
     it 'instantiates cleanly' do
@@ -40,6 +53,34 @@ RSpec.describe UserSessionForm, type: :model do
       expect(form.user_identity.idme_uuid)
         .to eq(saml_attributes['va_eauth_uid'])
     end
+
+    context 'and ID.me UUID not in SAML GCids' do
+      let(:va_eauth_gc_ids) do
+        ['1012853550V207686^NI^200M^USVHA^P|'\
+         '552151510^PI^989^USVHA^A|'\
+         '943571^PI^979^USVHA^A|'\
+         '12345748^PI^200MH^USVHA^A|'\
+         '1012853550^PN^200PROV^USDVA^A|'\
+         '7219295^PI^983^USVHA^A|'\
+         '552161765^PI^984^USVHA^A|'\
+         '2107307560^NI^200DOD^USDOD^A|'\
+         '12345748^PI^200MHS^USVHA^A']
+      end
+      let(:add_person_response) do
+        MPI::Responses::AddPersonResponse.new(status: status, mvi_codes: mvi_codes, error: nil)
+      end
+      let(:status) { 'OK' }
+      let(:mvi_codes) { { icn: saml_attributes[:va_eauth_icn] } }
+
+      before do
+        allow_any_instance_of(MPI::Service).to receive(:add_person_implicit_search).and_return(add_person_response)
+      end
+
+      it 'adds the ID.me UUID to the existing mpi record' do
+        expect_any_instance_of(MPI::Service).to receive(:add_person_implicit_search)
+        UserSessionForm.new(saml_response)
+      end
+    end
   end
 
   context 'with ID.me UUID not present in SAML' do
@@ -49,35 +90,63 @@ RSpec.describe UserSessionForm, type: :model do
       end
       let(:icn) { saml_attributes[:va_eauth_icn] }
       let(:expected_log_message) { "[UserSessionForm] Multiple matching accounts for icn:#{icn}" }
+      let!(:account) { create(:account, icn: icn) }
 
-      it 'raises a validation error' do
-        expect { UserSessionForm.new(saml_response) }.to raise_error { |error|
-          expect(error).to be_a(SAML::UserAttributeError)
-        }
+      context 'and there are no existing account mappings for the user' do
+        let(:account) { nil }
+        let(:expected_error) { SAML::UserAttributeError }
+
+        it 'raises a saml user attribute error' do
+          expect { UserSessionForm.new(saml_response) }.to raise_error(SAML::UserAttributeError)
+        end
       end
 
-      it 'instantiates if a unique account mapping exists' do
-        create(:account, icn: saml_attributes[:va_eauth_icn])
-        UserSessionForm.new(saml_response)
+      context 'when multiple account mappings exist' do
+        let!(:second_account) { create(:account, icn: icn) }
+
+        it 'raises a validation error ands logs a message' do
+          expect(Rails.logger).to receive(:info).with(expected_log_message)
+
+          expect { UserSessionForm.new(saml_response) }.to raise_error(SAML::UserAttributeError)
+        end
       end
 
-      it 'raises a validation error ands logs a message if multiple account mappings exist' do
-        create(:account, icn: icn)
-        create(:account, icn: icn)
+      context 'when credential identifier can be found on existing account' do
+        let!(:account) { create(:account, icn: saml_attributes[:va_eauth_icn]) }
+        let(:add_person_response) do
+          MPI::Responses::AddPersonResponse.new(status: status, mvi_codes: mvi_codes, error: nil)
+        end
+        let(:status) { 'OK' }
+        let(:mvi_codes) { { icn: saml_attributes[:va_eauth_icn] } }
 
-        expect(Rails.logger).to receive(:info).with(expected_log_message)
+        before do
+          allow_any_instance_of(MPI::Service).to receive(:add_person_implicit_search).and_return(add_person_response)
+        end
 
-        expect { UserSessionForm.new(saml_response) }.to raise_error { |error|
-          expect(error).to be_a(SAML::UserAttributeError)
-        }
-      end
+        it 'uses the injected identifier as the user key' do
+          subject = UserSessionForm.new(saml_response)
+          subject.persist
+          expect(User.find(account.idme_uuid)).to be_truthy
+          expect(UserIdentity.find(account.idme_uuid)).to be_truthy
+        end
 
-      it 'uses the injected identifier as the user key' do
-        account = create(:account, icn: saml_attributes[:va_eauth_icn])
-        subject = UserSessionForm.new(saml_response)
-        subject.persist
-        expect(User.find(account.idme_uuid)).to be_truthy
-        expect(UserIdentity.find(account.idme_uuid)).to be_truthy
+        it 'adds the identifier to an existing mpi record' do
+          expect_any_instance_of(MPI::Service).to receive(:add_person_implicit_search)
+          UserSessionForm.new(saml_response)
+        end
+
+        context 'when failure occurs during adding identifier to existing mpi record' do
+          let(:status) { 'some-not-successful-status' }
+          let(:idme_uuid) { account.idme_uuid }
+          let(:logingov_uuid) { account.logingov_uuid }
+          let(:sentry_log) { "Failed Add CSP ID to MPI FAILED, idme: #{idme_uuid}, logingov: #{logingov_uuid}" }
+          let(:sentry_level) { :warn }
+
+          it 'logs a message to sentry' do
+            expect_any_instance_of(UserSessionForm).to receive(:log_message_to_sentry).with(sentry_log, sentry_level)
+            UserSessionForm.new(saml_response)
+          end
+        end
       end
     end
 

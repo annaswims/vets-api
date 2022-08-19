@@ -18,6 +18,20 @@ describe MPI::Service do
   let(:icn_with_aaid) { '1008714701V416111^NI^200M^USVHA' }
   let(:not_found) { MPI::Responses::FindProfileResponse::RESPONSE_STATUS[:not_found] }
   let(:server_error) { MPI::Responses::FindProfileResponse::RESPONSE_STATUS[:server_error] }
+  let(:code_system) { '2.16.840.1.113883.5.1100' }
+  let(:mpi_error_code) { 'INTERR' }
+  let(:ack_detail_code) { 'AE' }
+  let(:error_texts) { ['Internal System Error'] }
+  let(:error_display_name) { 'Internal System Error' }
+  let(:id_extension) { '200VGOV-1373004c-e23e-4d94-90c5-5b101f6be54a' }
+  let(:error_details) do
+    { other: [{ codeSystem: code_system,
+                code: mpi_error_code,
+                displayName: error_display_name }],
+      error_details: { ack_detail_code: ack_detail_code,
+                       id_extension: id_extension,
+                       error_texts: error_texts } }
+  end
 
   let(:mvi_profile) do
     build(
@@ -110,37 +124,53 @@ describe MPI::Service do
     end
 
     context 'invalid requests' do
-      it 'responds with a SERVER_ERROR if request is invalid', :aggregate_failures do
-        expect(subject).to receive(:log_exception_to_sentry)
+      context 'generic invalid request' do
+        it 'responds with a SERVER_ERROR if request is invalid', :aggregate_failures do
+          expect(subject).to receive(:log_exception_to_sentry)
 
-        VCR.use_cassette('mpi/add_person/add_person_invalid_request') do
-          response = subject.add_person_proxy(user)
-          exception = response.error.errors.first
+          VCR.use_cassette('mpi/add_person/add_person_invalid_request') do
+            response = subject.add_person_proxy(user)
+            exception = response.error.errors.first
+            mpi_error_details = response.error.original_body
 
-          expect(response.class).to eq MPI::Responses::AddPersonResponse
-          expect(response.status).to eq server_error
-          expect(response.mvi_codes).to be_nil
-          expect(exception.title).to eq 'Bad Gateway'
-          expect(exception.code).to eq 'MVI_502'
-          expect(exception.status).to eq '502'
-          expect(exception.source).to eq MPI::Service
+            expect(response.class).to eq MPI::Responses::AddPersonResponse
+            expect(response.status).to eq server_error
+            expect(response.mvi_codes).to be_nil
+            expect(exception.title).to eq 'Bad Gateway'
+            expect(exception.code).to eq 'MVI_502'
+            expect(exception.status).to eq '502'
+            expect(exception.source).to eq MPI::Service
+
+            expect(mpi_error_details).to eq(error_details)
+          end
         end
       end
 
-      it 'responds with a SERVER_ERROR if the user has duplicate keys in the system', :aggregate_failures do
-        expect(subject).to receive(:log_exception_to_sentry)
+      context 'request with duplicate keys' do
+        let(:code_system) { '2.16.840.1.113883.5.4' }
+        let(:mpi_error_code) { 'Key205' }
+        let(:error_texts) { ['identified as a duplicate'] }
+        let(:error_display_name) { 'Duplicate Key Identifier' }
+        let(:id_extension) { '200VGOV-ac8c9bae-cd12-4609-811c-00bde47373bf' }
 
-        VCR.use_cassette('mpi/add_person/add_person_duplicate') do
-          response = subject.add_person_proxy(user)
-          exception = response.error.errors.first
+        it 'responds with a SERVER_ERROR if the user has duplicate keys in the system', :aggregate_failures do
+          expect(subject).to receive(:log_exception_to_sentry)
 
-          expect(response.class).to eq MPI::Responses::AddPersonResponse
-          expect(response.status).to eq server_error
-          expect(response.mvi_codes).to be_nil
-          expect(exception.title).to eq 'Duplicate Keys'
-          expect(exception.code).to eq 'MVI_502_DUP'
-          expect(exception.status).to eq '502'
-          expect(exception.source).to eq MPI::Service
+          VCR.use_cassette('mpi/add_person/add_person_duplicate') do
+            response = subject.add_person_proxy(user)
+            exception = response.error.errors.first
+            mpi_error_details = response.error.original_body
+
+            expect(response.class).to eq MPI::Responses::AddPersonResponse
+            expect(response.status).to eq server_error
+            expect(response.mvi_codes).to be_nil
+            expect(exception.title).to eq 'Duplicate Keys'
+            expect(exception.code).to eq 'MVI_502_DUP'
+            expect(exception.status).to eq '502'
+            expect(exception.source).to eq MPI::Service
+
+            expect(mpi_error_details).to eq(error_details)
+          end
         end
       end
     end
@@ -234,6 +264,7 @@ describe MPI::Service do
         VCR.use_cassette('mpi/add_person/add_person_implicit_search_server_error') do
           response = subject.add_person_implicit_search(user)
           exception = response.error.errors.first
+          mpi_error_details = response.error.original_body
 
           expect(response.class).to eq MPI::Responses::AddPersonResponse
           expect(response.status).to eq server_error
@@ -242,6 +273,8 @@ describe MPI::Service do
           expect(exception.code).to eq 'MVI_502'
           expect(exception.status).to eq '502'
           expect(exception.source).to eq MPI::Service
+
+          expect(mpi_error_details).to eq(error_details)
         end
       end
     end
@@ -274,6 +307,142 @@ describe MPI::Service do
         MPI::Configuration.instance.breakers_service.begin_forced_outage!
         expect(Raven).to receive(:extra_context).once
         response = subject.add_person_implicit_search(user)
+
+        exception = response.error.errors.first
+
+        expect(response.class).to eq MPI::Responses::AddPersonResponse
+        expect(response.status).to eq server_error
+        expect(response.mvi_codes).to be_nil
+        expect(exception.title).to eq 'Service unavailable'
+        expect(exception.code).to eq 'MVI_503'
+        expect(exception.status).to eq '503'
+        expect(exception.source).to eq MPI::Service
+      end
+    end
+  end
+
+  describe '.update_profile' do
+    before do
+      expect(MPI::Messages::UpdateProfileMessage).to receive(:new).once.and_call_original
+    end
+
+    context 'valid request' do
+      let(:user) do
+        build(:user,
+              :loa3,
+              ssn: ssn,
+              first_name: first_name,
+              last_name: last_name,
+              birth_date: birth_date,
+              icn: icn,
+              idme_uuid: idme_uuid)
+      end
+      let(:ssn) { 796_111_863 }
+      let(:first_name) { 'abraham' }
+      let(:last_name) { 'lincoln' }
+      let(:birth_date) { '18090212' }
+      let(:icn) { '1013677101V363970' }
+      let(:idme_uuid) { 'b2fab2b56af045e1a9e2394347af91ef' }
+      let(:expected_response_codes) { { idme_uuid: idme_uuid } }
+
+      it 'successfully updates a correlation profile in MPI' do
+        VCR.use_cassette('mpi/update_profile/update_profile_success') do
+          response = subject.update_profile(user)
+          expect(response.status).to eq('OK')
+          expect(response.mvi_codes).to have_deep_attributes(expected_response_codes)
+        end
+      end
+
+      it 'returns no errors' do
+        VCR.use_cassette('mpi/update_profile/update_profile_success') do
+          response = subject.update_profile(user)
+
+          expect(response.error).to be_nil
+        end
+      end
+    end
+
+    context 'failed requests' do
+      it 'properly responds if a server error occurs', :aggregate_failures do
+        expect(subject).to receive(:log_exception_to_sentry)
+
+        VCR.use_cassette('mpi/update_profile/update_profile_server_error') do
+          response = subject.update_profile(user)
+          exception = response.error.errors.first
+          mpi_error_details = response.error.original_body
+
+          expect(response.class).to eq MPI::Responses::AddPersonResponse
+          expect(response.status).to eq server_error
+          expect(response.mvi_codes).to be_nil
+          expect(exception.title).to eq 'Bad Gateway'
+          expect(exception.code).to eq 'MVI_502'
+          expect(exception.status).to eq '502'
+          expect(exception.source).to eq MPI::Service
+
+          expect(mpi_error_details).to eq(error_details)
+        end
+      end
+    end
+
+    context 'invalid requests' do
+      let(:code_system) { '2.16.840.1.113883.3.2017.11.6.1' }
+      let(:mpi_error_code) { 'PNUPDATE000005' }
+      let(:error_texts) do
+        ['Enterprise ID 1012592956V095840 passed is not linked to ID e4fd21a4-a677-4118-8c57-1f630cbc2a06',
+         'Correlation NOT FOUND']
+      end
+      let(:error_display_name) { 'ICN-EDI PI Correlation does not exist' }
+      let(:id_extension) { '200VGOV-0a8c7539-3490-4c5c-b36f-9df9c16af3a2' }
+
+      it 'properly responds if an invalid request is made', :aggregate_failures do
+        expect(subject).to receive(:log_exception_to_sentry)
+
+        VCR.use_cassette('mpi/update_profile/update_profile_failed_no_correlation') do
+          response = subject.update_profile(user)
+          exception = response.error.errors.first
+          mpi_error_details = response.error.original_body
+
+          expect(response.class).to eq MPI::Responses::AddPersonResponse
+          expect(response.status).to eq server_error
+          expect(response.mvi_codes).to be_nil
+          expect(exception.title).to eq 'Bad Gateway'
+          expect(exception.code).to eq 'MVI_502'
+          expect(exception.status).to eq '502'
+          expect(exception.source).to eq MPI::Service
+
+          expect(mpi_error_details).to eq(error_details)
+        end
+      end
+    end
+
+    context 'with an MVI timeout' do
+      let(:base_path) { MPI::Configuration.instance.base_path }
+
+      it 'raises a service error', :aggregate_failures do
+        allow_any_instance_of(Faraday::Connection).to receive(:post).and_raise(Faraday::TimeoutError)
+        expect(subject).to receive(:log_message_to_sentry).with(
+          'MVI update_profile error: Gateway timeout',
+          :warn
+        )
+        response = subject.update_profile(user)
+
+        exception = response.error.errors.first
+
+        expect(response.class).to eq MPI::Responses::AddPersonResponse
+        expect(response.status).to eq server_error
+        expect(response.mvi_codes).to be_nil
+        expect(exception.title).to eq 'Gateway timeout'
+        expect(exception.code).to eq 'MVI_504'
+        expect(exception.status).to eq '504'
+        expect(exception.source).to eq MPI::Service
+      end
+    end
+
+    context 'with an ongoing breakers outage' do
+      it 'returns the correct thing', :aggregate_failures do
+        MPI::Configuration.instance.breakers_service.begin_forced_outage!
+        expect(Raven).to receive(:extra_context).once
+        response = subject.update_profile(user)
 
         exception = response.error.errors.first
 

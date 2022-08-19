@@ -939,6 +939,7 @@ flipper:
     - scy0846@gmail.com # Taylor Mitchell - GCIO
     - ssuddath@governmentcio.com
     - stephen.barrs@gmail.com
+    - teagan.stephenson@bracari.com
     - tim.wright@adhocteam.us
     - tony.williams@va.gov
     - travis.hilton@oddball.io
@@ -986,6 +987,7 @@ flipper:
     - andrew.barrett1986@gmail.com # DGIB managed service Operations Lead
     - erica.sauve@adhocteam.us # Erica Suave - APM Adhoc Auth Exp
     - ajakabcin@gmail.com # Ana Jakabcin - PM Adhoc Auth Exp
+    - cesar.santiago@accenturefederal.com # My Education Benefits Team Lead
 
 bgs:
   application: ~
@@ -1380,10 +1382,10 @@ sidekiq:
   github_api_key: ~
 
 lgy:
-  base_url: ~
+  base_url: 'http://www.example.com'
   app_id: ~
   api_key: ~
-  mock_coe: false
+  mock_coe: true 
 
 form1095_b:
   s3:

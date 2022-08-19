@@ -52,7 +52,11 @@ class UserSessionForm
 
   def normalize_saml(saml_user)
     saml_user.validate!
-    saml_user.to_hash
+    saml_user_attributes = saml_user.to_hash
+    if saml_user.needs_csp_id_mpi_update?
+      add_csp_id_to_mpi(saml_user_attributes, saml_user_attributes[:idme_uuid], saml_user_attributes[:logingov_uuid])
+    end
+    saml_user_attributes
   rescue SAML::UserAttributeError => e
     raise unless e.code == SAML::UserAttributeError::UUID_MISSING_CODE
 
@@ -60,9 +64,33 @@ class UserSessionForm
     raise if idme_uuid.blank? && logingov_uuid.blank?
 
     Rails.logger.info('Account UUID injected into user SAML attributes')
-    saml_user.to_hash.merge({ uuid: idme_uuid || logingov_uuid,
-                              idme_uuid: idme_uuid,
-                              logingov_uuid: logingov_uuid })
+    saml_user_attributes = saml_user.to_hash
+    add_csp_id_to_mpi(saml_user_attributes, idme_uuid, logingov_uuid)
+    saml_user_attributes.merge({ uuid: idme_uuid || logingov_uuid,
+                                 idme_uuid: idme_uuid,
+                                 logingov_uuid: logingov_uuid })
+  end
+
+  def add_csp_id_to_mpi(saml_user_attributes, idme_uuid, logingov_uuid)
+    return unless saml_user_attributes[:loa][:current] == LOA::THREE
+
+    Rails.logger.info("[UserSessionForm] Adding CSP ID to MPI, idme: #{idme_uuid}, logingov: #{logingov_uuid}")
+    add_csp_id_user_identity = UserIdentity.new({ idme_uuid: idme_uuid,
+                                                  logingov_uuid: logingov_uuid,
+                                                  loa: saml_user_attributes[:loa],
+                                                  sign_in: saml_user_attributes[:sign_in],
+                                                  first_name: saml_user_attributes[:first_name],
+                                                  last_name: saml_user_attributes[:last_name],
+                                                  birth_date: saml_user_attributes[:birth_date],
+                                                  ssn: saml_user_attributes[:ssn],
+                                                  edipi: saml_user_attributes[:edipi],
+                                                  icn: saml_user_attributes[:mhv_icn],
+                                                  mhv_icn: saml_user_attributes[:mhv_icn],
+                                                  uuid: idme_uuid || logingov_uuid })
+    mpi_response = MPI::Service.new.add_person_implicit_search(add_csp_id_user_identity)
+    unless mpi_response.ok?
+      log_message_to_sentry("Failed Add CSP ID to MPI FAILED, idme: #{idme_uuid}, logingov: #{logingov_uuid}", :warn)
+    end
   end
 
   def uuid_from_account(identifier)

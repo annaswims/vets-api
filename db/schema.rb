@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_07_27_124515) do
+ActiveRecord::Schema.define(version: 2022_08_09_191220) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gin"
@@ -131,6 +131,8 @@ ActiveRecord::Schema.define(version: 2022_07_27_124515) do
     t.text "auth_headers_ciphertext"
     t.text "encrypted_kms_key"
     t.date "verified_decryptable_at"
+    t.string "veteran_icn"
+    t.index ["veteran_icn"], name: "index_appeals_api_higher_level_reviews_on_veteran_icn"
   end
 
   create_table "appeals_api_notice_of_disagreements", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -147,6 +149,8 @@ ActiveRecord::Schema.define(version: 2022_07_27_124515) do
     t.text "auth_headers_ciphertext"
     t.text "encrypted_kms_key"
     t.date "verified_decryptable_at"
+    t.string "veteran_icn"
+    t.index ["veteran_icn"], name: "index_appeals_api_notice_of_disagreements_on_veteran_icn"
   end
 
   create_table "appeals_api_status_updates", force: :cascade do |t|
@@ -174,6 +178,8 @@ ActiveRecord::Schema.define(version: 2022_07_27_124515) do
     t.text "encrypted_kms_key"
     t.boolean "evidence_submission_indicated"
     t.date "verified_decryptable_at"
+    t.string "veteran_icn"
+    t.index ["veteran_icn"], name: "index_appeals_api_supplemental_claims_on_veteran_icn"
   end
 
   create_table "async_transactions", id: :serial, force: :cascade do |t|
@@ -261,6 +267,13 @@ ActiveRecord::Schema.define(version: 2022_07_27_124515) do
     t.index ["evss_id"], name: "index_claims_api_auto_established_claims_on_evss_id"
     t.index ["md5"], name: "index_claims_api_auto_established_claims_on_md5"
     t.index ["source"], name: "index_claims_api_auto_established_claims_on_source"
+  end
+
+  create_table "claims_api_intent_to_files", force: :cascade do |t|
+    t.string "status"
+    t.string "cid"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
   end
 
   create_table "claims_api_power_of_attorneys", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -532,6 +545,16 @@ ActiveRecord::Schema.define(version: 2022_07_27_124515) do
     t.index ["saved_claim_id"], name: "index_form526_submissions_on_saved_claim_id", unique: true
     t.index ["submitted_claim_id"], name: "index_form526_submissions_on_submitted_claim_id", unique: true
     t.index ["user_uuid"], name: "index_form526_submissions_on_user_uuid"
+  end
+
+  create_table "form5655_submissions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "user_uuid", null: false
+    t.text "form_json_ciphertext", null: false
+    t.text "metadata_ciphertext"
+    t.text "encrypted_kms_key"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["user_uuid"], name: "index_form5655_submissions_on_user_uuid"
   end
 
   create_table "form_attachments", id: :serial, force: :cascade do |t|
@@ -848,8 +871,8 @@ ActiveRecord::Schema.define(version: 2022_07_27_124515) do
     t.datetime "checkout_time"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.string "loa"
     t.text "services"
+    t.string "loa"
     t.uuid "idme_uuid"
     t.text "notes"
     t.string "mfa_code"
