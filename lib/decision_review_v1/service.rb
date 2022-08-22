@@ -251,6 +251,24 @@ module DecisionReviewV1
     def create_supplemental_claim(request_body:, user:)
       with_monitoring_and_error_handling do
         headers = create_supplemental_claims_headers(user)
+        # ap [headers, user, request_body]
+        # SaveClaim
+        supplemental_claim_submission = SupplementalClaimSubmission.create(headers: headers.to_json, user_uuid: user.uuid, form_json: request_body)
+        begin
+          supplemental_claim_submission.save!
+        rescue => e
+          # add sentry log error/notification here, this is a BAD error as this request goes on the floor in this case
+          # or can add some other way to save this, jsut raising it for now. 
+          raise e
+        end
+        # Queue Job
+        sidekiq_job_id = DecisionReview::SubmitSupplementalClaim.perform_async(supplemental_claim_submission.id)
+        supplemental_claim_submission.sidekiq_job_id = sidekiq_job_id
+        supplemental_claim_submission.save!
+        ap supplemental_claim_submission; exit
+        #
+
+        
         response = perform :post, 'supplemental_claims', request_body, headers
         raise_schema_error_unless_200_status response.status
         validate_against_schema json: response.body, schema: SC_CREATE_RESPONSE_SCHEMA,
@@ -519,5 +537,6 @@ module DecisionReviewV1
     def remove_pii_from_json_schemer_errors(errors)
       errors.map { |error| error.slice 'data_pointer', 'schema', 'root_schema' }
     end
+
   end
 end
