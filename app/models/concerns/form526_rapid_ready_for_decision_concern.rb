@@ -62,11 +62,15 @@ module Form526RapidReadyForDecisionConcern
     'unknown'
   end
 
+  def past_pending_eps?
+    return true if form.dig('rrd_metadata', 'offramp_reason')&.upcase == 'PENDING_EP'
+
+    pending_eps?
+  end
+
   # Fetch all claims from EVSS
   # @return [Boolean] whether there are any open EP 020's
   def pending_eps?
-    return true if form.dig('rrd_metadata', 'offramp_reason')&.upcase == 'PENDING_EP'
-
     pending = open_claims.any? { |claim| claim['base_end_product_code'] == '020' }
     save_metadata(offramp_reason: 'pending_ep') if pending
     pending
@@ -113,7 +117,7 @@ module Form526RapidReadyForDecisionConcern
     diagnostic_codes.size == 1 &&
       RapidReadyForDecision::Constants::MAS_DISABILITIES.include?(diagnostic_codes.first) &&
       disabilities.first['disabilityActionType']&.upcase == 'INCREASE' &&
-      !pending_eps?
+      !past_pending_eps?
   end
 
   def rrd_new_pact_related_disability?
