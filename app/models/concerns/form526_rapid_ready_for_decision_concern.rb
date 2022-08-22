@@ -62,8 +62,10 @@ module Form526RapidReadyForDecisionConcern
     'unknown'
   end
 
-  def past_pending_eps?
-    return true if form.dig('rrd_metadata', 'offramp_reason')&.upcase == 'PENDING_EP'
+  # If a pending_ep was detected in the past, returns true
+  # Depends on offramp_reason in form JSON, which is inserted by pending_eps? method
+  def had_pending_eps?
+    return true if form.dig('rrd_metadata', 'offramp_reason') == 'pending_ep'
 
     pending_eps?
   end
@@ -117,7 +119,7 @@ module Form526RapidReadyForDecisionConcern
     diagnostic_codes.size == 1 &&
       RapidReadyForDecision::Constants::MAS_DISABILITIES.include?(diagnostic_codes.first) &&
       disabilities.first['disabilityActionType']&.upcase == 'INCREASE' &&
-      !past_pending_eps?
+      !had_pending_eps?
   end
 
   def rrd_new_pact_related_disability?
