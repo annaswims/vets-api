@@ -62,10 +62,14 @@ module Form526RapidReadyForDecisionConcern
     'unknown'
   end
 
+  # If there was an attempt to check for a pending ep in the past, and no pending ep found, return false
   # If a pending_ep was detected in the past, returns true
-  # Depends on offramp_reason in form JSON, which is inserted by pending_eps? method
+  # If no evidence of checking for pending ep, perform the check
+  # Depends on offramp_reason and pending_eps in form JSON, which is inserted by pending_eps? method
   def had_pending_eps?
-    return true if form.dig('rrd_metadata', 'offramp_reason') == 'pending_ep'
+    binding.pry
+    return true if form.dig('rrd_metadata', 'pending_eps') == true
+    return false if form.dig('rrd_metadata', 'pending_eps') == false
 
     pending_eps?
   end
@@ -75,6 +79,7 @@ module Form526RapidReadyForDecisionConcern
   def pending_eps?
     pending = open_claims.any? { |claim| claim['base_end_product_code'] == '020' }
     save_metadata(offramp_reason: 'pending_ep') if pending
+    save_metadata(pending_eps: pending)
     pending
   end
 
