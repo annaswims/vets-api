@@ -116,6 +116,17 @@ RSpec.describe RapidReadyForDecision::Form526BaseJob, type: :worker do
             end
           end
         end
+
+        it 'skips forwarding the claim to MAS' do
+          VCR.use_cassette('evss/claims/claims') do
+            Sidekiq::Testing.inline! do
+              expect(MailAutomation::Client).not_to receive(:new)
+              described_class.perform_async(submission.id)
+              submission.reload
+              expect(submission.form.dig('rrd_metadata', 'offramp_reason')).to eq 'pending_ep'
+            end
+          end
+        end
       end
     end
   end

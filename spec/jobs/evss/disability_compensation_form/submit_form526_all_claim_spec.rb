@@ -10,7 +10,7 @@ RSpec.describe EVSS::DisabilityCompensationForm::SubmitForm526AllClaim, type: :j
   end
 
   around do |example|
-    VCR.use_cassette('evss/claims/claims_without_open_compensation_claims', allow_playback_repeats: true, &example)
+    VCR.use_cassette('evss/claims/claims_without_open_compensation_claims', allow_playback_repeats: false, &example)
   end
 
   let(:user) { FactoryBot.create(:user, :loa3) }
