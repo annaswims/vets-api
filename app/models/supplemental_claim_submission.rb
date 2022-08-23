@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'sentry_logging'
+require 'decision_review_v1/service'
 
 class SupplementalClaimSubmission < ApplicationRecord
   include SentryLogging
@@ -33,4 +34,8 @@ class SupplementalClaimSubmission < ApplicationRecord
 
   has_encrypted  :form_json, :headers, **lockbox_options
 
+  def submit!
+    dr_service = DecisionReviewV1::Service.new
+    dr_service.submit_supplemental_claim(request_body: self.form_json, headers: self.headers)
+  end
 end

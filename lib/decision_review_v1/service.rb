@@ -242,17 +242,15 @@ module DecisionReviewV1
     end
 
     ##
-    # Creates a new Supplemental Claim
+    # Creates a new Supplemental Claim Job in Sidekiq
     #
     # @param request_body [JSON] JSON serialized version of a Supplemental Claim Form (20-0995)
     # @param user [User] Veteran who the form is in regard to
-    # @return [Faraday::Response]
+    # @return [Faraday::Response] #### CHANGE
     #
     def create_supplemental_claim(request_body:, user:)
       with_monitoring_and_error_handling do
         headers = create_supplemental_claims_headers(user)
-        puts [headers, user, request_body].to_yaml
-        # SaveClaim
         supplemental_claim_submission = SupplementalClaimSubmission.create(user_uuid: user.uuid, headers: headers.to_json, form_json: request_body)
         begin
           supplemental_claim_submission.save!
@@ -265,14 +263,26 @@ module DecisionReviewV1
         sidekiq_job_id = DecisionReview::SubmitSupplementalClaim.perform_async(supplemental_claim_submission.id)
         supplemental_claim_submission.sidekiq_job_id = sidekiq_job_id
         supplemental_claim_submission.save!
+       # Need to see what is using this and what it does with reswponse so I can 
+       # return something appropriately 
+      end
+    end
 
-
-
-        # response = perform :post, 'supplemental_claims', request_body, headers
-        # raise_schema_error_unless_200_status response.status
-        # validate_against_schema json: response.body, schema: SC_CREATE_RESPONSE_SCHEMA,
-        #                         append_to_error_class: ' (SC_V1)'
-        # response
+    ##
+    # Submit a new Supplemental Claim to Lighthouse
+    #
+    # @param request_body [string] JSON unserialized version of a Supplemental Claim Form (20-0995) from database
+    # @param headers [Hash|String] Headers from submission from the database as either a Hash or a JSON String 
+    # @return [Faraday::Response]
+    #
+    def submit_supplemental_claim(request_body:, headers:)
+      with_monitoring_and_error_handling do
+        p_headers = headers.is_a?(String) ? JSON.parse(headers) : headers
+        response  = perform :post, 'supplemental_claims', request_body, p_headers
+        raise_schema_error_unless_200_status response.status
+        validate_against_schema json: response.body, schema: SC_CREATE_RESPONSE_SCHEMA,
+                                append_to_error_class: ' (SC_V1)'
+        response
       end
     end
 
