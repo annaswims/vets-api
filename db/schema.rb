@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_08_09_191220) do
+ActiveRecord::Schema.define(version: 2022_08_22_182359) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gin"
@@ -821,6 +821,17 @@ ActiveRecord::Schema.define(version: 2022_08_09_191220) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.index ["rpo", "filename"], name: "index_spool_file_events_uniqueness", unique: true
+  end
+
+  create_table "supplemental_claim_submissions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "user_uuid"
+    t.string "status", default: "pending_submission"
+    t.string "saved_claim_id"
+    t.text "form_json_ciphertext"
+    t.text "headers_ciphertext"
+    t.string "sidekiq_job_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
   end
 
   create_table "terms_and_conditions", id: :serial, force: :cascade do |t|
