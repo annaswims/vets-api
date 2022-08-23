@@ -18,8 +18,13 @@ module DecisionReview
       # Raven.tags_context(source: '10182-board-appeal')
       supplemental_claim_submission = SupplementalClaimSubmission.find(supplemental_claim_submission_uuid)
       # TODO: perform submission, move code to here and handle results
-
-
+      response = perform :post, 'supplemental_claims', request_body, headers
+      raise_schema_error_unless_200_status response.status
+      validate_against_schema json: response.body, schema: SC_CREATE_RESPONSE_SCHEMA,
+                              append_to_error_class: ' (SC_V1)'
+                              
+      # TODO: handle any error cases 
+      # TODO: retry logic? 
       # StatsD.increment("#{STATSD_KEY_PREFIX}.success")
     rescue => e
       handle_error(e)

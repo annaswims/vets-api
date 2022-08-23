@@ -251,9 +251,9 @@ module DecisionReviewV1
     def create_supplemental_claim(request_body:, user:)
       with_monitoring_and_error_handling do
         headers = create_supplemental_claims_headers(user)
-        # ap [headers, user, request_body]
+        puts [headers, user, request_body].to_yaml
         # SaveClaim
-        supplemental_claim_submission = SupplementalClaimSubmission.create(headers: headers.to_json, user_uuid: user.uuid, form_json: request_body)
+        supplemental_claim_submission = SupplementalClaimSubmission.create(user_uuid: user.uuid, headers: headers.to_json, form_json: request_body)
         begin
           supplemental_claim_submission.save!
         rescue => e
@@ -265,15 +265,14 @@ module DecisionReviewV1
         sidekiq_job_id = DecisionReview::SubmitSupplementalClaim.perform_async(supplemental_claim_submission.id)
         supplemental_claim_submission.sidekiq_job_id = sidekiq_job_id
         supplemental_claim_submission.save!
-        ap supplemental_claim_submission; exit
-        #
 
-        
-        response = perform :post, 'supplemental_claims', request_body, headers
-        raise_schema_error_unless_200_status response.status
-        validate_against_schema json: response.body, schema: SC_CREATE_RESPONSE_SCHEMA,
-                                append_to_error_class: ' (SC_V1)'
-        response
+
+
+        # response = perform :post, 'supplemental_claims', request_body, headers
+        # raise_schema_error_unless_200_status response.status
+        # validate_against_schema json: response.body, schema: SC_CREATE_RESPONSE_SCHEMA,
+        #                         append_to_error_class: ' (SC_V1)'
+        # response
       end
     end
 
