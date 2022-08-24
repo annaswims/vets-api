@@ -105,8 +105,13 @@ module ClaimsApi
         def find_lighthouse_claim!(claim_id:)
           lighthouse_claim = ClaimsApi::AutoEstablishedClaim.get_by_id_or_evss_id(claim_id)
 
-          claim_found?(claim_id)
-          
+          claim_belongs_to_veteran = lighthouse_claim.veteran_icn == target_veteran.mpi.icn if lighthouse_claim.present?
+
+          if looking_for_lighthouse_claim?(claim_id: claim_id) &&
+             lighthouse_claim.blank? && claim_belongs_to_veteran
+            raise ::Common::Exceptions::ResourceNotFound.new(detail: 'Claim not found')
+          end
+
           lighthouse_claim
         end
 
@@ -131,9 +136,8 @@ module ClaimsApi
         end
 
         def claim_found?(claim_id:)
-          if looking_for_lighthouse_claim?(claim_id: claim_id) && 
-            lighthouse_claim.blank? && 
-            lighthouse_claim.veteran_icn == target_veteran.mpi.icn
+          if looking_for_lighthouse_claim?(claim_id: claim_id) &&
+             lighthouse_claim.blank? && claim_belongs_to_veteran?
             raise ::Common::Exceptions::ResourceNotFound.new(detail: 'Claim not found')
           end
         end
