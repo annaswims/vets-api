@@ -135,13 +135,6 @@ module ClaimsApi
           claim_id.to_s.include?('-')
         end
 
-        def claim_found?(claim_id:)
-          if looking_for_lighthouse_claim?(claim_id: claim_id) &&
-             lighthouse_claim.blank? && claim_belongs_to_veteran?
-            raise ::Common::Exceptions::ResourceNotFound.new(detail: 'Claim not found')
-          end
-        end
-
         def build_claim_structure(data:, lighthouse_id:, upstream_id:) # rubocop:disable Metrics/MethodLength
           {
             benefit_claim_type_code: data[:bnft_claim_type_cd],
