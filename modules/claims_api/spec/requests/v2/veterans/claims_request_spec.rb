@@ -318,6 +318,43 @@ RSpec.describe 'Claims', type: :request do
         end
       end
 
+      context 'when a Lighthouse claim exists' do
+        let(:lighthouse_claim) do
+          OpenStruct.new(
+            id: '0958d973-36fb-43ef-8801-2718bd33c825',
+            evss_id: '111111111',
+            status: 'pending',
+            veteran_id: '123'
+          )
+        end
+        let(:lighthouse_claim_2) do
+          OpenStruct.new(
+            id: '0958d973-36fb-43ef-8801-2718bd33c825',
+            evss_id: '222222222',
+            status: 'pending',
+            veteran_icn: '600048565'
+          )
+        end
+        let(:mismatched_claim_by_id_path) do
+          "/services/claims/v2/veterans/#{lighthouse_claim_2.veteran_icn}/claims/#{lighthouse_claim.evss_id}"
+        end
+
+        describe 'the veteran id does not match the requested claim' do
+          it 'returns a 404' do
+            with_okta_user(scopes) do |auth_header|
+              expect(ClaimsApi::AutoEstablishedClaim)
+                .to receive(:get_by_id_or_evss_id).and_return(lighthouse_claim_2)
+              expect_any_instance_of(BGS::EbenefitsBenefitClaimsStatus)
+                .to receive(:find_benefit_claim_details_by_benefit_claim_id).and_return(nil)
+
+              get mismatched_claim_by_id_path, headers: auth_header
+
+              expect(response.status).to eq(404)
+            end
+          end
+        end
+      end
+
       context 'when looking for a Lighthouse claim' do
         let(:claim_id) { '123-abc-456-def' }
 
