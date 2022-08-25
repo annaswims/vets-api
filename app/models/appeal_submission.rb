@@ -1,14 +1,31 @@
 # frozen_string_literal: true
+require 'sentry_logging'
+require 'decision_review_v1/service'
 
 class AppealSubmission < ApplicationRecord
   APPEAL_TYPES = %w[HLR NOD SC].freeze
-  validates :user_uuid, :submitted_appeal_uuid, presence: true
+  # DECISION_REVIEW_V1_SERVICE = DecisionReviewV1::Service.new
+
+  # validates :user_uuid, presence: true
+  validates :user_uuid, presence: true
+
   validates :type_of_appeal, inclusion: APPEAL_TYPES
 
   has_kms_key
-  has_encrypted :upload_metadata, key: :kms_key, **lockbox_options
+  has_encrypted :form_json, :headers, :upload_metadata, key: :kms_key, **lockbox_options
 
   has_many :appeal_submission_uploads, dependent: :destroy
+
+  def submit_claim
+    case type_of_appeal
+    when 'HLR'
+    when 'NOD'
+    when 'SC'
+      DecisionReviewV1::Service.new.submit_supplemental_claim(request_body: self.form_json, headers: self.headers)
+    else 
+      raise 'Unknown Appeal Type'
+    end
+  end
 
   def self.submit_nod(request_body_hash:, current_user:)
     appeal_submission = new(type_of_appeal: 'NOD',

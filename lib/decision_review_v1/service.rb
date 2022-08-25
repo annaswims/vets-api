@@ -242,29 +242,41 @@ module DecisionReviewV1
     end
 
     ##
-    # Creates a new Supplemental Claim Job in Sidekiq
+    # Creates a new appeal submission Job in Sidekiq
     #
-    # @param request_body [JSON] JSON serialized version of a Supplemental Claim Form (20-0995)
-    # @param user [User] Veteran who the form is in regard to
-    # @return [Faraday::Response] #### CHANGE
+    # @param appeal [AppealSubmission] The appeal submission to instantiate a job for.  
     #
+    def create_appeal_submission_job(appeal)
+      sidekiq_job_id = DecisionReview::SubmitAppeal.perform_async(id: appeal.id, user_uuid: appeal.user_uuid)
+      appeal.submission_status = :sidekiq_queued
+      appeal.sidekiq_job_id = sidekiq_job_id
+      appeal.save!
+      return sidekiq_job_id
+    end
+
+
     def create_supplemental_claim(request_body:, user:)
-      with_monitoring_and_error_handling do
+      begin 
         headers = create_supplemental_claims_headers(user)
-        supplemental_claim_submission = SupplementalClaimSubmission.create(user_uuid: user.uuid, headers: headers.to_json, form_json: request_body)
-        begin
-          supplemental_claim_submission.save!
-        rescue => e
-          # add sentry log error/notification here, this is a BAD error as this request goes on the floor in this case
-          # or can add some other way to save this, jsut raising it for now. 
-          raise e
+        appeal_submission = nil
+        ActiveRecord::Base.transaction do
+          appeal_submission = AppealSubmission.create!(
+            user_uuid: user.uuid, 
+            type_of_appeal: 'SC', 
+            form_json: request_body, 
+            headers: headers.to_json,
+            submission_status: :created
+          )
+          # Clear in-progress form since submit was successful
+          InProgressForm.form_for_user('20-0995', user)&.destroy!
         end
-        # Queue Job
-        sidekiq_job_id = DecisionReview::SubmitSupplementalClaim.perform_async(supplemental_claim_submission.id)
-        supplemental_claim_submission.sidekiq_job_id = sidekiq_job_id
-        supplemental_claim_submission.save!
-       # Need to see what is using this and what it does with reswponse so I can 
-       # return something appropriately 
+        sidekiq_job_id = create_appeal_submission_job(appeal_submission)
+        appeal_submission.sidekiq_job_id = sidekiq_job_id
+        return {:status => :success, :appeal_submission_id => appeal_submission.id, sidekiq_job_id: sidekiq_job_id}
+      rescue => e
+        raise e
+        # actually deal with errors here and log to sentry, or wrap whole thing ins the monitor/sentry code
+        # return {:status => :failure}
       end
     end
 
@@ -523,8 +535,6 @@ module DecisionReviewV1
 
     def validate_against_schema(json:, schema:, append_to_error_class: '')
       errors = JSONSchemer.schema(schema).validate(json).to_a
-      ap json
-
       return if errors.empty?
 
       raise Common::Exceptions::SchemaValidationErrors, remove_pii_from_json_schemer_errors(errors)
