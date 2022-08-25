@@ -280,8 +280,8 @@ module DecisionReviewV1
         p_headers = headers.is_a?(String) ? JSON.parse(headers) : headers
         response  = perform :post, 'supplemental_claims', request_body, p_headers
         raise_schema_error_unless_200_status response.status
-        validate_against_schema json: response.body, schema: SC_CREATE_RESPONSE_SCHEMA,
-                                append_to_error_class: ' (SC_V1)'
+        # validate_against_schema json: response.body , schema: SC_CREATE_RESPONSE_SCHEMA,
+        #                         append_to_error_class: ' (SC_V1)'
         response
       end
     end
@@ -523,6 +523,8 @@ module DecisionReviewV1
 
     def validate_against_schema(json:, schema:, append_to_error_class: '')
       errors = JSONSchemer.schema(schema).validate(json).to_a
+      ap json
+
       return if errors.empty?
 
       raise Common::Exceptions::SchemaValidationErrors, remove_pii_from_json_schemer_errors(errors)

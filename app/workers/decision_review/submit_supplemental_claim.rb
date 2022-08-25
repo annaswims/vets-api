@@ -17,13 +17,13 @@ module DecisionReview
       # TODO: Figure out what tag to put here
       # Raven.tags_context(source: '10182-board-appeal')
       supplemental_claim_submission = SupplementalClaimSubmission.find(supplemental_claim_submission_uuid)
-
       response = supplemental_claim_submission.submit!
       ap response
-      # supplemental_claim_submission.saved_claim_id = 
-      # supplemental_claim_submission.save!
+      supplemental_claim_submission.saved_claim_id = response.body["data"]["id"]
+      supplemental_claim_submission.status = :lighthouse_received
+      supplemental_claim_submission.save!
 
-      
+
       # raise_schema_error_unless_200_status response.status
       # validate_against_schema json: response.body, schema: SC_CREATE_RESPONSE_SCHEMA,
       #                         append_to_error_class: ' (SC_V1)'
