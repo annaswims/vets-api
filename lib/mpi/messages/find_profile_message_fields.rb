@@ -13,6 +13,14 @@ module MPI
         ssn
       ].freeze
 
+      REQUIRED_ADDRESS_FIELDS = %i[
+        street_address_lines
+        city
+        state
+        postal_code
+        country
+      ].freeze
+
       def initialize(profile)
         @profile = profile
       end
@@ -23,6 +31,7 @@ module MPI
 
       def validate
         @missing_keys = REQUIRED_FIELDS - @profile.keys
+        @missing_address_keys = REQUIRED_ADDRESS_FIELDS - @profile.keys
         @missing_values = REQUIRED_FIELDS.select { |key| @profile[key].nil? || @profile[key].blank? }
       end
     end
