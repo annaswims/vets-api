@@ -25,19 +25,14 @@ module DecisionReview
       appeal_submission = AppealSubmission.find_by(appeal)
       response = appeal_submission.submit_claim
       if response.success?
-        appeal_submission.submitted_appeal_uuid = response.body['data']['id']
-        appeal_submission.submission_status = :lighthouse_received
-        ## Clear out PII once submission is successful and it is no longer needed.
-        appeal_submission.headers = ''
-        appeal_submission.form_json = ''
-        ##
-        appeal_submission.save!
-        sentry_success_info = {
-          user_uuid: appeal_submission.user_uuid,
-          type_of_appeal: appeal_submission.type_of_appeal,
-          submitted_appeal_uuid: appeal_submission.submitted_appeal_uuid
-        }
-        log_message_to_sentry('Successful appeal submitted', :info, sentry_success_info, SENTRY_TAG)
+        appeal_submission.update({
+                                   submitted_appeal_uuid: response.body['data']['id'],
+                                   submission_status: :lighthouse_received,
+                                   ## flush PII containing fields once submission is successful, it is no longer needed
+                                   headers: nil,
+                                   form_json: nil
+                                 })
+        log_message_to_sentry('Successful appeal submitted', :info, sentry_success_info(appeal_submission), SENTRY_TAG)
         StatsD.increment("#{STATSD_KEY_PREFIX}.success")
         response
       else
@@ -53,6 +48,16 @@ module DecisionReview
       log_exception_to_sentry(e, {}, SENTRY_TAG)
       StatsD.increment("#{STATSD_KEY_PREFIX}.error")
       raise e
+    end
+
+    private
+
+    def sentry_success_info(appeal_submission)
+      {
+        user_uuid: appeal_submission.user_uuid,
+        type_of_appeal: appeal_submission.type_of_appeal,
+        submitted_appeal_uuid: appeal_submission.submitted_appeal_uuid
+      }
     end
   end
 end

@@ -57,7 +57,7 @@ module DecisionReviewV2
     def submit_higher_level_review(request_body:, headers:)
       with_monitoring_and_error_handling do
         p_headers = headers.is_a?(String) ? JSON.parse(headers) : headers
-        response = perform :post, 'higher_level_reviews', request_body, headers
+        response = perform :post, 'higher_level_reviews', request_body, p_headers
         raise_schema_error_unless_200_status response.status
         validate_against_schema json: response.body, schema: HLR_CREATE_RESPONSE_SCHEMA,
                                 append_to_error_class: ' (HLR_V1)'
@@ -285,21 +285,8 @@ module DecisionReviewV2
     #
     def create_claim(appeal_type:, request_body:, user:)
       appeal_submission = nil
-      sidekiq_job_id = nil
       begin
-        headers = nil
-        form = nil
-        case appeal_type
-        when 'SC'
-          headers = create_supplemental_claims_headers(user)
-          form = '20-0995'
-        when 'NOD'
-          headers = create_notice_of_disagreement_headers(user)
-          form = '10182'
-        when 'HLR'
-          headers = create_higher_level_review_headers(user)
-          form = '20-0996'
-        end
+        headers, form = generate_headers_and_form(appeal_type, user)
         ActiveRecord::Base.transaction do
           appeal_submission = AppealSubmission.create!(
             user_uuid: user.uuid,
@@ -315,9 +302,7 @@ module DecisionReviewV2
         appeal_submission.sidekiq_job_id = sidekiq_job_id
         { status: :success, appeal_submission_id: appeal_submission.id, sidekiq_job_id: sidekiq_job_id }
       rescue => e
-        ret = { status: :failure, sidekiq_job_id: sidekiq_job_id }
-        ret[:appeal_submission_id] = appeal_submission.id unless appeal_submission.nil?
-        ret
+        error_for_front_end(e)
       end
     end
 
@@ -464,6 +449,25 @@ module DecisionReviewV2
     end
 
     private
+
+    def generate_headers_and_form(appeal_type, user)
+      case appeal_type
+      when 'SC'
+        [create_supplemental_claims_headers(user), '20-0995']
+      when 'NOD'
+        [create_notice_of_disagreement_headers(user), '10182']
+      when 'HLR'
+        [create_higher_level_review_headers(user), '20-0996']
+      end
+    end
+
+    def error_for_front_end(e, **extra_data)
+      {
+        status: :failure,
+        error_message: e.message,
+        fullError: e.full_message(highlight: false)
+      }.merge(extra_data)
+    end
 
     def create_higher_level_review_headers(user)
       headers = {
