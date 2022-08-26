@@ -38,7 +38,6 @@ module DecisionReviewV2
     GET_CONTESTABLE_ISSUES_RESPONSE_SCHEMA =
       VetsJsonSchema::SCHEMAS.fetch 'DECISION-REVIEW-GET-CONTESTABLE-ISSUES-RESPONSE-200_V1'
 
-
     ##
     # Kickoff function called from the controller to begin a Higher-Level Review
     # @param request_body [JSON] JSON serialized version of a Higher-Level Review Form (20-0996)
@@ -52,7 +51,7 @@ module DecisionReviewV2
     # Create a Higher-Level Review
     #
     # @param request_body [JSON] JSON serialized version of a Higher-Level Review Form (20-0996)
-    # @param headers [Hash|String] Headers from submission from the database as either a Hash or a JSON String 
+    # @param headers [Hash|String] Headers from submission from the database as either a Hash or a JSON String
     # @return [Faraday::Response]
     #
     def submit_higher_level_review(request_body:, headers:)
@@ -265,7 +264,7 @@ module DecisionReviewV2
     ##
     # Creates a new appeal submission Job in Sidekiq
     #
-    # @param appeal [AppealSubmission] The appeal submission to instantiate a job for.  
+    # @param appeal [AppealSubmission] The appeal submission to instantiate a job for.
     # @returns [string] sidekiq job id string
     #
     def create_appeal_submission_job(appeal)
@@ -273,21 +272,23 @@ module DecisionReviewV2
       appeal.submission_status = :sidekiq_queued
       appeal.sidekiq_job_id = sidekiq_job_id
       appeal.save!
-      return sidekiq_job_id
+      sidekiq_job_id
     end
 
     ##
     # Helper method to generalize submitting one of the three types of appeals to lighthouse
     #
-    # @param appeal_type [string] one of SC,HLR,NOD. Can also be a symbol, case does not matter. 
+    # @param appeal_type [string] one of SC,HLR,NOD. Can also be a symbol, case does not matter.
     # @param request_body [string] JSON unserialized version submitted data from database
-    # @param headers [Hash|String] Headers from submission from the database as either a Hash or a JSON String 
+    # @param headers [Hash|String] Headers from submission from the database as either a Hash or a JSON String
     # @return [Hash]
     #
     def create_claim(appeal_type:, request_body:, user:)
-      appeal_submission, sidekiq_job_id = nil, nil
-      begin 
-        headers, form = nil, nil
+      appeal_submission = nil
+      sidekiq_job_id = nil
+      begin
+        headers = nil
+        form = nil
         case appeal_type
         when 'SC'
           headers = create_supplemental_claims_headers(user)
@@ -301,9 +302,9 @@ module DecisionReviewV2
         end
         ActiveRecord::Base.transaction do
           appeal_submission = AppealSubmission.create!(
-            user_uuid: user.uuid, 
-            type_of_appeal: appeal_type.upcase.to_s, 
-            form_json: request_body, 
+            user_uuid: user.uuid,
+            type_of_appeal: appeal_type.upcase.to_s,
+            form_json: request_body,
             headers: headers.to_json,
             submission_status: :pending
           )
@@ -312,11 +313,11 @@ module DecisionReviewV2
         end
         sidekiq_job_id = create_appeal_submission_job(appeal_submission)
         appeal_submission.sidekiq_job_id = sidekiq_job_id
-        return {:status => :success, :appeal_submission_id => appeal_submission.id, sidekiq_job_id: sidekiq_job_id}
+        { status: :success, appeal_submission_id: appeal_submission.id, sidekiq_job_id: sidekiq_job_id }
       rescue => e
-        ret = {:status => :failure, sidekiq_job_id: sidekiq_job_id}
+        ret = { status: :failure, sidekiq_job_id: sidekiq_job_id }
         ret[:appeal_submission_id] = appeal_submission.id unless appeal_submission.nil?
-        return ret
+        ret
       end
     end
 
@@ -325,7 +326,7 @@ module DecisionReviewV2
     #
     # @param request_body [string] JSON unserialized version of a Supplemental Claim Form (20-0995) from database
     # @param user [User] Veteran who the form is in regard to
-    # @return 
+    # @return
     #
     def create_supplemental_claim(request_body:, user:)
       create_claim(appeal_type: 'SC', request_body: request_body, user: user)
@@ -335,7 +336,7 @@ module DecisionReviewV2
     # Submit a new Supplemental Claim to Lighthouse
     #
     # @param request_body [string] JSON unserialized version of a Supplemental Claim Form (20-0995) from database
-    # @param headers [Hash|String] Headers from submission from the database as either a Hash or a JSON String 
+    # @param headers [Hash|String] Headers from submission from the database as either a Hash or a JSON String
     # @return [Faraday::Response]
     #
     def submit_supplemental_claim(request_body:, headers:)
@@ -612,6 +613,5 @@ module DecisionReviewV2
     def remove_pii_from_json_schemer_errors(errors)
       errors.map { |error| error.slice 'data_pointer', 'schema', 'root_schema' }
     end
-
   end
 end

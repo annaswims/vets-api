@@ -12,7 +12,8 @@ module V2
     end
 
     def create
-      sc_create = decision_review_service.create_supplemental_claim(request_body: request_body_hash, user: @current_user)
+      sc_create = decision_review_service.create_supplemental_claim(request_body: request_body_hash,
+                                                                    user: @current_user)
       render json: sc_create
     rescue => e
       request = begin
@@ -20,7 +21,7 @@ module V2
       rescue
         request_body_debug_data
       end
-      
+
       log_exception_to_personal_information_log(
         e, error_class: error_class(method: 'create', exception_class: e.class), request: request
       )

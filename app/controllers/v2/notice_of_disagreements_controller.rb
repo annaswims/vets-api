@@ -12,7 +12,8 @@ module V2
     end
 
     def create
-      nod_create = decision_review_service.create_notice_of_disagreement(request_body: request_body_hash, user: @current_user)
+      nod_create = decision_review_service.create_notice_of_disagreement(request_body: request_body_hash,
+                                                                         user: @current_user)
       render json: nod_create
     rescue => e
       request = begin

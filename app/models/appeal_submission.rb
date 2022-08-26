@@ -1,6 +1,7 @@
 # frozen_string_literal: true
+
 require 'sentry_logging'
-require 'decision_review_v1/service'
+require 'decision_review_v2/service'
 
 class AppealSubmission < ApplicationRecord
   include SentryLogging
@@ -18,43 +19,46 @@ class AppealSubmission < ApplicationRecord
   has_many :appeal_submission_uploads, dependent: :destroy
 
   def wrap_in_error_handling
-    begin
-      # Have to deal with 2 different types of failure. Ruby errors/exceptions from submitting are caught here.
-      # Non-successful http responses from submission are handled in each individual submission class.
-      # For example: app/workers/decision_review/submit_appeal.rb:25
-      ret = yield
-      StatsD.increment("worker.decision_review.#{type_of_appeal.downcase}.submit.success")
-      return ret
-    rescue => e
-      log_exception_to_sentry(
-        e,
-        {
-          error_message: 'Ruby error in appeal submission sidekiq job',
-          type_of_appeal: type_of_appeal
-        },
-        SENTRY_TAG
-      )
-      StatsD.increment("worker.decision_review.#{type_of_appeal.downcase}.submit.error")
-      raise e
-    end
+    # Have to deal with 2 different types of failure. Ruby errors/exceptions from submitting are caught here.
+    # Non-successful http responses from submission are handled in each individual submission class.
+    # For example: app/workers/decision_review/submit_appeal.rb:25
+    ret = yield
+    StatsD.increment("worker.decision_review.#{type_of_appeal.downcase}.submit.success")
+    ret
+  rescue => e
+    log_exception_to_sentry(
+      e,
+      {
+        error_message: 'Ruby error in appeal submission sidekiq job',
+        type_of_appeal: type_of_appeal
+      },
+      SENTRY_TAG
+    )
+    StatsD.increment("worker.decision_review.#{type_of_appeal.downcase}.submit.error")
+    raise e
   end
 
   # Used in apiVersion v2
   def submit_claim
     case type_of_appeal
     when 'HLR'
-      wrap_in_error_handling { DecisionReviewV2::Service.new.submit_higher_level_review(request_body: self.form_json, headers: self.headers) }
+      wrap_in_error_handling do
+        DecisionReviewV2::Service.new.submit_higher_level_review(request_body: form_json, headers: headers)
+      end
     when 'NOD'
-      wrap_in_error_handling { DecisionReviewV2::Service.new.submit_notice_of_disagreement(request_body: self.form_json, headers: self.headers) }
+      wrap_in_error_handling do
+        DecisionReviewV2::Service.new.submit_notice_of_disagreement(request_body: form_json, headers: headers)
+      end
     when 'SC'
-      wrap_in_error_handling { DecisionReviewV2::Service.new.submit_supplemental_claim(request_body: self.form_json, headers: self.headers) }
-    else 
+      wrap_in_error_handling do
+        DecisionReviewV2::Service.new.submit_supplemental_claim(request_body: form_json, headers: headers)
+      end
+    else
       emsg = "Unknown Appeal Type \"#{type_of_appeal}\""
-      log_message_to_sentry(emsg, :error, {unknown_type_of_appeal: type_of_appeal}, SENTRY_TAG)
+      log_message_to_sentry(emsg, :error, { unknown_type_of_appeal: type_of_appeal }, SENTRY_TAG)
       raise emsg
     end
   end
-  
 
   # Have to keep this here for V0 compatibility, but this is NOT sidekiq queued.
   # V1 of this submission is sidekiq queued and handled above in the `submit_claim` function.

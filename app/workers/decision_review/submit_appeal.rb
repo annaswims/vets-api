@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'sentry_logging'
 require 'decision_review/service'
 
@@ -24,7 +25,7 @@ module DecisionReview
       appeal_submission = AppealSubmission.find_by(appeal)
       response = appeal_submission.submit_claim
       if response.success?
-        appeal_submission.submitted_appeal_uuid = response.body["data"]["id"]
+        appeal_submission.submitted_appeal_uuid = response.body['data']['id']
         appeal_submission.submission_status = :lighthouse_received
         ## Clear out PII once submission is successful and it is no longer needed.
         appeal_submission.headers = ''
@@ -38,10 +39,10 @@ module DecisionReview
         }
         log_message_to_sentry('Successful appeal submitted', :info, sentry_success_info, SENTRY_TAG)
         StatsD.increment("#{STATSD_KEY_PREFIX}.success")
-        return response
-      else 
-        StatsD.increment("worker.decision_review.sc.submit.failure")
-        raise 'Could not submit, non 200 return from lighthouse, Sidekiq will retry.' 
+        response
+      else
+        StatsD.increment('worker.decision_review.sc.submit.failure')
+        raise 'Could not submit, non 200 return from lighthouse, Sidekiq will retry.'
       end
     rescue => e
       # have to impliment this error handing
