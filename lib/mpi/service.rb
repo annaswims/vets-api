@@ -10,6 +10,8 @@ require 'mpi/errors/errors'
 require 'mpi/messages/add_person_proxy_add_message'
 require 'mpi/messages/add_person_implicit_search_message'
 require 'mpi/messages/find_profile_message'
+
+require 'mpi/messages/find_profile_message_with_address'
 require 'mpi/messages/find_profile_message_identifier'
 require 'mpi/messages/find_profile_message_edipi'
 require 'mpi/messages/update_profile_message'
@@ -300,7 +302,7 @@ module MPI
       MPI::Messages::FindProfileMessageEdipi.new(user_identity.edipi, search_type: search_type).to_xml
     end
 
-    def message_user_attributes(user_identity, search_type, orch_search: false)
+    def message_user_attributes(user_identity, search_type, orch_search: false) # rubocop:disable Metrics/MethodLength
       raise Common::Exceptions::ValidationErrors, user_identity unless user_identity.valid?
 
       Raven.tags_context(mvi_find_profile: 'user_attributes')
@@ -314,12 +316,22 @@ module MPI
         ssn: user_identity.ssn,
         gender: user_identity.gender
       }
-      MPI::Messages::FindProfileMessage.new(
-        profile,
-        search_type: search_type,
-        orch_search: orch_search,
-        edipi: orch_search == true ? user_identity.edipi : nil
-      ).to_xml
+
+      if user_identity.ssn.nil? && user.identity.address.present?
+        MPI::Messages::FindProfileMessageWithAddress.new(
+          profile.merge(address: user.identity.address),
+          search_type: search_type,
+          orch_search: orch_search,
+          edipi: orch_search == true ? user_identity.edipi : nil
+        ).to_xml
+      else
+        MPI::Messages::FindProfileMessage.new(
+          profile,
+          search_type: search_type,
+          orch_search: orch_search,
+          edipi: orch_search == true ? user_identity.edipi : nil
+        ).to_xml
+      end
     end
   end
 end

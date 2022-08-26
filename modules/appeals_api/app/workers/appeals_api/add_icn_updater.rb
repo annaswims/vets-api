@@ -13,11 +13,19 @@ module AppealsApi
       if appeal.form_data.nil? && appeal.auth_headers.nil?
         Rails.logger.error "#{appeal_class_str} missing PII, can't retrieve ICN. Appeal ID:#{appeal_id}."
       else
-        appeal.update!(veteran_icn: target_veteran(appeal).mpi_icn)
+        add_icn_to_appeal(appeal)
       end
     end
 
     private
+
+    def add_icn_to_appeal
+      unless appeal_class_str == 'AppealsApi::NoticeOfDisagreement'
+        appeal.update!(veteran_icn: target_veteran(appeal).icn)
+      end
+
+      appeal.update!(veteran_icn: target_veteran_with_address(appeal).mpi_icn)
+    end
 
     def target_veteran(appeal)
       veteran ||= Appellant.new(
@@ -34,6 +42,16 @@ module AppealsApi
       )
 
       mpi_veteran
+    end
+
+    def target_veteran_with_address(appeal)
+      veteran ||= Appellant.new(
+        type: :veteran,
+        auth_headers: appeal.auth_headers,
+        form_data: appeal.form_data&.dig('data', 'attributes', 'veteran')
+      )
+
+      MPI::Service.find_profile(veteran)
     end
   end
 end
