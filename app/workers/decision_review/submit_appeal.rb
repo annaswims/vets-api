@@ -5,6 +5,8 @@ require 'decision_review/service'
 module DecisionReview
   class SubmitAppeal
     include Sidekiq::Worker
+    include SentryLogging
+
     SENTRY_TAG = { team: 'vfs-ebenefits' }.freeze
     STATSD_KEY_PREFIX = 'worker.decision_review.submission_attempt'
     sidekiq_options retry: 15
@@ -26,7 +28,7 @@ module DecisionReview
         appeal_submission.submission_status = :lighthouse_received
         ## Clear out PII once submission is successful and it is no longer needed.
         appeal_submission.headers = ''
-        appeal_submission.form_data = ''
+        appeal_submission.form_json = ''
         ##
         appeal_submission.save!
         sentry_success_info = {

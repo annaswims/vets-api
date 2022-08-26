@@ -39,15 +39,15 @@ class AppealSubmission < ApplicationRecord
     end
   end
 
-  
+  # Used in apiVersion v2
   def submit_claim
     case type_of_appeal
     when 'HLR'
-      wrap_in_error_handling { DecisionReviewV1::Service.new.submit_higher_level_review(request_body: self.form_json, headers: self.headers) }
+      wrap_in_error_handling { DecisionReviewV2::Service.new.submit_higher_level_review(request_body: self.form_json, headers: self.headers) }
     when 'NOD'
-      wrap_in_error_handling { DecisionReviewV1::Service.new.submit_notice_of_disagreement(request_body: self.form_json, headers: self.headers) }
+      wrap_in_error_handling { DecisionReviewV2::Service.new.submit_notice_of_disagreement(request_body: self.form_json, headers: self.headers) }
     when 'SC'
-      wrap_in_error_handling { DecisionReviewV1::Service.new.submit_supplemental_claim(request_body: self.form_json, headers: self.headers) }
+      wrap_in_error_handling { DecisionReviewV2::Service.new.submit_supplemental_claim(request_body: self.form_json, headers: self.headers) }
     else 
       emsg = "Unknown Appeal Type \"#{type_of_appeal}\""
       log_message_to_sentry(emsg, :error, {unknown_type_of_appeal: type_of_appeal}, SENTRY_TAG)
