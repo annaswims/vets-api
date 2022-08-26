@@ -38,26 +38,16 @@ module DecisionReviewV1
     GET_CONTESTABLE_ISSUES_RESPONSE_SCHEMA =
       VetsJsonSchema::SCHEMAS.fetch 'DECISION-REVIEW-GET-CONTESTABLE-ISSUES-RESPONSE-200_V1'
 
-
-    ##
-    # Kickoff function called from the controller to begin a Higher-Level Review
-    # @param request_body [JSON] JSON serialized version of a Higher-Level Review Form (20-0996)
-    # @param user [User] Veteran who the form is in regard to
-    #
-    def create_higher_level_review(request_body:, user:)
-      create_claim(appeal_type: 'HLR', request_body: request_body, user: user)
-    end
-
     ##
     # Create a Higher-Level Review
     #
     # @param request_body [JSON] JSON serialized version of a Higher-Level Review Form (20-0996)
-    # @param headers [Hash|String] Headers from submission from the database as either a Hash or a JSON String 
+    # @param user [User] Veteran who the form is in regard to
     # @return [Faraday::Response]
     #
-    def submit_higher_level_review(request_body:, headers:)
+    def create_higher_level_review(request_body:, user:)
       with_monitoring_and_error_handling do
-        p_headers = headers.is_a?(String) ? JSON.parse(headers) : headers
+        headers = create_higher_level_review_headers(user)
         response = perform :post, 'higher_level_reviews', request_body, headers
         raise_schema_error_unless_200_status response.status
         validate_against_schema json: response.body, schema: HLR_CREATE_RESPONSE_SCHEMA,
@@ -134,27 +124,16 @@ module DecisionReviewV1
     end
 
     ##
-    # Kickoff function called from the controller to begin a Notice of Disagreement
+    # Create a Notice of Disagreement
     #
-    # @param request_body [string] JSON serialized version of a Notice of Disagreement Form (10182)
+    # @param request_body [JSON] JSON serialized version of a Notice of Disagreement Form (10182)
     # @param user [User] Veteran who the form is in regard to
     # @return [Faraday::Response]
     #
     def create_notice_of_disagreement(request_body:, user:)
-      create_claim(appeal_type: 'NOD', request_body: request_body, user: user)
-    end
-
-    ##
-    # Create a Notice of Disagreement
-    #
-    # @param request_body [JSON] JSON serialized version of a Notice of Disagreement Form (10182)
-    # @param headers
-    # @return [Faraday::Response]
-    #
-    def submit_notice_of_disagreement(request_body:, headers:)
       with_monitoring_and_error_handling do
-        p_headers = headers.is_a?(String) ? JSON.parse(headers) : headers
-        response = perform :post, 'notice_of_disagreements', request_body, p_headers
+        headers = create_notice_of_disagreement_headers(user)
+        response = perform :post, 'notice_of_disagreements', request_body, headers
         raise_schema_error_unless_200_status response.status
         validate_against_schema(
           json: response.body, schema: NOD_CREATE_RESPONSE_SCHEMA, append_to_error_class: ' (NOD_V1)'
@@ -263,91 +242,19 @@ module DecisionReviewV1
     end
 
     ##
-    # Creates a new appeal submission Job in Sidekiq
+    # Creates a new Supplemental Claim
     #
-    # @param appeal [AppealSubmission] The appeal submission to instantiate a job for.  
-    # @returns [string] sidekiq job id string
-    #
-    def create_appeal_submission_job(appeal)
-      sidekiq_job_id = DecisionReview::SubmitAppeal.perform_async(id: appeal.id, user_uuid: appeal.user_uuid)
-      appeal.submission_status = :sidekiq_queued
-      appeal.sidekiq_job_id = sidekiq_job_id
-      appeal.save!
-      return sidekiq_job_id
-    end
-
-    ##
-    # Helper method to generalize submitting one of the three types of appeals to lighthouse
-    #
-    # @param appeal_type [string] one of SC,HLR,NOD. Can also be a symbol, case does not matter. 
-    # @param request_body [string] JSON unserialized version submitted data from database
-    # @param headers [Hash|String] Headers from submission from the database as either a Hash or a JSON String 
-    # @return [Hash]
-    #
-    def create_claim(appeal_type:, request_body:, user:)
-      appeal_submission, sidekiq_job_id = nil, nil
-      begin 
-        headers, form = nil, nil
-        case appeal_type
-        when 'SC'
-          headers = create_supplemental_claims_headers(user)
-          form = '20-0995'
-        when 'NOD'
-          headers = create_notice_of_disagreement_headers(user)
-          form = '10182'
-        when 'HLR'
-          headers = create_higher_level_review_headers(user)
-          form = '20-0996'
-        end
-        ActiveRecord::Base.transaction do
-          appeal_submission = AppealSubmission.create!(
-            user_uuid: user.uuid, 
-            type_of_appeal: appeal_type.upcase.to_s, 
-            form_json: request_body, 
-            headers: headers.to_json,
-            submission_status: :pending
-          )
-          # Clear in-progress form since submit was successful
-          InProgressForm.form_for_user(form, user)&.destroy!
-        end
-        sidekiq_job_id = create_appeal_submission_job(appeal_submission)
-        appeal_submission.sidekiq_job_id = sidekiq_job_id
-        return {:status => :success, :appeal_submission_id => appeal_submission.id, sidekiq_job_id: sidekiq_job_id}
-      rescue => e
-        ret = {:status => :failure, sidekiq_job_id: sidekiq_job_id}
-        ret[:appeal_submission_id] = appeal_submission.id unless appeal_submission.nil?
-        return ret
-      end
-    end
-
-    ##
-    # Kickoff function called from the controller to begin a supplemental claim
-    #
-    # @param request_body [string] JSON unserialized version of a Supplemental Claim Form (20-0995) from database
+    # @param request_body [JSON] JSON serialized version of a Supplemental Claim Form (20-0995)
     # @param user [User] Veteran who the form is in regard to
-    # @return 
-    #
-    def create_supplemental_claim(request_body:, user:)
-      create_claim(appeal_type: 'SC', request_body: request_body, user: user)
-    end
-
-    ##
-    # Submit a new Supplemental Claim to Lighthouse
-    #
-    # @param request_body [string] JSON unserialized version of a Supplemental Claim Form (20-0995) from database
-    # @param headers [Hash|String] Headers from submission from the database as either a Hash or a JSON String 
     # @return [Faraday::Response]
     #
-    def submit_supplemental_claim(request_body:, headers:)
+    def create_supplemental_claim(request_body:, user:)
       with_monitoring_and_error_handling do
-        p_headers = headers.is_a?(String) ? JSON.parse(headers) : headers
-        response  = perform :post, 'supplemental_claims', request_body, p_headers
+        headers = create_supplemental_claims_headers(user)
+        response = perform :post, 'supplemental_claims', request_body, headers
         raise_schema_error_unless_200_status response.status
-        # TODO
-        # This is coming back without attributes.formData section, so does not pass valitiation.
-        # Commented out now. Will comment back in when fixed.
-        # validate_against_schema json: response.body , schema: SC_CREATE_RESPONSE_SCHEMA,
-        #                         append_to_error_class: ' (SC_V1)'
+        validate_against_schema json: response.body, schema: SC_CREATE_RESPONSE_SCHEMA,
+                                append_to_error_class: ' (SC_V1)'
         response
       end
     end
@@ -612,6 +519,5 @@ module DecisionReviewV1
     def remove_pii_from_json_schemer_errors(errors)
       errors.map { |error| error.slice 'data_pointer', 'schema', 'root_schema' }
     end
-
   end
 end
