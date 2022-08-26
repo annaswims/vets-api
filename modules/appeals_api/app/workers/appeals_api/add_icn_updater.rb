@@ -21,19 +21,24 @@ module AppealsApi
 
     def add_icn_to_appeal
       unless appeal_class_str == 'AppealsApi::NoticeOfDisagreement'
-        appeal.update!(veteran_icn: target_veteran(appeal).icn)
+        appeal.update!(veteran_icn: target_veteran(appeal).mpi_icn)
       end
 
-      appeal.update!(veteran_icn: target_veteran_with_address(appeal).mpi_icn)
+      # Happy path MPI lookup in vets-api is SSN. NOD doesn't have that, so
+      # we have to utilize address attributes instead
+      appeal.update!(veteran_icn: target_veteran_with_address(appeal)&.profile&.icn)
     end
 
-    def target_veteran(appeal)
+    def veteran
       veteran ||= Appellant.new(
         type: :veteran,
         auth_headers: appeal.auth_headers,
         form_data: appeal.form_data&.dig('data', 'attributes', 'veteran')
       )
+      veteran
+    end
 
+    def target_veteran(appeal)
       mpi_veteran ||= AppealsApi::Veteran.new(
         ssn: veteran.ssn,
         first_name: veteran.first_name,
@@ -45,12 +50,6 @@ module AppealsApi
     end
 
     def target_veteran_with_address(appeal)
-      veteran ||= Appellant.new(
-        type: :veteran,
-        auth_headers: appeal.auth_headers,
-        form_data: appeal.form_data&.dig('data', 'attributes', 'veteran')
-      )
-
       MPI::Service.find_profile(veteran)
     end
   end
