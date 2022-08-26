@@ -454,6 +454,7 @@ describe DecisionReviewV1::Service do
 
       it 'throws a DR_422 exception' do
         VCR.use_cassette('decision_review/SC-CREATE-RESPONSE-422_V1') do
+          ap subject
           expect { subject }.to raise_error(
             an_instance_of(DecisionReviewV1::ServiceException).and(having_attributes(key: 'DR_422'))
           )
