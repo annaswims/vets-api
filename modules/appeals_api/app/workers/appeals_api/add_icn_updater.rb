@@ -29,16 +29,13 @@ module AppealsApi
       appeal.update!(veteran_icn: target_veteran_with_address(appeal)&.profile&.icn)
     end
 
-    def veteran
+    def target_veteran(appeal)
       veteran ||= Appellant.new(
         type: :veteran,
         auth_headers: appeal.auth_headers,
         form_data: appeal.form_data&.dig('data', 'attributes', 'veteran')
       )
-      veteran
-    end
 
-    def target_veteran(appeal)
       mpi_veteran ||= AppealsApi::Veteran.new(
         ssn: veteran.ssn,
         first_name: veteran.first_name,
@@ -50,6 +47,14 @@ module AppealsApi
     end
 
     def target_veteran_with_address(appeal)
+      veteran ||= Appellant.new(
+        type: :veteran,
+        auth_headers: appeal.auth_headers,
+        form_data: appeal.form_data&.dig('data', 'attributes', 'veteran')
+      )
+
+      # AppealsApi::Veteran is wrapper for ClaimsApi::Veteran, which requires ssn.
+      # Instead of modifying ClaimsApi::Veteran, we'll just query MPI directly.
       MPI::Service.find_profile(veteran)
     end
   end

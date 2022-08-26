@@ -13,7 +13,7 @@ module MPI
           @street_address_lines = [address['addressLine1'], address['addressLine2'], address['addressLine3']].compact
           @city = address['city']
           @state = address['stateCode']
-          # TODO: update logic for international postal codes
+          # TODO: add logic for international postal codes
           @postal_code = address['zipCode5']
           @country = address['countryName']
         end
