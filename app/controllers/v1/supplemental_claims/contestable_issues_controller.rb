@@ -2,9 +2,9 @@
 
 module V1
   module SupplementalClaims
-    class ContestableIssuesController < AppealsBaseControllerV1
+    class ContestableIssuesController < AppealsBaseController
       def index
-        ci = decision_review_service
+        ci = decision_review_service_v1
              .get_supplemental_claim_contestable_issues(user: current_user, benefit_type: params[:benefit_type])
              .body
         render json: merge_legacy_appeals(ci)

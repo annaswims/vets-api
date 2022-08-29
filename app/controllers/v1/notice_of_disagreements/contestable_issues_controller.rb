@@ -2,9 +2,9 @@
 
 module V1
   module NoticeOfDisagreements
-    class ContestableIssuesController < AppealsBaseControllerV1
+    class ContestableIssuesController < AppealsBaseController
       def index
-        render json: decision_review_service
+        render json: decision_review_service_v1
           .get_notice_of_disagreement_contestable_issues(user: current_user)
           .body
       rescue => e
