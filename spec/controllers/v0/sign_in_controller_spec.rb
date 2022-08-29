@@ -415,6 +415,10 @@ RSpec.describe V0::SignInController, type: :controller do
     let(:acr) { nil }
     let(:client_id) { nil }
     let(:mpi_update_profile_response) { MPI::Responses::AddPersonResponse.new(status: 'OK') }
+    let(:mpi_add_person_response) do
+      MPI::Responses::AddPersonResponse.new(status: 'OK', mvi_codes: { icn: add_person_icn })
+    end
+    let(:add_person_icn) { nil }
     let(:find_profile) do
       MPI::Responses::FindProfileResponse.new(
         status: MPI::Responses::FindProfileResponse::RESPONSE_STATUS[:ok],
@@ -428,6 +432,7 @@ RSpec.describe V0::SignInController, type: :controller do
       allow_any_instance_of(MPI::Service).to receive(:update_profile).and_return(mpi_update_profile_response)
       allow_any_instance_of(MPIData).to receive(:response_from_redis_or_service).and_return(find_profile)
       allow_any_instance_of(MPI::Service).to receive(:find_profile).and_return(find_profile)
+      allow_any_instance_of(MPI::Service).to receive(:add_person_implicit_search).and_return(mpi_add_person_response)
     end
 
     shared_examples 'api based error response' do
@@ -670,7 +675,35 @@ RSpec.describe V0::SignInController, type: :controller do
           end
         end
 
-        shared_context 'an idme authentication service' do
+        context 'when type in state JWT is idme' do
+          let(:type) { 'idme' }
+          let(:user_info) do
+            OpenStruct.new(
+              sub: 'some-sub',
+              level_of_assurance: level_of_assurance,
+              credential_ial: credential_ial,
+              social: '123456789',
+              birth_date: '1-1-2022',
+              fname: 'some-name',
+              lname: 'some-family-name',
+              email: 'some-email'
+            )
+          end
+          let(:expected_user_attributes) do
+            {
+              ssn: user_info.social,
+              birth_date: Formatters::DateFormatter.format_date(user_info.birth_date),
+              first_name: user_info.fname,
+              last_name: user_info.lname
+            }
+          end
+          let(:mpi_profile) do
+            build(:mvi_profile,
+                  ssn: user_info.social,
+                  birth_date: Formatters::DateFormatter.format_date(user_info.birth_date),
+                  given_names: [user_info.fname],
+                  family_name: user_info.lname)
+          end
           let(:response) { OpenStruct.new(access_token: token) }
           let(:level_of_assurance) { LOA::THREE }
           let(:credential_ial) { LOA::IDME_CLASSIC_LOA3 }
@@ -757,39 +790,6 @@ RSpec.describe V0::SignInController, type: :controller do
           end
         end
 
-        context 'when type in state JWT is idme' do
-          let(:type) { 'idme' }
-          let(:user_info) do
-            OpenStruct.new(
-              sub: 'some-sub',
-              level_of_assurance: level_of_assurance,
-              credential_ial: credential_ial,
-              social: '123456789',
-              birth_date: '1-1-2022',
-              fname: 'some-name',
-              lname: 'some-family-name',
-              email: 'some-email'
-            )
-          end
-          let(:expected_user_attributes) do
-            {
-              ssn: user_info.social,
-              birth_date: Formatters::DateFormatter.format_date(user_info.birth_date),
-              first_name: user_info.fname,
-              last_name: user_info.lname
-            }
-          end
-          let(:mpi_profile) do
-            build(:mvi_profile,
-                  ssn: user_info.social,
-                  birth_date: Formatters::DateFormatter.format_date(user_info.birth_date),
-                  given_names: [user_info.fname],
-                  family_name: user_info.lname)
-          end
-
-          it_behaves_like 'an idme authentication service'
-        end
-
         context 'when type in state JWT is dslogon' do
           let(:type) { 'dslogon' }
           let(:user_info) do
@@ -803,6 +803,7 @@ RSpec.describe V0::SignInController, type: :controller do
               dslogon_mname: 'some-middle-name',
               dslogon_lname: 'some-family-name',
               dslogon_uuid: '987654321',
+              dslogon_assurance: dslogon_assurance,
               email: 'some-email'
             )
           end
@@ -824,8 +825,104 @@ RSpec.describe V0::SignInController, type: :controller do
                   family_name: user_info.dslogon_lname,
                   edipi: user_info.dslogon_uuid)
           end
+          let(:response) { OpenStruct.new(access_token: token) }
+          let(:level_of_assurance) { LOA::THREE }
+          let(:dslogon_assurance) { 'some-dslogon-assurance' }
+          let(:credential_ial) { LOA::IDME_CLASSIC_LOA3 }
+          let(:token) { 'some-token' }
 
-          it_behaves_like 'an idme authentication service'
+          before do
+            allow_any_instance_of(SignIn::Idme::Service).to receive(:token).with(code_value).and_return(response)
+            allow_any_instance_of(SignIn::Idme::Service).to receive(:user_info).with(token).and_return(user_info)
+          end
+
+          context 'and code is given but does not match expected code for auth service' do
+            let(:response) { nil }
+            let(:expected_error) { 'Code is not valid' }
+            let(:error_code) { SignIn::Constants::ErrorCode::INVALID_REQUEST }
+
+            it_behaves_like 'error response'
+          end
+
+          context 'and code is given that matches expected code for auth service' do
+            let(:response) { OpenStruct.new(access_token: token) }
+            let(:level_of_assurance) { LOA::THREE }
+            let(:acr) { 'loa3' }
+            let(:credential_ial) { LOA::IDME_CLASSIC_LOA3 }
+            let(:client_code) { 'some-client-code' }
+            let(:expected_url) do
+              "#{Settings.sign_in.client_redirect_uris.mobile}?code=#{client_code}&state=#{client_state}&type=#{type}"
+            end
+            let(:expected_log) { '[SignInService] [V0::SignInController] callback' }
+            let(:statsd_callback_success) { SignIn::Constants::Statsd::STATSD_SIS_CALLBACK_SUCCESS }
+            let(:expected_logger_context) do
+              {
+                type: type,
+                client_id: client_id,
+                acr: acr
+              }
+            end
+
+            before do
+              allow(SecureRandom).to receive(:uuid).and_return(client_code)
+            end
+
+            shared_context 'dslogon successful callback' do
+              it 'returns found status' do
+                expect(subject).to have_http_status(:found)
+              end
+
+              it 'redirects to expected url' do
+                expect(subject).to redirect_to(expected_url)
+              end
+
+              it 'logs the successful callback' do
+                expect(Rails.logger).to receive(:info).with(expected_log, expected_logger_context)
+                expect { subject }.to trigger_statsd_increment(statsd_callback_success, tags: statsd_tags)
+              end
+
+              it 'creates a user with expected attributes' do
+                subject
+
+                user_uuid = UserVerification.last.credential_identifier
+                user = User.find(user_uuid)
+
+                expect(user).to have_attributes(expected_user_attributes)
+              end
+            end
+
+            context 'and dslogon account is not premium' do
+              let(:dslogon_assurance) { 'some-dslogon-assurance' }
+              let(:expected_user_attributes) do
+                {
+                  ssn: nil,
+                  birth_date: nil,
+                  first_name: nil,
+                  middle_name: nil,
+                  last_name: nil,
+                  edipi: nil
+                }
+              end
+
+              it_behaves_like 'dslogon successful callback'
+            end
+
+            context 'and dslogon account is premium' do
+              let(:dslogon_assurance) { LOA::DSLOGON_ASSURANCE_THREE }
+              let(:expected_user_attributes) do
+                {
+                  ssn: user_info.dslogon_idvalue,
+                  birth_date: Formatters::DateFormatter.format_date(user_info.dslogon_birth_date),
+                  first_name: user_info.dslogon_fname,
+                  middle_name: user_info.dslogon_mname,
+                  last_name: user_info.dslogon_lname,
+                  edipi: user_info.dslogon_uuid
+                }
+              end
+
+              it_behaves_like 'dslogon successful callback'
+            end
+          end
         end
 
         context 'when type in state JWT is mhv' do
@@ -836,10 +933,12 @@ RSpec.describe V0::SignInController, type: :controller do
               level_of_assurance: level_of_assurance,
               credential_ial: credential_ial,
               mhv_uuid: '123456789',
-              mhv_icn: '987654321V123456',
+              mhv_icn: mhv_icn,
               mhv_assurance: mhv_assurance
             )
           end
+          let(:mhv_icn) { '987654321V123456' }
+          let(:add_person_icn) { mhv_icn }
           let(:response) { OpenStruct.new(access_token: token) }
           let(:level_of_assurance) { LOA::THREE }
           let(:credential_ial) { LOA::IDME_CLASSIC_LOA3 }
