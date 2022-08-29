@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 module V1
-  class HigherLevelReviewsController < AppealsBaseControllerV1
+  class HigherLevelReviewsController < AppealsBaseController
     def show
-      render json: decision_review_service.get_higher_level_review(params[:id]).body
+      render json: decision_review_service_v1.get_higher_level_review(params[:id]).body
     rescue => e
       log_exception_to_personal_information_log(
         e, error_class: error_class(method: 'show', exception_class: e.class), id: params[:id]
@@ -12,7 +12,7 @@ module V1
     end
 
     def create
-      hlr_response_body = decision_review_service
+      hlr_response_body = decision_review_service_v1
                           .create_higher_level_review(request_body: request_body_hash, user: @current_user)
                           .body
       submitted_appeal_uuid = hlr_response_body.dig('data', 'id')

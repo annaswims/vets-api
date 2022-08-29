@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module V2
-  class SupplementalClaimsController < AppealsBaseControllerV2
+  class SupplementalClaimsController < AppealsBaseController
     def show
       render json: decision_review_service.get_supplemental_claim(params[:id]).body
     rescue => e

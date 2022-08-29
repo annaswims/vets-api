@@ -2,6 +2,9 @@
 
 require 'caseflow/service'
 require 'decision_review/service'
+require 'decision_review_v1/service'
+require 'decision_review_v2/service'
+
 
 class AppealsBaseController < ApplicationController
   include ActionController::Serialization
@@ -16,6 +19,14 @@ class AppealsBaseController < ApplicationController
 
   def decision_review_service
     DecisionReview::Service.new
+  end
+
+  def decision_review_service_v1
+    DecisionReviewV1::Service.new
+  end
+
+  def decision_review_service_v2
+    DecisionReviewV2::Service.new
   end
 
   def request_body_hash
@@ -47,3 +58,4 @@ class AppealsBaseController < ApplicationController
     }
   end
 end
+

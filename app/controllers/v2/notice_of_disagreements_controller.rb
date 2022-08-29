@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module V2
-  class NoticeOfDisagreementsController < AppealsBaseControllerV2
+  class NoticeOfDisagreementsController < AppealsBaseController
     def show
       render json: decision_review_service.get_notice_of_disagreement(params[:id]).body
     rescue => e

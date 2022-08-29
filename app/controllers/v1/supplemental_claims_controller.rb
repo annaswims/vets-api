@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 module V1
-  class SupplementalClaimsController < AppealsBaseControllerV1
+  class SupplementalClaimsController < AppealsBaseController
     def show
-      render json: decision_review_service.get_supplemental_claim(params[:id]).body
+      render json: decision_review_service_v1.get_supplemental_claim(params[:id]).body
     rescue => e
       log_exception_to_personal_information_log(
         e, error_class: error_class(method: 'show', exception_class: e.class), id: params[:id]
@@ -12,7 +12,7 @@ module V1
     end
 
     def create
-      sc_response_body = decision_review_service
+      sc_response_body = decision_review_service_v1
                          .create_supplemental_claim(request_body: request_body_hash, user: @current_user)
                          .body
       submitted_appeal_uuid = sc_response_body.dig('data', 'id')
