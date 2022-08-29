@@ -48,9 +48,6 @@ module MPI
         fields = FindProfileMessageFields.new(profile)
         fields.validate
 
-        # Address can be used in lieu of SSN
-        fields.missing_keys.delete('ssn') if fields.missing_address_keys.empty?
-
         raise ArgumentError, "required keys are missing: #{fields.missing_keys}" if fields.missing_keys.present?
         if fields.missing_values.present?
           raise ArgumentError, "required values are missing for keys: #{fields.missing_values}"
