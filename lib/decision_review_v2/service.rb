@@ -329,11 +329,8 @@ module DecisionReviewV2
         p_headers = headers.is_a?(String) ? JSON.parse(headers) : headers
         response  = perform :post, 'supplemental_claims', request_body, p_headers
         raise_schema_error_unless_200_status response.status
-        # TODO
-        # This is coming back without attributes.formData section, so does not pass valitiation.
-        # Commented out now. Will comment back in when fixed.
-        # validate_against_schema json: response.body , schema: SC_CREATE_RESPONSE_SCHEMA,
-        #                         append_to_error_class: ' (SC_V1)'
+        validate_against_schema json: response.body , schema: SC_CREATE_RESPONSE_SCHEMA,
+                                append_to_error_class: ' (SC_V1)'
         response
       end
     end
