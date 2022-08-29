@@ -318,12 +318,7 @@ module MPI
       }
 
       if user_identity.ssn.nil? && user_identity.address.present?
-        MPI::Messages::FindProfileMessageWithAddress.new(
-          profile.merge(address: user_identity.address),
-          search_type: search_type,
-          orch_search: orch_search,
-          edipi: orch_search == true ? user_identity.edipi : nil
-        ).to_xml
+        MPI::Messages::FindProfileMessageWithAddress.new(profile.merge(address: user_identity.address)).to_xml
       else
         MPI::Messages::FindProfileMessage.new(
           profile,

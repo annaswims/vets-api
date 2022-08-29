@@ -13,7 +13,7 @@ module MPI
         country
       ].freeze
 
-      def initialize(profile, **_find_profile_message_args)
+      def initialize(profile)
         required_fields_present?(profile)
         @address = profile[:address]
         @street_address_lines = [address['addressLine1'], address['addressLine2'], address['addressLine3']].compact
