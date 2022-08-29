@@ -13,7 +13,7 @@ module MPI
         @state = address['stateCode'] || ''
         # TODO: add logic for international postal codes
         @postal_code = address['zipCode5']
-        @country = address['countryName']
+        @country = address['countryCodeISO2']
 
         super(profile)
       end

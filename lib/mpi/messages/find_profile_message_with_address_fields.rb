@@ -10,7 +10,7 @@ module MPI
         addressLine1
         city
         zipCode5
-        countryName
+        countryCodeISO2
       ].freeze
 
       def initialize(address)
