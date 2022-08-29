@@ -329,7 +329,7 @@ module DecisionReviewV2
         p_headers = headers.is_a?(String) ? JSON.parse(headers) : headers
         response  = perform :post, 'supplemental_claims', request_body, p_headers
         raise_schema_error_unless_200_status response.status
-        validate_against_schema json: response.body , schema: SC_CREATE_RESPONSE_SCHEMA,
+        validate_against_schema json: response.body, schema: SC_CREATE_RESPONSE_SCHEMA,
                                 append_to_error_class: ' (SC_V1)'
         response
       end
