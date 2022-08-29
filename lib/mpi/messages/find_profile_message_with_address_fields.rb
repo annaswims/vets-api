@@ -2,7 +2,7 @@
 
 module MPI
   module Messages
-    # validates the fields used to find profile messages
+    # validates the fields used to find a profile with an address instead of SSN
     class FindProfileMessageWithAddressFields
       attr_reader :missing_keys, :missing_values
 

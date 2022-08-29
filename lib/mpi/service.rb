@@ -10,7 +10,6 @@ require 'mpi/errors/errors'
 require 'mpi/messages/add_person_proxy_add_message'
 require 'mpi/messages/add_person_implicit_search_message'
 require 'mpi/messages/find_profile_message'
-
 require 'mpi/messages/find_profile_message_with_address'
 require 'mpi/messages/find_profile_message_identifier'
 require 'mpi/messages/find_profile_message_edipi'
