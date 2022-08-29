@@ -1392,7 +1392,7 @@ lgy:
   base_url: http://www.example.com
   app_id: ~
   api_key: ~
-  mock_coe: true
+  mock_coe: false
 
 form1095_b:
   s3:
