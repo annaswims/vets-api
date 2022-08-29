@@ -31,7 +31,7 @@ module V2
     private
 
     def error_class(method:, exception_class:)
-      "#{self.class.name}##{method} exception #{exception_class} (HLR_V1)"
+      "#{self.class.name}##{method} exception #{exception_class} (HLR_V2)"
     end
   end
 end
