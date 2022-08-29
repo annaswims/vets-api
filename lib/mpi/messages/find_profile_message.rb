@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'find_profile_message_fields'
+require_relative 'find_profile_message_with_address_fields'
 require_relative 'find_profile_message_helpers'
 require 'mpi/constants'
 

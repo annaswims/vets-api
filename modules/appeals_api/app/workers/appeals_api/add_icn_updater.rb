@@ -19,8 +19,8 @@ module AppealsApi
 
     private
 
-    def add_icn_to_appeal
-      unless appeal_class_str == 'AppealsApi::NoticeOfDisagreement'
+    def add_icn_to_appeal(appeal)
+      unless appeal.instance_of?(::AppealsApi::NoticeOfDisagreement)
         appeal.update!(veteran_icn: target_veteran(appeal).mpi_icn)
       end
 
@@ -53,9 +53,21 @@ module AppealsApi
         form_data: appeal.form_data&.dig('data', 'attributes', 'veteran')
       )
 
+      veteran.define_singleton_method(:birth_date) do
+        appeal.auth_headers['X-VA-Birth-Date']
+      end
+      veteran.define_singleton_method(:valid?) do
+        true
+      end
+      veteran.define_singleton_method(:authn_context) do
+        'authn'
+      end
+      veteran.define_singleton_method(:uuid) do
+        nil
+      end
       # AppealsApi::Veteran is wrapper for ClaimsApi::Veteran, which requires ssn.
       # Instead of modifying ClaimsApi::Veteran, we'll just query MPI directly.
-      MPI::Service.find_profile(veteran)
+      MPI::Service.new.find_profile(veteran)
     end
   end
 end

@@ -138,6 +138,11 @@ module AppealsApi
       form_data['address'] || {}
     end
 
+    # Not something we currently take in, but required for MPI
+    def gender
+      nil
+    end
+
     private
 
     attr_accessor :auth_headers, :form_data, :type
