@@ -5,14 +5,6 @@ module MPI
     class FindProfileMessageWithAddress < FindProfileMessage
       attr_reader :address
 
-      REQUIRED_ADDRESS_FIELDS = %i[
-        street_address_lines
-        city
-        state
-        postal_code
-        country
-      ].freeze
-
       def initialize(profile)
         required_fields_present?(profile)
         @address = profile[:address]

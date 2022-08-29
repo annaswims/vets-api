@@ -27,14 +27,6 @@ module MPI
         ssn
       ].freeze
 
-      REQUIRED_ADDRESS_FIELDS = %i[
-        street_address_lines
-        city
-        state
-        postal_code
-        country
-      ].freeze
-
       def initialize(profile,
                      orch_search: false,
                      edipi: nil,
