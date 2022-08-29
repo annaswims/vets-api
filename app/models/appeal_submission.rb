@@ -61,7 +61,7 @@ class AppealSubmission < ApplicationRecord
   end
 
   # Have to keep this here for V0 compatibility, but this is NOT sidekiq queued.
-  # V1 of this submission is sidekiq queued and handled above in the `submit_claim` function.
+  # V2 of this submission is sidekiq queued and handled above in the `submit_claim` function.
   # See: app/controllers/v0/notice_of_disagreements_controller.rb:6
   def self.submit_nod(request_body_hash:, current_user:)
     appeal_submission = new(type_of_appeal: 'NOD',
