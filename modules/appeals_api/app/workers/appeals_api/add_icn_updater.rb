@@ -20,13 +20,13 @@ module AppealsApi
     private
 
     def add_icn_to_appeal(appeal)
-      unless appeal.instance_of?(::AppealsApi::NoticeOfDisagreement)
+      if appeal.instance_of?(::AppealsApi::NoticeOfDisagreement)
+        # Happy path MPI lookup in vets-api is SSN. NOD doesn't have that, so
+        # we have to utilize address attributes instead
+        appeal.update!(veteran_icn: target_veteran_with_address(appeal)&.profile&.icn)
+      else
         appeal.update!(veteran_icn: target_veteran(appeal).mpi_icn)
       end
-
-      # Happy path MPI lookup in vets-api is SSN. NOD doesn't have that, so
-      # we have to utilize address attributes instead
-      appeal.update!(veteran_icn: target_veteran_with_address(appeal)&.profile&.icn)
     end
 
     def target_veteran(appeal)
