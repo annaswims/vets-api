@@ -5,7 +5,6 @@ require 'decision_review/service'
 require 'decision_review_v1/service'
 require 'decision_review_v2/service'
 
-
 class AppealsBaseController < ApplicationController
   include ActionController::Serialization
   include FailedRequestLoggable
@@ -58,4 +57,3 @@ class AppealsBaseController < ApplicationController
     }
   end
 end
-

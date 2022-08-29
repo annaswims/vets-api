@@ -13,7 +13,7 @@ module V2
 
     def create
       hlr_create = decision_review_service_v2.create_higher_level_review(request_body: request_body_hash,
-                                                                      user: @current_user)
+                                                                         user: @current_user)
       render json: hlr_create
     rescue => e
       request = begin
