@@ -6,7 +6,7 @@ module MPI
     class FindProfileMessageWithAddressFields
       attr_reader :missing_keys, :missing_values
 
-      REQUIRED_ADDRESS_FIELDS = %w[
+      REQUIRED_ADDRESS_FIELDS = %i[
         addressLine1
         city
         zipCode5
@@ -14,7 +14,7 @@ module MPI
       ].freeze
 
       def initialize(address)
-        @address = address
+        @address = address.symbolize_keys
       end
 
       def valid?

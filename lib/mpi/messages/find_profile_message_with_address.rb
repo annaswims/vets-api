@@ -24,15 +24,18 @@ module MPI
         address_fields = FindProfileMessageWithAddressFields.new(profile[:address])
         address_fields.validate
 
-        # Ignore missing values for SSN if address fields are substitued in.
-        if address_fields.missing_keys.blank? && address_fields.missing_values.blank?
-          fields.missing_keys.delete(:ssn)
-          fields.missing_values.delete(:ssn)
-        end
+        # Ignore missing values for SSN while still validating for the rest
+        fields.missing_keys.delete(:ssn)
+        fields.missing_values.delete(:ssn)
 
-        raise ArgumentError, "required keys are missing: #{fields.missing_keys}" if fields.missing_keys.present?
-        if fields.missing_values.present?
-          raise ArgumentError, "required values are missing for keys: #{fields.missing_values}"
+        all_missing_keys = fields.missing_keys + address_fields.missing_keys
+        all_missing_values = fields.missing_values + address_fields.missing_values
+
+        raise ArgumentError, "required keys are missing: #{all_missing_keys}" if all_missing_keys.present?
+
+        if all_missing_values.present?
+          raise ArgumentError,
+                "required values are missing for keys: #{all_missing_values}"
         end
       end
 
