@@ -4,7 +4,7 @@ require 'rails_helper'
 
 module AppealsApi
   RSpec.describe AddIcnUpdater, type: :job do
-    let(:notice_of_disagreement) { create(:notice_of_disagreement) }
+    let(:notice_of_disagreement) { create(:notice_of_disagreement_v2) }
 
     describe 'Notice Of Disagreement' do
       it 'queries MPI with address data instead' do
