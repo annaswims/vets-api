@@ -284,26 +284,19 @@ module DecisionReviewV2
     # @return [Hash]
     #
     def create_claim(appeal_type:, request_body:, user:)
-      appeal_submission = nil
-      begin
-        headers, form = generate_headers_and_form(appeal_type, user)
-        ActiveRecord::Base.transaction do
-          appeal_submission = AppealSubmission.create!(
-            user_uuid: user.uuid,
-            type_of_appeal: appeal_type.upcase.to_s,
-            form_json: request_body,
-            headers: headers.to_json,
-            submission_status: :pending
-          )
-          # Clear in-progress form since submit was successful
-          InProgressForm.form_for_user(form, user)&.destroy!
-        end
-        sidekiq_job_id = create_appeal_submission_job(appeal_submission)
-        appeal_submission.sidekiq_job_id = sidekiq_job_id
-        { status: :success, appeal_submission_id: appeal_submission.id, sidekiq_job_id: sidekiq_job_id }
-      rescue => e
-        error_for_front_end(e)
-      end
+      appeal_submission = create_internal_appeal_claim_record(appeal_type: appeal_type, request_body: request_body,
+                                                              user: user)
+      sidekiq_job_id = create_appeal_submission_job(appeal_submission)
+      {
+        data: {
+          attributes: {
+            jobId: sidekiq_job_id,
+            appealId: appeal_submission.id
+          }
+        }
+      }
+    rescue => e
+      error_for_front_end(e)
     end
 
     ##
@@ -447,7 +440,24 @@ module DecisionReviewV2
 
     private
 
-    def generate_headers_and_form(appeal_type, user)
+    def create_internal_appeal_claim_record(appeal_type:, request_body:, user:)
+      headers, form = generate_headers_and_form(appeal_type: appeal_type, user: user)
+      appeal = nil
+      ActiveRecord::Base.transaction do
+        appeal = AppealSubmission.create!(
+          user_uuid: user.uuid,
+          type_of_appeal: appeal_type.upcase.to_s,
+          form_json: request_body,
+          headers: headers.to_json,
+          submission_status: :pending
+        )
+        # Clear in-progress form since submit was successful
+        InProgressForm.form_for_user(form, user)&.destroy!
+      end
+      appeal
+    end
+
+    def generate_headers_and_form(appeal_type:, user:)
       case appeal_type
       when 'SC'
         [create_supplemental_claims_headers(user), '20-0995']
