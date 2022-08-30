@@ -13,14 +13,14 @@ module AppealsApi
       auth_headers['X-VA-Birth-Date']
     end
 
-    # Required by MPI when validating in message_user_attributes
+    # Required by MPI when validating in message_user_attributes.
     # (See lib/mpi/service.rb)
     def valid?
       true
     end
 
-    # The following attributes we don't take in for NOD,
-    # but they are required for MPI
+    # We don't take the following attributes in for NOD,
+    # but they are required for MPI.
     def gender
       nil
     end
@@ -30,6 +30,29 @@ module AppealsApi
     end
 
     def uuid
+      nil
+    end
+
+    # The follow methods get checked for in create_profile_message,
+    # but aren't need for our purposes.
+    # (See lib/mpi/service.rb)
+    def mhv_icn
+      nil
+    end
+
+    def edipi
+      nil
+    end
+
+    def logingov_uuid
+      nil
+    end
+
+    def idme_uuid
+      nil
+    end
+
+    def middle_name
       nil
     end
   end

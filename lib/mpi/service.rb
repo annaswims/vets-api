@@ -263,12 +263,12 @@ module MPI
 
         return message_user_attributes(user_identity, search_type, orch_search: orch_search)
       end
-      return message_icn(user_identity, search_type) if user_identity.try(:mhv_icn).present?
-      return message_edipi(user_identity, search_type) if user_identity.try(:edipi).present?
-      if user_identity.try(:logingov_uuid).present?
+      return message_icn(user_identity, search_type) if user_identity.mhv_icn.present?
+      return message_edipi(user_identity, search_type) if user_identity.edipi.present?
+      if user_identity.logingov_uuid.present?
         return message_identifier(user_identity.logingov_uuid, 'logingov', search_type)
       end
-      return message_identifier(user_identity.idme_uuid, 'idme', search_type) if user_identity.try(:idme_uuid).present?
+      return message_identifier(user_identity.idme_uuid, 'idme', search_type) if user_identity.idme_uuid.present?
 
       message_user_attributes(user_identity, search_type)
     end
@@ -302,7 +302,7 @@ module MPI
       Raven.tags_context(mvi_find_profile: 'user_attributes')
 
       given_names = [user_identity.first_name]
-      given_names.push user_identity.try(:middle_name) unless user_identity.try(:middle_name).nil?
+      given_names.push user_identity.middle_name unless user_identity.middle_name.nil?
       profile = {
         given_names: given_names,
         last_name: user_identity.last_name,
