@@ -52,7 +52,7 @@ module MPI
       mvi_add_exception_response_for(MPI::Constants::CONNECTION_FAILED, e)
     rescue MPI::Errors::Base => e
       key = get_mvi_error_key(e)
-      mvi_error_handler(user_identity, e, 'add_person_proxy')
+      mvi_error_handler(e, 'add_person_proxy')
       mvi_add_exception_response_for(key, e)
     end
     # rubocop:enable Metrics/MethodLength
@@ -81,7 +81,7 @@ module MPI
       mvi_add_exception_response_for(MPI::Constants::CONNECTION_FAILED, e)
     rescue MPI::Errors::Base => e
       key = get_mvi_error_key(e)
-      mvi_error_handler(user_identity, e, 'add_person_implicit')
+      mvi_error_handler(e, 'add_person_implicit')
       mvi_add_exception_response_for(key, e)
     end
     # rubocop:enable Metrics/MethodLength
@@ -116,7 +116,7 @@ module MPI
       log_message_to_sentry("MVI find_profile error: #{e.message}", :warn)
       mvi_profile_exception_response_for(MPI::Constants::CONNECTION_FAILED, e)
     rescue MPI::Errors::Base => e
-      mvi_error_handler(user_identity, e, 'find_profile', profile_message)
+      mvi_error_handler(e, 'find_profile', profile_message)
       if e.is_a?(MPI::Errors::RecordNotFound)
         mvi_profile_exception_response_for(MPI::Constants::NOT_FOUND, e, type: 'not_found')
       else
@@ -152,7 +152,7 @@ module MPI
       nil
     rescue MPI::Errors::Base => e
       key = get_mvi_error_key(e)
-      mvi_error_handler(user_identity, e, 'update_profile')
+      mvi_error_handler(e, 'update_profile')
       mvi_add_exception_response_for(key, e)
     end
     # rubocop:enable Metrics/MethodLength
@@ -200,7 +200,7 @@ module MPI
       )
     end
 
-    def mvi_error_handler(user_identity, error, source = '', request = '')
+    def mvi_error_handler(error, source = '', request = '')
       context = { error: error.try(:body) }
       case error
       when MPI::Errors::DuplicateRecords
@@ -208,13 +208,8 @@ module MPI
       when MPI::Errors::RecordNotFound
         Rails.logger.info('MVI Record Not Found')
       when MPI::Errors::InvalidRequestError
-        # NOTE: ICN based lookups do not return RecordNotFound. They return InvalidRequestError
-        if user_identity.mhv_icn.present?
-          log_exception_to_sentry(error, context, { message: 'Possible RecordNotFound', source: source })
-        else
-          context[:request] = request
-          log_exception_to_sentry(error, context, { message: 'MVI Invalid Request', source: source })
-        end
+        context[:request] = request
+        log_exception_to_sentry(error, context, { message: 'MVI Invalid Request', source: source })
       when MPI::Errors::FailedRequestError
         log_exception_to_sentry(error, context)
       end
