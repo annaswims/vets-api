@@ -47,28 +47,14 @@ module AppealsApi
     end
 
     def target_veteran_with_address(appeal)
-      veteran ||= Appellant.new(
+      # AppealsApi::Veteran is a wrapper for ClaimsApi::Veteran, which requires an ssn.
+      # Instead of modifying ClaimsApi::Veteran, we'll define the minimum number of required methods
+      # we need on VeteranWithMPIAttributes and just call the MPI service with that directly.
+      veteran ||= AppealsApi::VeteranWithMPIAttributes.new(
         type: :veteran,
         auth_headers: appeal.auth_headers,
         form_data: appeal.form_data&.dig('data', 'attributes', 'veteran')
       )
-
-      # AppealsApi::Veteran is a wrapper for ClaimsApi::Veteran, which requires ssn.
-      # Instead of modifying ClaimsApi::Veteran, we'll define the following missing methods
-      # we need on this veteran object and just call the MPI service directly.
-
-      veteran.define_singleton_method(:birth_date) do
-        appeal.auth_headers['X-VA-Birth-Date']
-      end
-      veteran.define_singleton_method(:valid?) do
-        true
-      end
-      veteran.define_singleton_method(:authn_context) do
-        'authn'
-      end
-      veteran.define_singleton_method(:uuid) do
-        nil
-      end
 
       MPI::Service.new.find_profile(veteran)
     end

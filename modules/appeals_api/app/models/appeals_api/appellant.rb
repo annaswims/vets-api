@@ -133,16 +133,6 @@ module AppealsApi
       phone_country_code == '1'
     end
 
-    def address
-      # empty hash when claimant appellant but no address provided
-      form_data['address'] || {}
-    end
-
-    # Not something we currently take in, but required for MPI
-    def gender
-      nil
-    end
-
     private
 
     attr_accessor :auth_headers, :form_data, :type
@@ -158,6 +148,11 @@ module AppealsApi
         [address['addressLine1'],
          address['addressLine2'],
          address['addressLine3']].compact.map(&:strip).join(' ')
+    end
+
+    def address
+      # empty hash when claimant appellant but no address provided
+      form_data['address'] || {}
     end
 
     def claimant_headers_present?
