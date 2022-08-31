@@ -14,6 +14,8 @@ module DecisionReviewV2
     # @return [String] Base path for decision review URLs.
     #
     def base_path
+      # This is supposed to be v1, we are still submitting to v1 lighthouse here
+      # v2 in here reffers to OUR version of decision_review
       Settings.decision_review.v1.url
     end
 
@@ -21,7 +23,7 @@ module DecisionReviewV2
     # @return [String] Service name to use in breakers and metrics.
     #
     def service_name
-      'DecisionReview_v1'
+      'DecisionReview_v2'
     end
 
     ##
