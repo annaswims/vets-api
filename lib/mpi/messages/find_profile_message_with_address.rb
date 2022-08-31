@@ -64,6 +64,7 @@ module MPI
         value << element('postalCode', text!: @postal_code)
         value << element('country', text!: @country)
         el << value
+        el << element('semanticsText', text!: 'Physical Address')
         el
       end
     end
