@@ -34,7 +34,7 @@ module MPI
       def required_fields_present?(profile)
         fields = FindProfileMessageFields.new(profile)
         fields.validate
-        address_fields = FindProfileMessageWithAddressFields.new(profile[:address])
+        address_fields = FindProfileMessageWithAddressFields.new(profile[:address] || {})
         address_fields.validate
 
         # Ignore missing values for SSN while still validating for the rest

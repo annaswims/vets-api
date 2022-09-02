@@ -13,7 +13,7 @@ module MPI
         countryCodeISO2
       ].freeze
 
-      def initialize(address)
+      def initialize(address = {})
         @address = address.symbolize_keys
       end
 
