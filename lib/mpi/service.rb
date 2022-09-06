@@ -308,6 +308,7 @@ module MPI
         given_names: given_names,
         last_name: user_identity.last_name,
         birth_date: user_identity.birth_date,
+        ssn: user_identity.ssn,
         gender: user_identity.gender
       }
 
