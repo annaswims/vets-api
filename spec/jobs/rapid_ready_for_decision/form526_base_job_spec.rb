@@ -106,10 +106,11 @@ RSpec.describe RapidReadyForDecision::Form526BaseJob, type: :worker do
       end
 
       context 'when there are pending claims, which cause EP 400 errors' do
-        it 'off-ramps to the non-RRD process' do
+        it 'off-ramps to the non-RRD process and does not notify MAS' do
           VCR.use_cassette('evss/claims/claims') do
             Sidekiq::Testing.inline! do
               expect(Lighthouse::VeteransHealth::Client).not_to receive(:new)
+              expect(MailAutomation::Client).not_to receive(:new)
               described_class.perform_async(submission.id)
               submission.reload
               expect(submission.form.dig('rrd_metadata', 'offramp_reason')).to eq 'pending_ep'
