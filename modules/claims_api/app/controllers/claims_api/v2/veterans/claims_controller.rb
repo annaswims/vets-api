@@ -41,24 +41,33 @@ module ClaimsApi
                             external_key: target_veteran.participant_id)
         end
 
-        def generate_show_output(bgs_claim:, lighthouse_claim:)
+        def evss_docs_service
+          EVSS::DocumentsService.new(auth_headers)
+        end
+
+        def generate_show_output(bgs_claim:, lighthouse_claim:) # rubocop:disable Metrics/MethodLength
           if lighthouse_claim.present? && bgs_claim.present?
             bgs_details = bgs_claim[:benefit_claim_details_dto]
-            build_claim_structure(
+            structure = build_claim_structure(
               data: bgs_details,
               lighthouse_id: lighthouse_claim.id,
               upstream_id: bgs_details[:benefit_claim_id]
             )
           elsif lighthouse_claim.present? && bgs_claim.blank?
-            {
+            structure = {
               lighthouse_id: lighthouse_claim.id,
               type: lighthouse_claim.claim_type,
               status: lighthouse_claim.status.capitalize
             }
           else
             bgs_details = bgs_claim[:benefit_claim_details_dto]
-            build_claim_structure(data: bgs_details, lighthouse_id: nil, upstream_id: bgs_details[:benefit_claim_id])
+            structure = build_claim_structure(data: bgs_details,
+                                              lighthouse_id: nil,
+                                              upstream_id: bgs_details[:benefit_claim_id])
           end
+          structure.merge!(errors: get_errors(lighthouse_claim))
+          structure.merge!(supporting_documents: build_supporting_docs(bgs_claim))
+          structure.merge!(tracked_items: map_bgs_tracked_items(bgs_claim))
         end
 
         def map_claims(bgs_claims:, lighthouse_claims:) # rubocop:disable Metrics/MethodLength
@@ -103,7 +112,7 @@ module ClaimsApi
         end
 
         def find_lighthouse_claim!(claim_id:)
-          lighthouse_claim = ClaimsApi::AutoEstablishedClaim.get_by_id_or_evss_id(claim_id)
+          lighthouse_claim = ClaimsApi::AutoEstablishedClaim.get_by_id_and_icn(claim_id, target_veteran.mpi.icn)
 
           if looking_for_lighthouse_claim?(claim_id: claim_id) && lighthouse_claim.blank?
             raise ::Common::Exceptions::ResourceNotFound.new(detail: 'Claim not found')
@@ -148,13 +157,12 @@ module ClaimsApi
             end_product_code: data[:end_prdct_type_cd],
             jurisdiction: data[:regional_office_jrsdctn],
             lighthouse_id: lighthouse_id,
-            maxEstClaimDate: data[:max_est_claim_complete_dt],
-            minEstClaimDate: data[:min_est_claim_complete_dt],
+            max_est_claim_date: data[:max_est_claim_complete_dt],
+            min_est_claim_date: data[:min_est_claim_complete_dt],
             status: detect_status(data),
             submitter_application_code: data[:submtr_applcn_type_cd],
             submitter_role_code: data[:submtr_role_type_cd],
-            tempJurisdiction: data[:temp_regional_office_jrsdctn],
-            tracked_items: map_bgs_tracked_items(upstream_id),
+            temp_jurisdiction: data[:temp_regional_office_jrsdctn],
             '5103_waiver_submitted'.to_sym => map_yes_no_to_boolean('filed5103_waiver_ind',
                                                                     data[:filed5103_waiver_ind])
           }
@@ -164,6 +172,17 @@ module ClaimsApi
           return data[:phase_type] if data.key?(:phase_type)
 
           cast_claim_lc_status(data[:bnft_claim_lc_status])
+        end
+
+        def get_errors(lighthouse_claim)
+          return [] if lighthouse_claim.blank? || lighthouse_claim.evss_response.blank?
+
+          lighthouse_claim.evss_response.map do |error|
+            {
+              detail: "#{error['severity']} #{error['detail'] || error['text']}".squish,
+              source: error['key'] ? error['key'].gsub('.', '/') : error['key']
+            }
+          end
         end
 
         # The status can either be an object or array
@@ -191,16 +210,38 @@ module ClaimsApi
           end
         end
 
-        def map_bgs_tracked_items(claim_id)
+        def map_bgs_tracked_items(bgs_claim)
+          return [] if bgs_claim.nil?
+
+          claim_id = bgs_claim.dig(:benefit_claim_details_dto, :benefit_claim_id)
+          return [] if claim_id.nil?
+
           bgs_response = bgs_service.tracked_items.find_tracked_items(claim_id)
           bgs = bgs_response.dig(:benefit_claim, :dvlpmt_items) || []
           bgs.map do |item|
             {
-              closedDate: item[:jrn_dt].iso8601,
+              closed_date: item[:jrn_dt].iso8601,
               description: item[:short_nm],
-              suspensionDate: item[:suspns_dt].iso8601,
-              requestedDate: item[:req_dt].iso8601,
-              trackedItemId: item[:dvlpmt_item_id].to_i
+              suspension_date: item[:suspns_dt].iso8601,
+              requested_date: item[:req_dt].iso8601,
+              tracked_item_id: item[:dvlpmt_item_id].to_i
+            }
+          end
+        end
+
+        def build_supporting_docs(bgs_claim)
+          return [] if bgs_claim.nil?
+
+          docs = evss_docs_service.get_claim_documents(bgs_claim[:benefit_claim_details_dto][:benefit_claim_id]).body
+          return [] if docs.nil? || docs['documents'].blank?
+
+          docs['documents'].map do |doc|
+            {
+              document_id: doc['document_id'],
+              document_type_label: doc['document_type_label'],
+              original_file_name: doc['original_file_name'],
+              tracked_item_id: doc['tracked_item_id'],
+              upload_date: doc['upload_date']
             }
           end
         end

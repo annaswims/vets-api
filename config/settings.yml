@@ -272,12 +272,9 @@ modules_appeals_api:
       # List of flags to indicate parts of documentation that are still WIP and not ready for production.
       # See the rswag:appeals_api:dev rake task, spec_helper, and DocHelpers#wip_doc_enabled? for usage info to opt-in.
       # NOTE: Do not remove this key even if it's empty.
-  higher_level_review_pii_expunge_enabled: true
   higher_level_review_updater_enabled: true
   legacy_appeals_enabled: false
   supplemental_claims_enabled: true
-  supplemental_claim_pii_expunge_enabled: true
-  notice_of_disagreement_pii_expunge_enabled: true
   notice_of_disagreement_updater_enabled: true
   supplemental_claim_updater_enabled: true
   job_schedules:
@@ -620,7 +617,6 @@ redis:
   port: 6379
   app_data:
     url: redis://localhost:6379
-    # secondary_url: redis://localhost:6378
   sidekiq:
     url: redis://localhost:6379
   rails_cache:
@@ -988,6 +984,10 @@ flipper:
     - erica.sauve@adhocteam.us # Erica Suave - APM Adhoc Auth Exp
     - ajakabcin@gmail.com # Ana Jakabcin - PM Adhoc Auth Exp
     - cesar.santiago@accenturefederal.com # My Education Benefits Team Lead
+    - jacob.k.worrell@gmail.com # Jacob Worrell - Benefits Team #1
+    - jerek.shoemaker@adhocteam.us # Jerek Shoemaker - Benefits Team #1
+    - sam.cormier@coforma.io # Sam Cormier - Benefits Team #1
+    - scott.meyers@coforma.io # Scott Meyers - Benefits Team #1
 
 bgs:
   application: ~
@@ -1005,6 +1005,7 @@ directory:
 
 va_mobile:
   url: "https://veteran.apps.va.gov"
+  ppms_base_url: "https://staff.apps.va.gov"
   mock: false
   key_path: /fake/client/key/path
   timeout: 15
@@ -1385,10 +1386,10 @@ sidekiq:
   github_api_key: ~
 
 lgy:
-  base_url: 'http://www.example.com'
+  base_url: http://www.example.com
   app_id: ~
   api_key: ~
-  mock_coe: true 
+  mock_coe: true
 
 form1095_b:
   s3:

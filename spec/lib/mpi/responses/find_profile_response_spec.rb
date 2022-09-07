@@ -4,14 +4,16 @@ require 'rails_helper'
 require 'mpi/responses/find_profile_response'
 
 describe MPI::Responses::FindProfileResponse do
-  let(:faraday_response) { instance_double('Faraday::Response') }
+  let(:raw_response) { OpenStruct.new({ body: body }) }
   let(:body) { Ox.parse(File.read('spec/support/mpi/find_candidate_response.xml')) }
-  let(:ok_response) { MPI::Responses::FindProfileResponse.with_parsed_response(faraday_response) }
+  let(:ok_response) { MPI::Responses::FindProfileResponse.with_parsed_response(raw_response) }
   let(:error_response) { MPI::Responses::FindProfileResponse.with_server_error }
   let(:not_found_response) { MPI::Responses::FindProfileResponse.with_not_found }
-
-  before do
-    allow(faraday_response).to receive(:body) { body }
+  let(:ack_detail_code) { 'AE' }
+  let(:error_details) do
+    { error_details: { ack_detail_code: ack_detail_code,
+                       id_extension: id_extension,
+                       error_texts: error_texts } }
   end
 
   describe '.with_server_error' do
@@ -41,6 +43,65 @@ describe MPI::Responses::FindProfileResponse do
 
       expect(response.error).to be_present
       expect(exception.code).to eq not_found_exception.errors.first.code
+    end
+  end
+
+  describe '.with_parsed_response' do
+    subject { described_class.with_parsed_response(raw_response) }
+
+    context 'when response parses multiple match' do
+      let(:body) { Ox.parse(File.read('spec/support/mpi/find_candidate_multiple_match_response.xml')) }
+      let(:expected_error) { MPI::Errors::DuplicateRecords }
+      let(:id_extension) { '200VGOV-03b2801a-3005-4dcc-9a3c-7e3e4c0d5293' }
+      let(:error_texts) { ['Multiple Matches Found'] }
+
+      it 'raises a duplicate records exception' do
+        expect { subject }.to raise_exception(expected_error, error_details.to_s)
+      end
+    end
+
+    context 'when response parses invalid request' do
+      let(:body) { Ox.parse(File.read('spec/support/mpi/find_candidate_invalid_request.xml')) }
+      let(:expected_error) { MPI::Errors::RecordNotFound }
+
+      it 'raises a record not found exception' do
+        expect { subject }.to raise_exception(expected_error)
+      end
+    end
+
+    context 'when response parses failed request' do
+      let(:body) { Ox.parse(File.read('spec/support/mpi/find_candidate_ar_code_database_error_response.xml')) }
+      let(:ack_detail_code) { 'AR' }
+      let(:id_extension) { 'MCID-12345' }
+      let(:error_texts) { ['Environment Database Error'] }
+      let(:expected_error) { MPI::Errors::FailedRequestError }
+
+      it 'raises a failed request error' do
+        expect { subject }.to raise_exception(expected_error, error_details.to_s)
+      end
+    end
+
+    context 'when response parses as nil' do
+      let(:body) { nil }
+      let(:expected_error) { MPI::Errors::RecordNotFound }
+
+      it 'raises a record not found exception' do
+        expect { subject }.to raise_exception(expected_error)
+      end
+    end
+
+    context 'successful parsing of response' do
+      let(:body) { Ox.parse(File.read('spec/support/mpi/find_candidate_response.xml')) }
+      let(:expected_status) { Common::Client::Concerns::ServiceStatus::RESPONSE_STATUS[:ok] }
+      let(:expected_parsed_profile) { MPI::Responses::ProfileParser.new(raw_response).parse }
+
+      it 'returns profile response with ok status' do
+        expect(subject.status).to eq(expected_status)
+      end
+
+      it 'returns profile response with parsed profile' do
+        expect(subject.profile).to have_deep_attributes(expected_parsed_profile)
+      end
     end
   end
 

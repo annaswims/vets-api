@@ -4,7 +4,7 @@ require 'rails_helper'
 
 RSpec.describe V0::CaregiversAssistanceClaimsController, type: :controller do
   before do
-    allow(Flipper).to receive(:enabled?).with(:caregiver_async).and_return(false)
+    Flipper.disable(:caregiver_async)
   end
 
   describe '::auditor' do
@@ -173,11 +173,15 @@ RSpec.describe V0::CaregiversAssistanceClaimsController, type: :controller do
     end
 
     context 'with caregiver_async on' do
+      let(:user) { build(:user, :loa3) }
+
       before do
-        allow(Flipper).to receive(:enabled?).with(:caregiver_async).and_return(true)
+        sign_in_as(user)
+        Flipper.enable(:caregiver_async, user)
       end
 
       it 'submits to background job' do
+        expect_any_instance_of(Form1010cg::Service).to receive(:assert_veteran_status)
         expect(Form1010cg::SubmissionJob).to receive(:perform_async)
         post :create, params: { caregivers_assistance_claim: { form: claim.form } }
 
