@@ -5,7 +5,7 @@ module V0
     class VirtualAgentControllerUtil
       include Sidekiq::Worker
 
-      def self.log_user_action(current_user, action_type, meta)
+      def log_user_action(current_user, action_type, meta)
 
         log_data = current_user.dup.slice(
             '@icn',
@@ -19,7 +19,6 @@ module V0
         log_data[:action_meta] = meta
 
         # TODO: replace with logic to write to Postgres ...
-        puts log_data.to_json
 
       end
 

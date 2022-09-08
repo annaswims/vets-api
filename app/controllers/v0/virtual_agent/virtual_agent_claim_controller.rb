@@ -17,7 +17,7 @@ module V0
 
         case synchronized
         when 'REQUESTED'
-          V0::VirtualAgent::VirtualAgentControllerUtil.log_user_action(current_user, :claims, { })
+          VirtualAgentStoreClaimsCallJob.perform_async(current_user, :claims, { })
           render json: {
             data: nil,
             meta: { sync_status: synchronized }
