@@ -8,6 +8,8 @@ module V0
       def index
         # @appeal_status_description
 
+        V0::VirtualAgent::VirtualAgentControllerUtil.log_user_action(current_user, :appeals, { })
+
         if Settings.vsp_environment == 'staging'
           @user_ssan, @user_name = set_user_credentials
           appeals_response = get_appeal_from_lighthouse(@user_ssan, @user_name)

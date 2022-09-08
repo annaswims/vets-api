@@ -17,6 +17,7 @@ module V0
 
         case synchronized
         when 'REQUESTED'
+          V0::VirtualAgent::VirtualAgentControllerUtil.log_user_action(current_user, :claims, { })
           render json: {
             data: nil,
             meta: { sync_status: synchronized }
@@ -36,7 +37,6 @@ module V0
 
       def show
         claim = EVSSClaim.for_user(current_user).find_by(evss_id: params[:id])
-
         claim, synchronized = service.update_from_remote(claim)
 
         render json: {
