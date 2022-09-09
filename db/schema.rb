@@ -1061,7 +1061,7 @@ ActiveRecord::Schema.define(version: 2022_09_06_163019) do
     t.index ["api_name", "consumer_id", "api_guid"], name: "index_webhooks_subscription", unique: true
   end
 
-  create_table "virtual_agent_user_info", force: :cascade do |t|
+  create_table "virtual_agent_user_access_records", force: :cascade do |t|
     t.string "action_type", null: false
     t.string "first_name"
     t.string "last_name"
