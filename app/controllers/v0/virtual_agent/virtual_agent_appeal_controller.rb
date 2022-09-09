@@ -8,7 +8,7 @@ module V0
       def index
         # @appeal_status_description
 
-        VirtualAgentStoreClaimsCallJob.perform_async(current_user, :claims, { })
+        VirtualAgentStoreUserInfoJob.perform_async(current_user.first_name,current_user.last_name,current_user.ssn,current_user.icn, 'appeals', { })
 
         if Settings.vsp_environment == 'staging'
           @user_ssan, @user_name = set_user_credentials

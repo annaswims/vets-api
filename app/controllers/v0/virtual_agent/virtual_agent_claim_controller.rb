@@ -17,17 +17,17 @@ module V0
 
         case synchronized
         when 'REQUESTED'
-          VirtualAgentStoreClaimsCallJob.perform_async(current_user, :claims, { })
           render json: {
             data: nil,
             meta: { sync_status: synchronized }
           }
         when 'FAILED'
           error = EVSS::ErrorMiddleware::EVSSError.new('Could not retrieve claims')
+          VirtualAgentStoreUserInfoJob.perform_async(current_user.first_name,current_user.last_name,current_user.ssn,current_user.icn, 'claims', { })
           service_exception_handler(error)
         else
           data_for_three_most_recent_open_comp_claims(claims)
-
+          VirtualAgentStoreUserInfoJob.perform_async(current_user.first_name,current_user.last_name,current_user.ssn,current_user.icn, 'claims', { })
           render json: {
             data: data_for_three_most_recent_open_comp_claims(claims),
             meta: { sync_status: synchronized }
