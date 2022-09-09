@@ -1065,7 +1065,7 @@ ActiveRecord::Schema.define(version: 2022_09_06_163019) do
     t.string "action_type", null: false
     t.string "first_name"
     t.string "last_name"
-    t.string "ssan", null: false
+    t.string "ssn", null: false
     t.string "icn",  null: false
     t.datetime "created_at",  null: false
 
