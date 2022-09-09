@@ -1062,16 +1062,16 @@ ActiveRecord::Schema.define(version: 2022_09_06_163019) do
   end
 
   create_table "virtual_agent_user_info", force: :cascade do |t|
-    t.string :action_type, null: false
-    t.string :first_name
-    t.string :last_name
-    t.string :ssan, null: false
-    t.string :icn,  null: false
-    t.datetime :created_at,  null: false
+    t.string "action_type", null: false
+    t.string "first_name"
+    t.string "last_name"
+    t.string "ssan", null: false
+    t.string "icn",  null: false
+    t.datetime "created_at",  null: false
 
-    t.index [ :ssan ], unique: false
-    t.index [ :icn ],  unique: false
-    t.index [ :created_at ], unique: false
+    t.index [ "ssan" ], unique: false
+    t.index [ "icn" ],  unique: false
+    t.index [ "created_at" ], unique: false
   end
 
   add_foreign_key "account_login_stats", "accounts"
