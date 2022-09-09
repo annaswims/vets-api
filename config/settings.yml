@@ -51,14 +51,14 @@ session_cookie:
   secure: false
 
 sign_in:
-  jwt_encode_key: 'spec/fixtures/sign_in/privatekey.pem'
+  jwt_encode_key: "spec/fixtures/sign_in/privatekey.pem"
   cookies_secure: false
   info_cookie_domain: localhost
   client_redirect_uris:
-    mobile: 'vamobile://login-success'
-    web: 'http://localhost:3001/auth/login/callback'
-    web_logout: 'http://localhost:3001'
-    mobile_test: 'http://localhost:4001/auth/sis/login-success'
+    mobile: "vamobile://login-success"
+    web: "http://localhost:3001/auth/login/callback"
+    web_logout: "http://localhost:3001"
+    mobile_test: "http://localhost:4001/auth/sis/login-success"
 
 lockbox:
   master_key: "0d78eaf0e90d4e7b8910c9112e16e66d8b00ec4054a89aa426e32712a13371e9"
@@ -249,23 +249,23 @@ decision_review:
 dhp:
   mock: false
   fitbit:
-    client_id: ''
-    client_secret: ''
-    redirect_uri: 'http://localhost:3000/dhp_connected_devices/fitbit-callback'
-    scope: 'heartrate activity nutrition sleep'
-    code_challenge: ''
-    code_verifier: ''
+    client_id: ""
+    client_secret: ""
+    redirect_uri: "http://localhost:3000/dhp_connected_devices/fitbit-callback"
+    scope: "heartrate activity nutrition sleep"
+    code_challenge: ""
+    code_verifier: ""
   s3:
-    aws_access_key_id: ''
-    aws_secret_access_key: ''
-    bucket: ''
-    region: 'us-gov-west-1'
+    aws_access_key_id: ""
+    aws_secret_access_key: ""
+    bucket: ""
+    region: "us-gov-west-1"
 
 # Settings for modules/appeals_api
 modules_appeals_api:
   slack:
-    api_token: ''
-    appeals_channel_id: ''
+    api_token: ""
+    appeals_channel_id: ""
   documentation:
     path_enabled_flag: false
     wip_docs:
@@ -293,7 +293,7 @@ modules_appeals_api:
     appeals_api_hlr_cleanup_pii:
       class: AppealsApi::HigherLevelReviewCleanUpWeekOldPii
       description: "Remove PII of HigherLevelReviews"
-      every: ['24h', first_in: '45m']
+      every: ["24h", first_in: "45m"]
     appeals_api_hlr_status_batch:
       class: AppealsApi::HigherLevelReviewUploadStatusBatch
       description: "Update HigherLevelReview statuses with their Central Mail status"
@@ -301,7 +301,7 @@ modules_appeals_api:
     appeals_api_nod_cleanup_pii:
       class: AppealsApi::NoticeOfDisagreementCleanUpWeekOldPii
       description: "Remove PII of NoticeOfDisagreements"
-      every: ['24h', first_in: '45m']
+      every: ["24h", first_in: "45m"]
     appeals_api_nod_status_batch:
       class: AppealsApi::NoticeOfDisagreementUploadStatusBatch
       description: "Update NoticeOfDisagreement statuses with their Central Mail status"
@@ -847,7 +847,8 @@ flipper:
   admin_user_emails:
     - aditya.sharma@thoughtworks.com # Virtual Agent
     - adrian.rollett@agile6.com # Adrian Rollett (Agile6), Engineer/Product Manager Health Care Experience/Check-In
-    - agarcia@clarityinnovates.com
+    - alexander.schmidt.garcia@gmail.com # Alexander Garcia (Clarity/Oddball), Identity Team, Frontend Engineer
+    - afia.caruso@oddball.io # Afia Caruso (Oddball), Identity Team, Frontend Engineer
     - alastair@adhocteam.us
     - andrew.herzberg@adhocteam.us
     - bill.ryan@adhocteam.us
@@ -885,9 +886,8 @@ flipper:
     - jesse.cohn@adhocteam.us
     - jlinn@governmentcio.com
     - joe.hall@thoughtworks.com # Virtual Agent
-    - joeyn414@gmail.com # Joe Niquette Oddball VSP Identity Team Sr Security Engineer
-    - john.bramley@adhocteam.us
-    - Josh.Scanish@oddball.io # vsp identity engineer
+    - joeyn414@gmail.com # Joe Niquette (Oddball), Identity Team, Sr Security Engineer
+    - john.bramley@adhocteam.us # John Bramley (AdHoc), Identity Team, Backend Engineer
     - julie.adair@agile6.com # Julie Adair (Agile6), Product Manager Health Care Experience/Check-In
     - jwolf@governmentcio.com # Jason Wolf Product Manager for GCIO
     - justin.trieu@thoughtworks.com # Virtual Agent
@@ -900,7 +900,6 @@ flipper:
     - kmircovich@governmentcio.com
     - kris.pethtel@adhocteam.us
     - kris.pethtel@gmail.com # email tied to production id.me account
-    - kyle.woolley@oddball.io # VSP Identity Engineer
     - ksuriyamoorthy@kindsys.us # Kanchana Suriyamoorthy (Kindsys), BE Engineer Health Care Experience/Check-In
     - lauren.alexanderson@va.gov
     - leah.delacosta@adhocteam.us
@@ -914,7 +913,6 @@ flipper:
     - micah@adhocteam.us
     - michel.mcdonald@adhocteam.us
     - michael.chelen@va.gov
-    - michael.fleet@oddball.io
     - michael.pelz-sherman@gcio.com
     - michelle.middaugh@adhocteam.us
     - n.ratana@gmail.com
@@ -936,10 +934,9 @@ flipper:
     - ssuddath@governmentcio.com
     - stephen.barrs@gmail.com
     - teagan.stephenson@bracari.com
-    - tim.wright@adhocteam.us
     - tony.williams@va.gov
     - travis.hilton@oddball.io
-    - trevor.bosaw@oddball.io
+    - trevor.bosaw@oddball.io # Trevor Bosaw (Oddball), Identity Team, Backend Engineer
     - tze@adhocteam.us
     - yangyang@navapbc.com
     - yoom@navapbc.com
@@ -1119,7 +1116,138 @@ google_analytics:
   tracking_id: ~
 
 covid_vaccine:
-  allowed_facilities: [402,405,436,437,438,442,459,460,463,501,502,503,504,506,508,509,512,515,516,517,518,519,520,521,523,526,528,529,531,534,537,538,539,540,541,542,544,546,548,549,550,552,553,554,556,557,558,561,562,564,565,568,570,573,575,578,580,581,583,585,586,589,590,593,595,596,598,600,603,605,607,608,610,612,613,614,618,619,620,621,623,626,629,630,631,632,635,636,637,640,642,644,646,648,649,650,652,653,654,655,656,657,658,659,660,662,663,664,666,667,668,671,672,673,674,675,676,678,679,687,688,689,691,692,693,695,740,756,757]
+  allowed_facilities:
+    [
+      402,
+      405,
+      436,
+      437,
+      438,
+      442,
+      459,
+      460,
+      463,
+      501,
+      502,
+      503,
+      504,
+      506,
+      508,
+      509,
+      512,
+      515,
+      516,
+      517,
+      518,
+      519,
+      520,
+      521,
+      523,
+      526,
+      528,
+      529,
+      531,
+      534,
+      537,
+      538,
+      539,
+      540,
+      541,
+      542,
+      544,
+      546,
+      548,
+      549,
+      550,
+      552,
+      553,
+      554,
+      556,
+      557,
+      558,
+      561,
+      562,
+      564,
+      565,
+      568,
+      570,
+      573,
+      575,
+      578,
+      580,
+      581,
+      583,
+      585,
+      586,
+      589,
+      590,
+      593,
+      595,
+      596,
+      598,
+      600,
+      603,
+      605,
+      607,
+      608,
+      610,
+      612,
+      613,
+      614,
+      618,
+      619,
+      620,
+      621,
+      623,
+      626,
+      629,
+      630,
+      631,
+      632,
+      635,
+      636,
+      637,
+      640,
+      642,
+      644,
+      646,
+      648,
+      649,
+      650,
+      652,
+      653,
+      654,
+      655,
+      656,
+      657,
+      658,
+      659,
+      660,
+      662,
+      663,
+      664,
+      666,
+      667,
+      668,
+      671,
+      672,
+      673,
+      674,
+      675,
+      676,
+      678,
+      679,
+      687,
+      688,
+      689,
+      691,
+      692,
+      693,
+      695,
+      740,
+      756,
+      757,
+    ]
   enrollment_service:
     job_enabled: false
     sftp:
@@ -1177,8 +1305,8 @@ va_forms:
   # A notification for when a forms url has changed
   slack:
     enabled: false
-    notification_url: ''
-    users: '<>'
+    notification_url: ""
+    users: "<>"
 
 # Settings for connecting to genISIS, this is the storage system for the COVID Research initiative
 genisis:
@@ -1367,11 +1495,11 @@ test_user_dashboard:
     client_secret:
 
 lighthouse_health_immunization:
-  client_id: '0oad0xggirKLf2ger2p7'
-  audience_claim_url: 'https://deptva-eval.okta.com/oauth2/aus8nm1q0f7VQ0a482p7/v1/token'
+  client_id: "0oad0xggirKLf2ger2p7"
+  audience_claim_url: "https://deptva-eval.okta.com/oauth2/aus8nm1q0f7VQ0a482p7/v1/token"
   key_path: ~
-  access_token_url: 'https://sandbox-api.va.gov/oauth2/health/system/v1/token'
-  api_url: 'https://sandbox-api.va.gov/services/fhir/v0/r4'
+  access_token_url: "https://sandbox-api.va.gov/oauth2/health/system/v1/token"
+  api_url: "https://sandbox-api.va.gov/services/fhir/v0/r4"
   scopes:
     - "launch launch/patient"
     - "patient/Immunization.read"
@@ -1400,9 +1528,9 @@ form1095_b:
   s3:
     aws_access_key_id: ~
     aws_secret_access_key: ~
-    bucket: 'bucket'
+    bucket: "bucket"
     enabled: true
-    region: 'region'
+    region: "region"
 
 coverband:
   github_organization: ~
