@@ -55,6 +55,16 @@ module MPI
 
       private
 
+      def build_parameter_list
+        el = element('parameterList')
+        el << build_gender if @gender.present?
+        el << build_living_subject_birth_time
+        el << build_living_subject_id
+        el << build_living_subject_name
+        el << build_vba_orchestration if Settings.mvi.vba_orchestration
+        el
+      end
+
       def build_control_act_process
         el = element('controlActProcess', classCode: 'CACT', moodCode: 'EVN')
         el << element('code', code: 'PRPA_TE201305UV02', codeSystem: '2.16.840.1.113883.1.6')
@@ -76,49 +86,6 @@ module MPI
         assigned_person << assigned_person_instance
         assigned_person << build_orchestrated_search if @orch_search
         el << assigned_person
-        el
-      end
-
-      def build_parameter_list
-        el = element('parameterList')
-        el << build_gender if @gender.present?
-        el << build_living_subject_birth_time
-        el << build_living_subject_id
-        el << build_living_subject_name
-        el << build_vba_orchestration if Settings.mvi.vba_orchestration
-        el
-      end
-
-      def build_living_subject_name
-        el = element('livingSubjectName')
-        value = element('value', use: 'L')
-        @given_names.each do |given_name|
-          value << element('given', text!: given_name)
-        end
-        value << element('family', text!: @family_name)
-        el << value
-        el << element('semanticsText', text!: 'Legal Name')
-        el
-      end
-
-      def build_living_subject_birth_time
-        el = element('livingSubjectBirthTime')
-        el << element('value', value: Date.parse(@birth_date)&.strftime('%Y%m%d'))
-        el << element('semanticsText', text!: 'Date of Birth')
-        el
-      end
-
-      def build_living_subject_id
-        el = element('livingSubjectId')
-        el << element('value', root: '2.16.840.1.113883.4.1', extension: @ssn)
-        el << element('semanticsText', text!: 'SSN')
-        el
-      end
-
-      def build_gender
-        el = element('livingSubjectAdministrativeGender')
-        el << element('value', code: @gender)
-        el << element('semanticsText', text!: 'Gender')
         el
       end
 
