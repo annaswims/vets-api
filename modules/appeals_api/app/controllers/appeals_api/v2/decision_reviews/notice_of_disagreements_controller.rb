@@ -39,6 +39,7 @@ class AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController < Appeals
       'AppealsApi::NoticeOfDisagreement',
       'v2'
     )
+    AppealsApi::AddIcnUpdater.perform_async(@notice_of_disagreement.id, 'AppealsApi::NoticeOfDisagreement')
     render_notice_of_disagreement
   end
 

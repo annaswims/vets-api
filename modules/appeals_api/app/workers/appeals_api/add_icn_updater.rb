@@ -13,11 +13,21 @@ module AppealsApi
       if appeal.form_data.nil? && appeal.auth_headers.nil?
         Rails.logger.error "#{appeal_class_str} missing PII, can't retrieve ICN. Appeal ID:#{appeal_id}."
       else
-        appeal.update!(veteran_icn: target_veteran(appeal).mpi_icn)
+        add_icn_to_appeal(appeal)
       end
     end
 
     private
+
+    def add_icn_to_appeal(appeal)
+      if appeal.instance_of?(::AppealsApi::NoticeOfDisagreement)
+        # Happy path MPI lookup in vets-api is SSN. NOD doesn't have that, so
+        # we have to utilize address attributes instead
+        appeal.update!(veteran_icn: target_veteran_with_address(appeal)&.profile&.icn)
+      else
+        appeal.update!(veteran_icn: target_veteran(appeal).mpi_icn)
+      end
+    end
 
     def target_veteran(appeal)
       veteran ||= Appellant.new(
@@ -34,6 +44,19 @@ module AppealsApi
       )
 
       mpi_veteran
+    end
+
+    def target_veteran_with_address(appeal)
+      # AppealsApi::Veteran is a wrapper for ClaimsApi::Veteran, which requires an ssn.
+      # Instead of modifying ClaimsApi::Veteran, we'll define the minimum number of required methods
+      # we need on VeteranWithMPIAttributes and just call the MPI service with that directly.
+      veteran ||= AppealsApi::VeteranWithMPIAttributes.new(
+        type: :veteran,
+        auth_headers: appeal.auth_headers,
+        form_data: appeal.form_data&.dig('data', 'attributes', 'veteran')
+      )
+
+      MPI::Service.new.find_profile(veteran)
     end
   end
 end

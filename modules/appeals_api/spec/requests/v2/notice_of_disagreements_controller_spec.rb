@@ -165,7 +165,9 @@ describe AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController, type:
         allow(client).to receive(:send_email)
 
         Sidekiq::Testing.inline! do
-          post(path, params: @max_data, headers: @max_headers)
+          VCR.use_cassette('mpi/find_candidate/valid_no_gender') do
+            post(path, params: @max_data, headers: @max_headers)
+          end
         end
 
         nod = AppealsApi::NoticeOfDisagreement.find_by(id: parsed['data']['id'])
