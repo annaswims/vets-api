@@ -837,30 +837,6 @@ describe MPI::Service do
       end
     end
 
-    describe '.find_profile with address attributes and without ICN' do
-      let(:nod_appeal) { create(:notice_of_disagreement_v2) }
-
-      it 'calls the find_profile endpoint with a find candidate with address message' do
-        VCR.use_cassette('mpi/find_candidate/valid') do
-          # This path for calling find_profile utilizes a Veteran model with a small subset of
-          # User attributes, but enough to be able to query MPI still.
-          user = AppealsApi::VeteranWithMPIAttributes.new(
-            type: :veteran,
-            auth_headers: nod_appeal.auth_headers,
-            form_data: nod_appeal.form_data&.dig('data', 'attributes', 'veteran')
-          )
-          expect(MPI::Messages::FindProfileMessageWithAddress).to receive(:new).once.and_call_original
-          profile = mvi_profile
-          profile['search_token'] = 'WSDOC1908281447208280163390431'
-          expect(Raven).to receive(:tags_context).once.with(mvi_find_profile: 'user_attributes_address')
-
-          response = subject.find_profile(user)
-          expect(response.status).to eq('OK')
-          expect(response.profile).to have_deep_attributes(profile)
-        end
-      end
-    end
-
     context 'when a MVI invalid request response is returned' do
       let(:id_extension) { '200VGOV-2c3c0c78-5e44-4ad2-b542-11388c3e45cd' }
       let(:error_texts) { ['MVI[S]:INVALID REQUEST'] }
