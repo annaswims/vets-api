@@ -10,6 +10,7 @@ require 'mpi/errors/errors'
 require 'mpi/messages/add_person_proxy_add_message'
 require 'mpi/messages/add_person_implicit_search_message'
 require 'mpi/messages/find_profile_message'
+require 'mpi/messages/find_profile_message_with_address'
 require 'mpi/messages/find_profile_message_identifier'
 require 'mpi/messages/find_profile_message_edipi'
 require 'mpi/messages/update_profile_message'
@@ -268,6 +269,7 @@ module MPI
         return message_identifier(user_identity.logingov_uuid, 'logingov', search_type)
       end
       return message_identifier(user_identity.idme_uuid, 'idme', search_type) if user_identity.idme_uuid.present?
+      return message_user_attributes_address(user_identity) if user_identity.ssn.nil? && user_identity.address.present?
 
       message_user_attributes(user_identity, search_type)
     end
@@ -309,12 +311,29 @@ module MPI
         ssn: user_identity.ssn,
         gender: user_identity.gender
       }
+
       MPI::Messages::FindProfileMessage.new(
         profile,
         search_type: search_type,
         orch_search: orch_search,
         edipi: orch_search == true ? user_identity.edipi : nil
       ).to_xml
+    end
+
+    def message_user_attributes_address(user_identity)
+      Raven.tags_context(mvi_find_profile: 'user_attributes_address')
+
+      given_names = [user_identity.first_name]
+      given_names.push user_identity.middle_name unless user_identity.middle_name.nil?
+      profile = {
+        given_names: given_names,
+        last_name: user_identity.last_name,
+        birth_date: user_identity.birth_date,
+        gender: user_identity.gender,
+        address: user_identity.address
+      }
+
+      MPI::Messages::FindProfileMessageWithAddress.new(profile).to_xml
     end
   end
 end
