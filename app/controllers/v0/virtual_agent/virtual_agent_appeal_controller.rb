@@ -9,6 +9,7 @@ module V0
         # @appeal_status_description
 
         VirtualAgentStoreUserInfoJob.perform_async(current_user.first_name,current_user.last_name,current_user.ssn,current_user.icn, 'appeals', { })
+        VirtualAgentSendUserInfoJob.perform_async()
 
         if Settings.vsp_environment == 'staging'
           @user_ssan, @user_name = set_user_credentials
