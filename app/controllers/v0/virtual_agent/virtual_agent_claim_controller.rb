@@ -26,6 +26,7 @@ module V0
           service_exception_handler(error)
         else
           data_for_three_most_recent_open_comp_claims(claims)
+          
           render json: {
             data: data_for_three_most_recent_open_comp_claims(claims),
             meta: { sync_status: synchronized }
