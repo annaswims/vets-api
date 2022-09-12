@@ -1,0 +1,2 @@
+class VirtualAgentUserAccessRecord < ApplicationRecord
+end
