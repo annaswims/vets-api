@@ -4,9 +4,26 @@ class VirtualAgentSendUserInfoJob
   include Sidekiq::Worker
 
   def perform()
-    all_records = VirtualAgentUserAccessRecord.all
-    puts 'in job'
-    puts all_records
-    puts all_records.inspect
+    current_datetime = Time.now
+    month_int = current_datetime.month - 1
+    month = Date::ABBR_MONTHNAMES[month_int]
+    year = current_datetime.year
+
+    csv_string = CSV.generate do |csv|
+      csv << VirtualAgentUserAccessRecord.attribute_names
+      # VirtualAgentUserAccessRecord.where("EXTRACT (month FROM created_at) = #{month_int}").each do |user_record|
+
+      puts VirtualAgentUserAccessRecord.all
+      VirtualAgentUserAccessRecord.all.each do |user_record|
+        csv << user_record.attributes.values
+      end
+    end
+
+    filename = "chatbot-claims-appeals-#{month}-#{year}.csv"
+
+    request_object = { 'filename': filename, 'payload': csv_string}
+    puts request_object
+    request_object
+    
   end
 end
