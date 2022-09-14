@@ -58,7 +58,7 @@ module Swagger
 
             property :attributes do
               key :$ref, :GibctInstitutionBase
-
+              key :$ref, :GibctInstitutionCategoryRating
               property :type, type: :string,
                               enum: ['OJT', 'PRIVATE', 'FOREIGN', 'CORRESPONDENCE', 'FLIGHT', 'FOR PROFIT', 'PUBLIC']
               property :flight, type: :boolean
@@ -102,6 +102,35 @@ module Swagger
               property :ownership_name, type: %i[null string]
               property :rating_count, type: :number
               property :rating_average, type: %i[null string]
+              property :complaints, type: :object do
+                property :facility_code, type: :integer
+                property :financial_by_fac_code, type: :integer
+                property :quality_by_fac_code, type: :integer
+                property :refund_by_fac_code, type: :integer
+                property :marketing_by_fac_code, type: :integer
+                property :accreditation_by_fac_code, type: :integer
+                property :degree_requirements_by_fac_code, type: :integer
+                property :student_loans_by_fac_code, type: :integer
+                property :grades_by_fac_code, type: :integer
+                property :credit_transfer_by_fac_code, type: :integer
+                property :credit_job_by_fac_code, type: %i[null integer]
+                property :job_by_fac_code, type: :integer
+                property :transcript_by_fac_code, type: :integer
+                property :other_by_fac_code, type: :integer
+                property :main_campus_roll_up, type: :integer
+                property :financial_by_ope_id_do_not_sum, type: :integer
+                property :quality_by_ope_id_do_not_sum, type: :integer
+                property :refund_by_ope_id_do_not_sum, type: :integer
+                property :marketing_by_ope_id_do_not_sum, type: :integer
+                property :accreditation_by_ope_id_do_not_sum, type: :integer
+                property :degree_requirements_by_ope_id_do_not_sum, type: :integer
+                property :student_loans_by_ope_id_do_not_sum, type: :integer
+                property :grades_by_ope_id_do_not_sum, type: :integer
+                property :credit_transfer_by_ope_id_do_not_sum, type: :integer
+                property :jobs_by_ope_id_do_not_sum, type: :integer
+                property :transcript_by_ope_id_do_not_sum, type: :integer
+                property :other_by_ope_id_do_not_sum, type: :integer
+              end
               property :complaints, type: :object do
                 property :facility_code, type: :integer
                 property :financial_by_fac_code, type: :integer
@@ -250,6 +279,21 @@ module Swagger
           property :true, type: %i[null integer]
           property :false, type: %i[null integer]
         end
+
+        swagger_schema :GibctInstitutionCategoryRatings do
+          key :type, :object
+          key :required, %i[self category_name average_rating total_count rated1_count rated2_count rated3_count rated4_count rated5_count na_count]
+
+          property :self, type: :string
+          property :category_name, type: :string
+          property :average_rating, type: :integer
+          property :total_count, type: :integer
+          property :rated1_count, type: :integer
+          property :rated2_count, type: :integer
+          property :rated3_count, type: :integer
+          property :rated4_count, type: :integer
+          property :rated5_count, type: :integer
+          property :na_count, type: :integer
       end
     end
   end
