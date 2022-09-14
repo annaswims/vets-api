@@ -237,7 +237,8 @@ module Swagger
           key :required, %i[
             name facility_code type city state zip country highest_degree locale_type
             student_count caution_flag caution_flag_reason created_at updated_at bah
-            tuition_in_state tuition_out_of_state books student_veteran yr poe eight_keys ownership_name rating_count rating_average
+            tuition_in_state tuition_out_of_state books student_veteran yr poe eight_keys
+            ownership_name rating_count rating_average
           ]
           property :name, type: :string
           property :facility_code, type: :string
@@ -282,7 +283,9 @@ module Swagger
 
         swagger_schema :GibctInstitutionCategoryRatings do
           key :type, :object
-          key :required, %i[self category_name average_rating total_count rated1_count rated2_count rated3_count rated4_count rated5_count na_count]
+          key :required,
+              %i[self category_name average_rating total_count rated1_count rated2_count rated3_count rated4_count
+                 rated5_count na_count]
 
           property :self, type: :string
           property :category_name, type: :string
@@ -294,6 +297,7 @@ module Swagger
           property :rated4_count, type: :integer
           property :rated5_count, type: :integer
           property :na_count, type: :integer
+        end
       end
     end
   end
