@@ -117,9 +117,7 @@ module DebtManagementCenter
         copay['station']['facilitYNum']
       end
       facility_copays.each do |facility_num, copays|
-        fsr_reason = copays.map do |c|
-          c['resolutionOption']
-        end.uniq.join(', ')
+        fsr_reason = copays.map { |copay| copay['resolutionOption'] }.uniq.join(', ')
         facility_form = form.deep_dup
         facility_form['personalIdentification']['fsrReason'] = fsr_reason
         facility_form['facilityNum'] = facility_num
