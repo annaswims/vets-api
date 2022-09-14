@@ -100,6 +100,8 @@ module Swagger
               property :accreditation_type, type: %i[null string]
               property :accreditation_status, type: %i[null string]
               property :ownership_name, type: %i[null string]
+              property :rating_count, type: :number
+              property :rating_average, type: %i[null string]
               property :complaints, type: :object do
                 property :facility_code, type: :integer
                 property :financial_by_fac_code, type: :integer
@@ -206,7 +208,7 @@ module Swagger
           key :required, %i[
             name facility_code type city state zip country highest_degree locale_type
             student_count caution_flag caution_flag_reason created_at updated_at bah
-            tuition_in_state tuition_out_of_state books student_veteran yr poe eight_keys
+            tuition_in_state tuition_out_of_state books student_veteran yr poe eight_keys ownership_name rating_count rating_average
           ]
           property :name, type: :string
           property :facility_code, type: :string
@@ -230,6 +232,8 @@ module Swagger
           property :poe, type: %i[null boolean]
           property :eight_keys, type: %i[null boolean]
           property :ownership_name, type: %i[null string]
+          property :rating_count, type: :number
+          property :rating_average, type: %i[null string]
         end
 
         swagger_schema :GibctInstitutionsSelfLinks do
