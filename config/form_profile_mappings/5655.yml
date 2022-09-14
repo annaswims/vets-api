@@ -1,5 +1,5 @@
 personalIdentification:
-  ssn: [identity_information, ssn]
+  ssn: [identity_information, ssn_last_four]
   fileNumber: [va_file_number_last_four]
 personalData:
   veteranFullName: [identity_information, full_name]
