@@ -16,7 +16,7 @@ describe VirtualAgentSendClaimsUserInfoJob, type: :job do
     end 
 
     it 'retrieves claims records from the database and returns request object' do
-      expected_csv_as_string = "id,action_type,first_name,last_name,ssn,icn,created_at,updated_at\n1,claims,Rob,last_name,ssn,icn,2022-08-12 20:08:42 UTC,2022-09-12 20:08:42 UTC\n2,claims,Tracy,last_name,ssn,icn,2022-08-01 20:08:42 UTC,2022-09-12 20:08:42 UTC\n3,claims,Betty,last_name,ssn,icn,2022-08-20 20:08:42 UTC,2022-09-12 20:08:42 UTC\n4,claims,Walter,last_name,ssn,icn,2022-08-16 20:08:42 UTC,2022-09-12 20:08:42 UTC\n"
+      expected_csv_as_string = "id,action_type,first_name,last_name,ssn,icn,datetime\n1,claims,Rob,last_name,ssn,icn,2022-08-12 20:08:42 UTC\n2,claims,Tracy,last_name,ssn,icn,2022-08-01 20:08:42 UTC\n3,claims,Betty,last_name,ssn,icn,2022-08-20 20:08:42 UTC\n4,claims,Walter,last_name,ssn,icn,2022-08-16 20:08:42 UTC\n"
 
       actual_request_object = VirtualAgentSendClaimsUserInfoJob.new.perform()
       expect(actual_request_object[:filename]).to eq('chatbot-claims-Sep-15-2022.csv')

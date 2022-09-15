@@ -8,9 +8,9 @@ class VirtualAgentSendClaimsUserInfoJob
     month = Date::ABBR_MONTHNAMES[current_datetime.month]
 
     csv_string = CSV.generate do |csv|
-      csv << VirtualAgentUserAccessRecord.attribute_names
+      csv << ['id', 'action_type', 'first_name', 'last_name', 'ssn', 'icn', 'datetime']
       VirtualAgentUserAccessRecord.find_by_sql("SELECT * FROM virtual_agent_user_access_records WHERE action_type = 'claims'").to_a.each do |user_record|
-        csv << user_record.attributes.values
+        csv << user_record.attributes.values[0..6]
       end
     end
 
