@@ -1,16 +1,15 @@
 # frozen_string_literal: true
 
-class VirtualAgentSendUserInfoJob
+class VirtualAgentSendClaimsUserInfoJob
   include Sidekiq::Worker
 
   def perform()
     current_datetime = Time.now
-    month_int = current_datetime.month
-    month = Date::ABBR_MONTHNAMES[month_int]
+    month = Date::ABBR_MONTHNAMES[current_datetime.month]
 
     csv_string = CSV.generate do |csv|
       csv << VirtualAgentUserAccessRecord.attribute_names
-      VirtualAgentUserAccessRecord.find_by_sql("SELECT * FROM virtual_agent_user_access_records WHERE EXTRACT(month FROM created_at) = #{month_int}").to_a.each do |user_record|
+      VirtualAgentUserAccessRecord.find_by_sql("SELECT * FROM virtual_agent_user_access_records WHERE action_type = 'claims'").to_a.each do |user_record|
         csv << user_record.attributes.values
       end
     end
