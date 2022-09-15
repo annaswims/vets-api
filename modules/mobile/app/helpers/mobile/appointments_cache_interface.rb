@@ -11,7 +11,7 @@ module Mobile
       search_start_date = [start_date, latest_allowable_cache_start_date].compact.min
       search_end_date = [end_date, earliest_allowable_cache_end_date].compact.max
 
-      if use_cache?(search_start_date, search_end_date, fetch_cache)
+      if fetch_cache?(search_start_date, search_end_date, fetch_cache)
         appointments = Mobile::V0::Appointment.get_cached(user)
         if appointments
           Rails.logger.info('mobile appointments cache fetch', user_uuid: user.uuid)
@@ -51,8 +51,8 @@ module Mobile
     # must break the cache if user is requesting dates beyond default range to ensure the integrity of the cache.
     # at this time, it's not possible for the user to fetch beyond this range because the interface doesn't allow it,
     # so the cache will effectively always be from beginning of last year until one year from today
-    def use_cache?(start_date, end_date, use_cache)
-      use_cache &&
+    def fetch_cache?(start_date, end_date, fetch_cache)
+      fetch_cache &&
         start_date == latest_allowable_cache_start_date &&
         end_date == earliest_allowable_cache_end_date
     end
