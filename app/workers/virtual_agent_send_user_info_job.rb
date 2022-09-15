@@ -5,12 +5,7 @@ class VirtualAgentSendUserInfoJob
 
   def perform()
     current_datetime = Time.now
-    month_int = current_datetime.month - 1
-    year = current_datetime.year
-    if month_int == 0
-      month_int = 12
-      year = current_datetime.year - 1
-    end
+    month_int = current_datetime.month
     month = Date::ABBR_MONTHNAMES[month_int]
 
     csv_string = CSV.generate do |csv|
@@ -20,7 +15,7 @@ class VirtualAgentSendUserInfoJob
       end
     end
 
-    filename = "chatbot-claims-appeals-#{month}-#{year}.csv"
+    filename = "chatbot-claims-#{month}-#{current_datetime.day}-#{current_datetime.year}.csv"
 
     request_object = { 'filename': filename, 'payload': csv_string}
     # puts request_object
