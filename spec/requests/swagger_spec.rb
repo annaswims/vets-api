@@ -1648,7 +1648,7 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
 
         describe 'search' do
           it 'supports autocomplete of institution names' do
-            VCR.use_cassette('gi_client/gets_institution_search_results') do
+            VCR.use_cassette('gi_client/gets_institution_search_results', record: :new_episodes) do
               expect(subject).to validate(
                 :get, '/v0/gi/institutions/search', 200, '_query_string' => 'name=illinois'
               )
@@ -1659,7 +1659,7 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
         describe 'show' do
           context 'successful calls' do
             it 'supports showing institution details' do
-              VCR.use_cassette('gi_client/gets_the_institution_details') do
+              VCR.use_cassette('gi_client/gets_the_institution_details', record: :new_episodes) do
                 expect(subject).to validate(:get, '/v0/gi/institutions/{id}', 200, 'id' => '11902614')
               end
             end

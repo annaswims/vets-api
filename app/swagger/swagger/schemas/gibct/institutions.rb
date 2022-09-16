@@ -34,7 +34,7 @@ module Swagger
               property :links, '$ref': :GibctInstitutionsSelfLinks
               property :attributes do
                 key :$ref, :GibctInstitutionBase
-
+                key :$ref, :GibctInstitutionCategoryRating
                 property :type, type: :string,
                                 enum: ['OJT', 'PRIVATE', 'FOREIGN', 'CORRESPONDENCE', 'FLIGHT', 'FOR PROFIT', 'PUBLIC']
               end
