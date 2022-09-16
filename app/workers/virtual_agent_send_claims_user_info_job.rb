@@ -3,6 +3,11 @@
 class VirtualAgentSendClaimsUserInfoJob
   include Sidekiq::Worker
 
+  def sendReport(request_object)
+    # make HTTP request
+    'fake response'
+  end
+
   def perform()
     current_datetime = Time.now
     month = Date::ABBR_MONTHNAMES[current_datetime.month]
@@ -21,7 +26,8 @@ class VirtualAgentSendClaimsUserInfoJob
 
     claims_records.destroy_all
 
-    request_object
+    sendReport(request_object)
     
   end
+
 end
