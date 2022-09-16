@@ -1,0 +1,79 @@
+---
+http_interactions:
+- request:
+    method: post
+    uri: https://prod-18.usgovtexas.logic.azure.us:443/workflows/474b982d9d204a7aab2cf587e52dbac5/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=bBRX8Cp6SIGXph4CjQeuuXnO6h3_7E9r7VWfZGWrvnA
+    body:
+      encoding: UTF-8
+      string: '{"filename":"chatbot-claims-Sep-15-2022.csv","payload":"id,action_type,first_name,last_name,ssn,icn,datetime\n1,claims,Rob,last_name,ssn,icn,2022-08-12
+        20:08:42 UTC\n2,claims,Tracy,last_name,ssn,icn,2022-08-01 20:08:42 UTC\n3,claims,Betty,last_name,ssn,icn,2022-08-20
+        20:08:42 UTC\n4,claims,Walter,last_name,ssn,icn,2022-08-16 20:08:42 UTC\n"}'
+    headers:
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+      Accept:
+      - "*/*"
+      User-Agent:
+      - Ruby
+      Host:
+      - prod-18.usgovtexas.logic.azure.us
+      Content-Type:
+      - application/json
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - no-cache
+      Pragma:
+      - no-cache
+      Transfer-Encoding:
+      - chunked
+      Content-Type:
+      - application/json; charset=utf-8
+      Expires:
+      - "-1"
+      Vary:
+      - Accept-Encoding
+      X-Ms-Workflow-Run-Id:
+      - '08585382505311109017824436653CU20'
+      X-Ms-Correlation-Id:
+      - 3d17ef79-d543-49cf-8fdb-c4a26d192c58
+      X-Ms-Client-Tracking-Id:
+      - '08585382505311109017824436653CU20'
+      X-Ms-Trigger-History-Name:
+      - '08585382505311109017824436653CU20'
+      X-Ms-Execution-Location:
+      - usgovtexas
+      X-Ms-Workflow-System-Id:
+      - "/locations/usgovtexas/scaleunits/prod-18/workflows/474b982d9d204a7aab2cf587e52dbac5"
+      X-Ms-Workflow-Id:
+      - 474b982d9d204a7aab2cf587e52dbac5
+      X-Ms-Workflow-Version:
+      - '08585383496215989101'
+      X-Ms-Workflow-Name:
+      - 571430b0-a002-4c7f-b29b-187a3d8b04f0
+      X-Ms-Tracking-Id:
+      - 3d17ef79-d543-49cf-8fdb-c4a26d192c58
+      X-Ms-Ratelimit-Burst-Remaining-Workflow-Writes:
+      - '3459'
+      X-Ms-Ratelimit-Remaining-Workflow-Download-Contentsize:
+      - '247786077'
+      X-Ms-Ratelimit-Remaining-Workflow-Upload-Contentsize:
+      - '247786153'
+      X-Ms-Ratelimit-Time-Remaining-Directapirequests:
+      - '23076690'
+      X-Ms-Request-Id:
+      - usgovtexas:3d17ef79-d543-49cf-8fdb-c4a26d192c58
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains
+      Date:
+      - Fri, 16 Sep 2022 19:25:54 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"status":"success","request-body":{"filename":"chatbot-claims-Sep-15-2022.csv","payload":"id,action_type,first_name,last_name,ssn,icn,datetime\n1,claims,Rob,last_name,ssn,icn,2022-08-12
+        20:08:42 UTC\n2,claims,Tracy,last_name,ssn,icn,2022-08-01 20:08:42 UTC\n3,claims,Betty,last_name,ssn,icn,2022-08-20
+        20:08:42 UTC\n4,claims,Walter,last_name,ssn,icn,2022-08-16 20:08:42 UTC\n"}}'
+  recorded_at: Thu, 15 Sep 2022 04:00:00 GMT
+recorded_with: VCR 6.1.0
