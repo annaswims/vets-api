@@ -281,7 +281,7 @@ module Swagger
           property :false, type: %i[null integer]
         end
 
-        swagger_schema :GibctInstitutionCategoryRatings do
+        swagger_schema :GibctInstitutionCategoryRating do
           key :type, :object
           key :required,
               %i[self category_name average_rating total_count rated1_count rated2_count rated3_count rated4_count
