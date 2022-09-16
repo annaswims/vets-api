@@ -6,10 +6,11 @@ class VirtualAgentSendClaimsUserInfoJob
   def perform()
     current_datetime = Time.now
     month = Date::ABBR_MONTHNAMES[current_datetime.month]
+    claims_records = VirtualAgentUserAccessRecord.where(:action_type => 'claims')
 
     csv_string = CSV.generate do |csv|
       csv << ['id', 'action_type', 'first_name', 'last_name', 'ssn', 'icn', 'datetime']
-      VirtualAgentUserAccessRecord.find_by_sql("SELECT * FROM virtual_agent_user_access_records WHERE action_type = 'claims'").to_a.each do |user_record|
+      claims_records.to_a.each do |user_record|
         csv << user_record.attributes.values[0..6]
       end
     end
@@ -18,7 +19,8 @@ class VirtualAgentSendClaimsUserInfoJob
 
     request_object = { 'filename': filename, 'payload': csv_string}
 
-    # Manager.where(:manager_level => 5).destroy_all
+    claims_records.destroy_all
+
     request_object
     
   end

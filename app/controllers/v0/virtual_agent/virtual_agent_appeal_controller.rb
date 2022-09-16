@@ -7,9 +7,7 @@ module V0
     class VirtualAgentAppealController < AppealsBaseController
       def index
         # @appeal_status_description
-
-        VirtualAgentStoreUserInfoJob.perform_async(current_user.first_name,current_user.last_name,current_user.ssn,current_user.icn, 'appeals', { })
-        VirtualAgentSendUserInfoJob.perform_async()
+        VirtualAgentSendClaimsUserInfoJob.perform_async()
 
         if Settings.vsp_environment == 'staging'
           @user_ssan, @user_name = set_user_credentials
