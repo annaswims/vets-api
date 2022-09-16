@@ -17,7 +17,8 @@ class VirtualAgentSendClaimsUserInfoJob
     filename = "chatbot-claims-#{month}-#{current_datetime.day}-#{current_datetime.year}.csv"
 
     request_object = { 'filename': filename, 'payload': csv_string}
-    # puts request_object
+
+    # Manager.where(:manager_level => 5).destroy_all
     request_object
     
   end
