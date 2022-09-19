@@ -100,8 +100,6 @@ module DebtManagementCenter
         vbs_responses << vbs_response
       end
 
-      send_confirmation_email if vbs_responses.all?(&:success?)
-
       { status: vbs_responses.collect(&:status) }
     end
 
