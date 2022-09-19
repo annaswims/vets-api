@@ -180,27 +180,6 @@ RSpec.describe DebtManagementCenter::FinancialStatusReportService, type: :servic
       expect(service.submit_vha_fsr(valid_form_data, form_submission)).to eq({ status: [200] })
     end
 
-    it 'sends a confirmation email' do
-      valid_form_data['selectedDebtsAndCopays'] = [{
-        'station' => {
-          'facilitYNum' => '123'
-        },
-        'resolutionOption' => 'waiver',
-        'debtType' => 'COPAY'
-      }]
-      service = described_class.new(user)
-      expect(DebtManagementCenter::VANotifyEmailJob).to receive(:perform_async).with(
-        user.email.downcase,
-        described_class::CONFIRMATION_TEMPLATE,
-        {
-          'name' => user.first_name,
-          'time' => '48 hours',
-          'date' => Time.zone.now.strftime('%m/%d/%Y')
-        }
-      )
-      service.submit_vha_fsr(valid_form_data, form_submission)
-    end
-
     it 'parses out delimiter characters' do
       valid_form_data['selectedDebtsAndCopays'] = [{
         'station' => {
