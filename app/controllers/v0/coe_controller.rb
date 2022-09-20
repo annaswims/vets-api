@@ -10,12 +10,12 @@ module V0
     end
 
     def download_coe
-      coe_url = lgy_service.coe_url
-      render json: { data: { attributes: { url: coe_url } } }, status: :ok
+      res = lgy_service.get_coe_file
+
+      send_data(res.body, type: 'application/pdf', disposition: 'inline')
     end
 
     def submit_coe_claim
-      load_user
       claim = SavedClaim::CoeClaim.new(form: filtered_params[:form])
 
       unless claim.save
@@ -41,8 +41,6 @@ module V0
     end
 
     def document_upload
-      load_user
-
       attachments.each do |attachment|
         file_extension = attachment['file_type']
 
@@ -65,9 +63,9 @@ module V0
     end
 
     def document_download
-      document_url = lgy_service.get_document_url(params[:id])
+      res = lgy_service.get_document(params[:id])
 
-      render json: { data: { attributes: { url: document_url } } }, status: :ok
+      send_data(res.body, type: 'application/pdf', disposition: 'inline')
     end
 
     private

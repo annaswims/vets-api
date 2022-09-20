@@ -14,11 +14,11 @@ module VBADocuments
     include Sidekiq::Worker
     include VBADocuments::UploadValidations
 
-    sidekiq_options unique_until: :success
+    # Ensure that multiple jobs for the same GUID aren't spawned,
+    # to avoid race condition when parsing the multipart file
+    sidekiq_options unique_for: 30.days
 
     def perform(guid, caller_data, retries = 0)
-      return if cancelled?
-
       # @retries variable used via the CentralMail::Utilities which is included via VBADocuments::UploadValidations
       @retries = retries
       @cause = caller_data.nil? ? { caller: 'unknown' } : caller_data['caller']
@@ -36,20 +36,6 @@ module VBADocuments
       response&.success? ? true : false
     end
 
-    def cancelled?
-      Sidekiq.redis do |c|
-        if c.respond_to? :exists?
-          c.exists?("cancelled-#{jid}")
-        else
-          c.exists("cancelled-#{jid}")
-        end
-      end
-    end
-
-    def self.cancel!(jid)
-      Sidekiq.redis { |c| c.setex("cancelled-#{jid}", 86_400, 1) }
-    end
-
     private
 
     # rubocop:disable Metrics/MethodLength
@@ -57,14 +43,20 @@ module VBADocuments
       tempfile, timestamp = VBADocuments::PayloadManager.download_raw_file(@upload.guid)
       response = nil
       begin
-        update_size(@upload, tempfile.size)
+        @upload.update(metadata: @upload.metadata.merge({ 'size' => tempfile.size }))
+
         parts = VBADocuments::MultipartParser.parse(tempfile.path)
         inspector = VBADocuments::PDFInspector.new(pdf: parts)
+        @upload.update(uploaded_pdf: inspector.pdf_data)
+
+        # Validations
         validate_parts(@upload, parts)
         validate_metadata(parts[META_PART_NAME], submission_version: @upload.metadata['version'].to_i)
-        update_pdf_metadata(@upload, inspector)
+        validate_documents(parts)
+
         metadata = perfect_metadata(@upload, parts, timestamp)
         response = submit(metadata, parts)
+
         process_response(response)
         log_submission(@upload, metadata)
       rescue Common::Exceptions::GatewayTimeout, Faraday::TimeoutError => e

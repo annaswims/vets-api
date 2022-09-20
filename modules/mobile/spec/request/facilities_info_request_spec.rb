@@ -8,14 +8,13 @@ RSpec.describe 'facilities info', type: :request do
   include JsonSchemaMatchers
 
   let(:params) { { lat: 40.5, long: 100.1 } }
-  let(:user) { FactoryBot.build(:iam_user) }
-  let(:user_staging_ids) { FactoryBot.build(:iam_user, :staging_facility_ids) }
+  let(:user) { FactoryBot.build(:iam_user, :custom_facility_ids, facility_ids: %w[757 358 999]) }
 
   before do
     allow_any_instance_of(IAMUser).to receive(:icn).and_return('24811694708759028')
     iam_sign_in(user)
     allow_any_instance_of(VAOS::UserService).to receive(:session).and_return('stubbed_token')
-    allow(Settings.mhv).to receive(:facility_range).and_return([[358, 718], [720, 758], [983, 984]])
+    allow(Settings.mhv).to receive(:facility_range).and_return([[358, 718], [720, 758], [983, 984], [999, 999]])
   end
 
   va_path = Rails.root.join('modules', 'mobile', 'spec', 'support', 'fixtures',
@@ -97,18 +96,16 @@ RSpec.describe 'facilities info', type: :request do
         end
       end
 
-      context 'when non-valid staging facility ids are used' do
-        before { iam_sign_in(user_staging_ids) }
+      it 'raises error when sorting by unknown sorting method' do
+        expected_error_message = [{ 'title' => 'Invalid field value',
+                                    'detail' => '"test" is not a valid value for "sort"',
+                                    'code' => '103',
+                                    'status' => '400' }]
 
-        it 'converts to valid ids' do
-          VCR.use_cassette('appointments/get_multiple_mfs_facilities_200', match_requests_on: %i[method uri]) do
-            get '/mobile/v0/facilities-info/home', headers: iam_headers, params: params
-            facilities = response.parsed_body.dig('data', 'attributes', 'facilities')
-            expect(response).to have_http_status(:ok)
-            expect(facilities[0]['id']).to eq('442')
-            expect(facilities[1]['id']).to eq('552')
-            expect(response.body).to match_json_schema('facilities_info')
-          end
+        VCR.use_cassette('appointments/legacy_get_facilities_for_facilities_info',
+                         match_requests_on: %i[method uri]) do
+          get '/mobile/v0/facilities-info/test', headers: iam_headers, params: params
+          expect(response.parsed_body['errors']).to eq(expected_error_message)
         end
       end
     end
@@ -168,19 +165,76 @@ RSpec.describe 'facilities info', type: :request do
         end
       end
 
-      context 'when non-valid staging facility ids are used' do
-        before { iam_sign_in(user_staging_ids) }
+      it 'raises error when sorting by unknown sorting method' do
+        expected_error_message = [{ 'title' => 'Invalid field value',
+                                    'detail' => '"test" is not a valid value for "sort"',
+                                    'code' => '103',
+                                    'status' => '400' }]
 
-        it 'converts to valid ids' do
-          VCR.use_cassette('appointments/legacy_get_facilities_for_facilities_info',
-                           match_requests_on: %i[method uri]) do
-            get '/mobile/v0/facilities-info/home', headers: iam_headers, params: params
-            facilities = response.parsed_body.dig('data', 'attributes', 'facilities')
-            expect(response).to have_http_status(:ok)
-            expect(facilities[0]['id']).to eq('442')
-            expect(facilities[1]['id']).to eq('552')
-            expect(response.body).to match_json_schema('facilities_info')
-          end
+        VCR.use_cassette('appointments/legacy_get_facilities_for_facilities_info',
+                         match_requests_on: %i[method uri]) do
+          get '/mobile/v0/facilities-info/test', headers: iam_headers, params: params
+          expect(response.parsed_body['errors']).to eq(expected_error_message)
+        end
+      end
+    end
+
+    context 'when there are no appointments' do
+      before do
+        Flipper.enable(:mobile_appointment_use_VAOS_MFS)
+        Mobile::V0::Appointment.set_cached(user, [])
+      end
+
+      it 'returns facility details sorted alphabetically' do
+        VCR.use_cassette('appointments/get_multiple_facilities_200', match_requests_on: %i[method uri]) do
+          get '/mobile/v0/facilities-info/appointments', headers: iam_headers, params: params
+          facilities = response.parsed_body.dig('data', 'attributes', 'facilities')
+          expect(response).to have_http_status(:ok)
+          expect(facilities[0]['name']).to eq('American Lake VA Medical Center')
+          expect(facilities[1]['name']).to eq('Ayton VA Medical Center')
+          expect(facilities[2]['name']).to eq('Cheyenne VA Medical Center')
+          expect(response.body).to match_json_schema('facilities_info')
+        end
+      end
+    end
+
+    context 'when appointments cache is nil' do
+      before do
+        Flipper.enable(:mobile_appointment_use_VAOS_MFS)
+        allow(Rails.logger).to receive(:info)
+      end
+
+      it 'logs the cache is nil and still returns alphabetized facilities' do
+        VCR.use_cassette('appointments/get_multiple_facilities_200', match_requests_on: %i[method uri]) do
+          get '/mobile/v0/facilities-info/appointments', headers: iam_headers, params: params
+          expect(Rails.logger).to have_received(:info).with('mobile facilities info appointments cache nil',
+                                                            user_uuid: '3097e489-ad75-5746-ab1a-e0aabc1b426a')
+          facilities = response.parsed_body.dig('data', 'attributes', 'facilities')
+          expect(response).to have_http_status(:ok)
+          expect(facilities[0]['name']).to eq('American Lake VA Medical Center')
+          expect(facilities[1]['name']).to eq('Ayton VA Medical Center')
+          expect(facilities[2]['name']).to eq('Cheyenne VA Medical Center')
+          expect(response.body).to match_json_schema('facilities_info')
+        end
+      end
+    end
+
+    context 'when there is one appointment' do
+      before do
+        Flipper.enable(:mobile_appointment_use_VAOS_MFS)
+        matching_appointments = appointments.select { |appointment| appointment.facility_id == '358' }
+        Mobile::V0::Appointment.set_cached(user, matching_appointments)
+      end
+
+      it 'remaining facilities are sorted alphabetically' do
+        VCR.use_cassette('appointments/get_multiple_facilities_200', match_requests_on: %i[method uri]) do
+          get '/mobile/v0/facilities-info/appointments', headers: iam_headers, params: params
+          facilities = response.parsed_body.dig('data', 'attributes', 'facilities')
+          expect(response).to have_http_status(:ok)
+          expect(facilities[0]['name']).to eq('Cheyenne VA Medical Center')
+          expect(facilities[1]['name']).to eq('American Lake VA Medical Center')
+          expect(facilities[2]['name']).to eq('Ayton VA Medical Center')
+          expect(response.body).to match_json_schema('facilities_info')
         end
       end
     end

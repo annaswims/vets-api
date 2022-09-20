@@ -3,7 +3,6 @@
 module V0
   class EducationCareerCounselingClaimsController < ClaimsBaseController
     def create
-      load_user
       claim = SavedClaim::EducationCareerCounselingClaim.new(form: filtered_params[:form])
 
       unless claim.save
@@ -12,7 +11,7 @@ module V0
         raise Common::Exceptions::ValidationErrors, claim
       end
 
-      claim.send_to_central_mail!
+      CentralMail::SubmitCareerCounselingJob.perform_async(claim.id)
 
       Rails.logger.info "ClaimID=#{claim.confirmation_number} Form=#{claim.class::FORM}"
       clear_saved_form(claim.form_id)

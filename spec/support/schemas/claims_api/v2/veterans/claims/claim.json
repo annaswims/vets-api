@@ -8,7 +8,7 @@
       "description": "Claim ID in VBMS",
       "example": "600131328"
     },
-    "benefitClaimTypeCode": {
+    "claimTypeCode": {
       "type": "string",
       "description": "Type Code of benefit claim",
       "example": "400PREDSCHRG"
@@ -30,6 +30,26 @@
       "type": ["string", "null"],
       "description": "The date a claim was filed",
       "example": "5/17/20"
+    },
+    "claimPhaseDates": {
+      "currentPhaseBack": {
+        "type": "boolean",
+        "description": "Indicates whether the current phase is phased back, i.e. in the 2-digit phaseTypeChangeInd for the most recent phase change, if the first digit's value is greater than the second digit's value, then we are regressing or phasing back."
+      },
+      "everPhaseBack": {
+        "type": "boolean",
+        "description": "Flag to indicate we have phased back at some point in the history of the claim phases, even if we are moving forward in the current claim"
+      },
+      "latestPhaseType": {
+        "type": "string",
+        "nullable": true,
+        "description": "The most current phase for the claim"
+      },
+      "phaseChangeDate": {
+        "type": "date",
+        "nullable": true,
+        "description": "The date that the claim changed to its current phase"
+      }
     },
     "closeDate": {
       "type": ["string", "null"],
@@ -54,9 +74,31 @@
       "description": "End product code of claim",
       "example": "930"
     },
+    "evidenceWaiverSubmitted5103": {
+      "type": "boolean",
+      "nullable": true,
+      "description": "If true, indicates a decision has been requested and/or a Waiver 5103 has been submitted",
+      "example": "false"
+    },
+    "errors": {
+      "type": "array",
+      "description": "Error details if claim is in an errored state.",
+      "items": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "example": "Something happened"
+          },
+          "source": {
+            "type": "string",
+            "example": "some/error/path"
+          }
+        }
+      }
+    },
     "jurisdiction": {
       "type": "string",
-      "description": "Jurisdiction of claim"
+      "description": "Current station of jurisdiction"
     },
     "lighthouseId": {
       "type": "string",
@@ -85,7 +127,8 @@
         "INITIAL_REVIEW",
         "EVIDENCE_GATHERING_REVIEW_DECISION",
         "PREPARATION_FOR_NOTIFICATION",
-        "COMPLETE"
+        "COMPLETE",
+        "ERRORED"
       ]
     },
     "submitterApplicationCode": {
@@ -103,22 +146,27 @@
       "description": "Information regarding any supported documents attached to a claim",
       "items": {
         "properties": {
-          "id": {
+          "documentId": {
             "type": "string",
             "description": "Unique identifier of document"
           },
-          "md5": {
+          "documentTypeLabel": {
             "type": "string",
-            "description": "Hashed representation of document"
+            "nullable": true
           },
-          "filename": {
+          "originalFileName": {
             "type": "string",
-            "description": "Name of document"
+            "description": "Name of document",
+            "nullable": true
           },
-          "uploadedAt": {
+          "trackedItemId": {
             "type": "string",
-            "format": "date",
-            "description": "Date and time document was uploaded"
+            "nullable": true
+          },
+          "uploadDate": {
+            "type": "date",
+            "description": "Date and time document was uploaded",
+            "nullable": true
           }
         }
       }
@@ -127,11 +175,91 @@
       "type": ["string", "null"],
       "description": "Temporary jurisdiction of claim"
     },
-    "5103WaiverSubmitted": {
-      "type": "boolean",
-      "nullable": true,
-      "description": "If true, indicates a decision has been requested and/or a Waiver 5103 has been submitted",
-      "example": "false"
+    "trackedItems": {
+      "type": "array",
+      "description": "",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "closedDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Date the tracked item was closed",
+            "example": "2022-01-01T00:00:00-04:00"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Description of the tracked item",
+            "example": "Buddy mentioned - No complete address"
+          },
+          "suspensionDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Suspension date on the tracked item",
+            "example": "2022-01-01T00:00:00-04:00"
+          },
+          "requestedDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Date the tracked item was requested",
+            "example": "2022-01-01T00:00:00-04:00"
+          },
+          "trackedItemId": {
+            "type": "integer",
+            "description": "ID of the tracked item",
+            "example": 293454
+          },
+          "dvlpmtTc": {
+            "type": "string",
+            "nullable": true,
+            "example": "CLMNTRQST"
+          },
+          "displayedName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Request #",
+            "example": "Request 5"
+          },
+          "openedDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Date the tracked item was opened",
+            "example": "2022-01-01T00:00:00-04:00"
+          },
+          "overdue": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "True if the item is overdue",
+            "example": true
+          },
+          "suspenseDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "example": "2022-01-01T00:00:00-04:00"
+          },
+          "trackedItemStatus": {
+            "type": "string",
+            "nullable": true,
+            "description": "Enum with the status of the tracked item",
+            "example": "NO_LONGER_REQUIRED"
+          },
+          "uploaded": {
+            "type": "boolean",
+            "nullable": true,
+            "example": true
+          },
+          "uploadsAllowed": {
+            "type": "boolean",
+            "nullable": true,
+            "example": true
+          }
+        }
+      }
     }
   }
 }

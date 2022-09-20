@@ -5,26 +5,106 @@ require 'rails_helper'
 # rubocop:disable Metrics/ModuleLength
 module AppealsApi
   RSpec.describe AppealReceivedJob, type: :job do
+    let(:job) { described_class.new }
+    let(:client) { instance_double(VaNotify::Service) }
+
+    before do
+      allow(VaNotify::Service).to receive(:new).and_return(client)
+      allow(client).to receive(:send_email)
+    end
+
+    describe 'va notify vet email templates' do
+      let(:opts) do
+        {
+          'receipt_event' => '',
+          'email_identifier' => { 'id_value' => 'fake_email@email.com', 'id_type' => 'email' },
+          'first_name' => 'first name',
+          'date_submitted' => DateTime.new(2021, 1, 2, 3, 4, 5).iso8601,
+          'guid' => '1234556'
+        }
+      end
+
+      it 'uses hlr email template' do
+        with_settings(Settings.vanotify.services.lighthouse.template_id,
+                      higher_level_review_received: 'hlr_veteran_template') do
+          opts.merge!('receipt_event' => 'hlr_received')
+          job.perform(opts)
+          expect(client).to have_received(:send_email).with(hash_including(template_id: 'hlr_veteran_template'))
+        end
+      end
+
+      it 'uses nod email template' do
+        with_settings(Settings.vanotify.services.lighthouse.template_id,
+                      notice_of_disagreement_received: 'nod_veteran_template') do
+          opts.merge!('receipt_event' => 'nod_received')
+          job.perform(opts)
+          expect(client).to have_received(:send_email).with(hash_including(template_id: 'nod_veteran_template'))
+        end
+      end
+
+      it 'uses sc email template' do
+        with_settings(Settings.vanotify.services.lighthouse.template_id,
+                      supplemental_claim_received: 'sc_veteran_template') do
+          opts.merge!('receipt_event' => 'sc_received')
+          job.perform(opts)
+          expect(client).to have_received(:send_email).with(hash_including(template_id: 'sc_veteran_template'))
+        end
+      end
+    end
+
+    describe 'va notify claimant email templates' do
+      let(:opts) do
+        {
+          'receipt_event' => '',
+          'email_identifier' => { 'id_value' => 'fake_email@email.com', 'id_type' => 'email' },
+          'first_name' => 'first name',
+          'date_submitted' => DateTime.new(2021, 1, 2, 3, 4, 5).iso8601,
+          'guid' => '1234556',
+          'claimant_email' => 'fc@email.com',
+          'claimant_first_name' => 'AshJoeSue'
+        }
+      end
+
+      it 'uses hlr email template' do
+        with_settings(Settings.vanotify.services.lighthouse.template_id,
+                      higher_level_review_received_claimant: 'hlr_claimant_template') do
+          opts.merge!('receipt_event' => 'hlr_received')
+          job.perform(opts)
+          expect(client).to have_received(:send_email).with(hash_including(template_id: 'hlr_claimant_template'))
+        end
+      end
+
+      it 'uses nod email template' do
+        with_settings(Settings.vanotify.services.lighthouse.template_id,
+                      notice_of_disagreement_received_claimant: 'nod_claimant_template') do
+          opts.merge!('receipt_event' => 'nod_received')
+          job.perform(opts)
+          expect(client).to have_received(:send_email).with(hash_including(template_id: 'nod_claimant_template'))
+        end
+      end
+
+      it 'uses sc email template' do
+        with_settings(Settings.vanotify.services.lighthouse.template_id,
+                      supplemental_claim_received_claimant: 'sc_claimant_template') do
+          opts.merge!('receipt_event' => 'sc_received')
+          job.perform(opts)
+          expect(client).to have_received(:send_email).with(hash_including(template_id: 'sc_claimant_template'))
+        end
+      end
+    end
+
     describe 'higher_level_review' do
       it 'errors if the keys needed are missing' do
-        client = instance_double(VaNotify::Service)
-        allow(VaNotify::Service).to receive(:new).and_return(client)
-        allow(client).to receive(:send_email)
-
         opts = {
           'receipt_event' => 'hlr_received'
         }
         expect(Rails.logger).to receive(:error).with 'AppealReceived: Missing required keys'
         expect(client).not_to have_received(:send_email)
 
-        described_class.new.perform(opts)
+        job.perform(opts)
       end
 
       it 'logs error if email identifier cannot be used' do
-        client = instance_double(VaNotify::Service)
-        allow(VaNotify::Service).to receive(:new).and_return(client)
-        allow(client).to receive(:send_email)
-
         opts = {
           'receipt_event' => 'hlr_received',
           'email_identifier' => { 'id_value' => 'fake_email@email.com' }, # missing id_type
@@ -36,14 +116,10 @@ module AppealsApi
         expect(Rails.logger).to receive(:error)
         expect(client).not_to have_received(:send_email)
 
-        described_class.new.perform(opts)
+        job.perform(opts)
       end
 
       it 'errors if the template id cannot be found' do
-        client = instance_double(VaNotify::Service)
-        allow(VaNotify::Service).to receive(:new).and_return(client)
-        allow(client).to receive(:send_email)
-
         error_prefix = 'AppealReceived: could not find template id for'
 
         opts = {
@@ -59,7 +135,7 @@ module AppealsApi
         expect(Rails.logger).to receive(:error).with "#{error_prefix} higher_level_review_received"
         expect(client).not_to have_received(:send_email)
 
-        described_class.new.perform(opts)
+        job.perform(opts)
 
         opts['claimant_email'] = 'fake_claimant_email@email.com'
         opts['claimant_first_name'] = 'Betty'
@@ -67,14 +143,10 @@ module AppealsApi
         expect(Rails.logger).to receive(:error).with "#{error_prefix} higher_level_review_received_claimant"
         expect(client).not_to have_received(:send_email)
 
-        described_class.new.perform(opts)
+        job.perform(opts)
       end
 
       it 'errors if claimant info is missing email' do
-        client = instance_double(VaNotify::Service)
-        allow(VaNotify::Service).to receive(:new).and_return(client)
-        allow(client).to receive(:send_email)
-
         opts = {
           'receipt_event' => 'hlr_received',
           'email_identifier' => { 'id_type' => 'email', 'id_value' => 'fake_email@email.com' }, # key order changed
@@ -91,17 +163,13 @@ module AppealsApi
         expect(Rails.logger).to receive(:error).with error_message
         expect(client).not_to have_received(:send_email)
 
-        described_class.new.perform(opts)
+        job.perform(opts)
       end
 
       it 'sends an email' do
         with_settings(Settings.vanotify.services.lighthouse.template_id,
                       higher_level_review_received: 'veteran_template',
                       higher_level_review_received_claimant: 'claimant_template') do
-          client = instance_double(VaNotify::Service)
-          allow(VaNotify::Service).to receive(:new).and_return(client)
-          allow(client).to receive(:send_email)
-
           opts = {
             'receipt_event' => 'hlr_received',
             'email_identifier' => { 'id_value' => 'fake_email@email.com', 'id_type' => 'email' },
@@ -112,7 +180,7 @@ module AppealsApi
             'claimant_first_name' => ''
           }
 
-          described_class.new.perform(opts)
+          job.perform(opts)
 
           expect(client).to have_received(:send_email).with(
             {
@@ -131,10 +199,6 @@ module AppealsApi
         with_settings(Settings.vanotify.services.lighthouse.template_id,
                       higher_level_review_received: 'veteran_template',
                       higher_level_review_received_claimant: 'claimant_template') do
-          client = instance_double(VaNotify::Service)
-          allow(VaNotify::Service).to receive(:new).and_return(client)
-          allow(client).to receive(:send_email)
-
           opts = {
             'receipt_event' => 'hlr_received',
             'email_identifier' => { 'id_type' => 'email', 'id_value' => 'fake_email@email.com' }, # key order changed
@@ -143,7 +207,7 @@ module AppealsApi
             'guid' => '1234556'
           }
 
-          described_class.new.perform(opts)
+          job.perform(opts)
 
           expect(client).to have_received(:send_email).with(
             {
@@ -164,10 +228,6 @@ module AppealsApi
           higher_level_review_received: 'veteran_template',
           higher_level_review_received_claimant: 'claimant_template'
         ) do
-          client = instance_double(VaNotify::Service)
-          allow(VaNotify::Service).to receive(:new).and_return(client)
-          allow(client).to receive(:send_email)
-
           opts = {
             'receipt_event' => 'hlr_received',
             'email_identifier' => { 'id_type' => 'email', 'id_value' => 'fake_email@email.com' }, # key order changed
@@ -178,7 +238,7 @@ module AppealsApi
             'claimant_first_name' => 'Betty'
           }
 
-          described_class.new.perform(opts)
+          job.perform(opts)
 
           expect(client).to have_received(:send_email).with(
             {
@@ -200,10 +260,6 @@ module AppealsApi
         Settings.vanotify.services.lighthouse.template_id,
         higher_level_review_received: 'fake_template_id'
       ) do
-        client = instance_double(VaNotify::Service)
-        allow(VaNotify::Service).to receive(:new).and_return(client)
-        allow(client).to receive(:send_email)
-
         opts = {
           'receipt_event' => 'hlr_received',
           'email_identifier' => { 'id_value' => '1233445353', 'id_type' => 'ICN' },
@@ -212,7 +268,7 @@ module AppealsApi
           'guid' => '1234556'
         }
 
-        described_class.new.perform(opts)
+        job.perform(opts)
 
         expect(client).to have_received(:send_email).with(
           {

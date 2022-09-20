@@ -3,11 +3,18 @@
 require 'rails_helper'
 require 'debt_management_center/financial_status_report_service'
 require 'debt_management_center/workers/va_notify_email_job'
+require 'debt_management_center/sharepoint/request'
 require 'support/financial_status_report_helpers'
 
 RSpec.describe DebtManagementCenter::FinancialStatusReportService, type: :service do
   it 'inherits SentryLogging' do
     expect(described_class.ancestors).to include(SentryLogging)
+  end
+
+  def mock_sharepoint_upload
+    sp_stub = instance_double('DebtManagementCenter::Sharepoint::Request')
+    allow(DebtManagementCenter::Sharepoint::Request).to receive(:new).and_return(sp_stub)
+    allow(sp_stub).to receive(:upload).and_return(Faraday::Response.new)
   end
 
   describe '#submit_financial_status_report' do
@@ -149,6 +156,7 @@ RSpec.describe DebtManagementCenter::FinancialStatusReportService, type: :servic
   describe '#submit_vha_fsr' do
     let(:valid_form_data) { get_fixture('dmc/fsr_submission') }
     let(:user) { build(:user, :loa3) }
+    let(:form_submission) { create(:form5655_submission) }
 
     before do
       response = Faraday::Response.new(status: 200, body:
@@ -157,6 +165,7 @@ RSpec.describe DebtManagementCenter::FinancialStatusReportService, type: :servic
       })
       valid_form_data.deep_transform_keys! { |key| key.to_s.camelize(:lower) }
       allow_any_instance_of(DebtManagementCenter::VBS::Request).to receive(:post).and_return(response)
+      mock_sharepoint_upload
     end
 
     it 'submits to the VBS endpoint' do
@@ -168,7 +177,7 @@ RSpec.describe DebtManagementCenter::FinancialStatusReportService, type: :servic
         'debtType' => 'COPAY'
       }]
       service = described_class.new(user)
-      expect(service.submit_vha_fsr(valid_form_data)).to eq({ status: [200] })
+      expect(service.submit_vha_fsr(valid_form_data, form_submission)).to eq({ status: [200] })
     end
 
     it 'sends a confirmation email' do
@@ -189,7 +198,7 @@ RSpec.describe DebtManagementCenter::FinancialStatusReportService, type: :servic
           'date' => Time.zone.now.strftime('%m/%d/%Y')
         }
       )
-      service.submit_vha_fsr(valid_form_data)
+      service.submit_vha_fsr(valid_form_data, form_submission)
     end
 
     it 'parses out delimiter characters' do
@@ -232,7 +241,7 @@ RSpec.describe DebtManagementCenter::FinancialStatusReportService, type: :servic
       ]
       service = described_class.new(user)
       expect_any_instance_of(DebtManagementCenter::VBS::Request).to receive(:post).twice
-      service.submit_vha_fsr(valid_form_data)
+      service.submit_vha_fsr(valid_form_data, form_submission)
     end
   end
 
@@ -245,9 +254,9 @@ RSpec.describe DebtManagementCenter::FinancialStatusReportService, type: :servic
       {
         message: 'Success'
       })
-      allow_any_instance_of(DebtManagementCenter::VBS::Request).to receive(:post).with(
-        "#{Settings.mcp.vbs_v2.base_path}/UploadFSRJsonDocument", valid_form_data
-      ).and_return(response)
+      allow_any_instance_of(DebtManagementCenter::VBS::Request).to receive(:post)
+        .and_return(response)
+      mock_sharepoint_upload
     end
 
     it 'submits to vba if specified' do
@@ -270,8 +279,21 @@ RSpec.describe DebtManagementCenter::FinancialStatusReportService, type: :servic
         'debtType' => 'COPAY'
       }]
       service = described_class.new(user)
-      expect(service).to receive(:submit_vha_fsr).with(valid_form_data)
+      expect(service).to receive(:submit_vha_fsr)
       service.submit_combined_fsr(valid_form_data)
+    end
+
+    it 'creates a form 5655 submission record' do
+      valid_form_data['selectedDebtsAndCopays'] = [{
+        'station' => {
+          'facilitYNum' => '123'
+        },
+        'resolutionOption' => 'waiver',
+        'debtType' => 'COPAY'
+      }]
+      valid_form_data.deep_transform_keys! { |key| key.to_s.camelize(:lower) }
+      service = described_class.new(user)
+      expect { service.submit_combined_fsr(valid_form_data) }.to change(Form5655Submission, :count).by(1)
     end
   end
 end

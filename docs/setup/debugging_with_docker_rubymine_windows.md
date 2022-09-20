@@ -53,7 +53,6 @@ redis:
   port: 6379
   app_data:
     url: redis://redis:6379
-    # secondary_url: redis://localhost:6378
   sidekiq:
     url: redis://redis:6379
 
@@ -161,7 +160,7 @@ Allows you to interact with the application from the shell like:
 - `rails console`
 
 For more details see:
-[native instructions](docs/setup/running_natively.md)
+[native instructions](running_natively.md)
 
 ######Viewing swagger docs
 
@@ -189,6 +188,3 @@ https://github.com/department-of-veterans-affairs/va.gov-team/blob/master/platfo
 Once these keys are generated you will need to request environment access.
 
 https://github.com/department-of-veterans-affairs/va.gov-team/issues/new?assignees=&labels=external-request%2C+operations&template=Environment-Access-Request-Template.md&title=Access+for+%5Bindividual%5D
-
-
-

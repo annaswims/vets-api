@@ -22,12 +22,12 @@ module Mobile
         HIDDEN_STATUS = %w[
           arrived
           noshow
-          fulfilled
           pending
         ].freeze
 
         STATUSES = {
           booked: 'BOOKED',
+          fulfilled: 'BOOKED',
           cancelled: 'CANCELLED',
           hidden: 'HIDDEN',
           proposed: 'SUBMITTED'
@@ -70,14 +70,14 @@ module Mobile
 
         # rubocop:disable Metrics/MethodLength
         def build_appointment_model(appointment_hash)
-          facility_id = Mobile::V0::Appointment.convert_non_prod_id!(
+          facility_id = Mobile::V0::Appointment.convert_from_non_prod_id!(
             appointment_hash[:location_id]
           )
           sta6aid = facility_id
           type = parse_by_appointment_type(appointment_hash, appointment_hash[:kind])
           start_date_utc = start_date_utc(appointment_hash)
-          time_zone = time_zone(facility_id)
-          start_date_local = start_date_utc.in_time_zone(time_zone)
+          time_zone = timezone(appointment_hash, facility_id)
+          start_date_local = start_date_utc&.in_time_zone(time_zone)
           status = status(appointment_hash)
           adapted_hash = {
             id: appointment_hash[:id],
@@ -109,10 +109,22 @@ module Mobile
           }
 
           Rails.logger.info('metric.mobile.appointment.type', type: type)
+          Rails.logger.info('metric.mobile.appointment.upstream_status', status: appointment_hash[:status])
 
           Mobile::V0::Appointment.new(adapted_hash)
         end
         # rubocop:enable Metrics/MethodLength
+
+        def timezone(appointment_hash, facility_id)
+          time_zone = appointment_hash.dig(:location, :time_zone, :time_zone_id)
+          return time_zone if time_zone
+
+          return nil unless facility_id
+
+          # not always correct if clinic is different time zone than parent
+          facility = Mobile::VA_FACILITIES_BY_ID["dfn-#{facility_id[0..2]}"]
+          facility ? facility[:time_zone] : nil
+        end
 
         def cancel_id(appointment_hash)
           return nil unless appointment_hash[:cancellable]
@@ -156,10 +168,14 @@ module Mobile
         end
 
         def start_date_utc(appointment_hash)
-          start = appointment_hash[:start] || appointment_hash.dig(:requested_periods, 0, :start)
-          return nil if start.nil?
-
-          DateTime.parse(start)
+          start = appointment_hash[:start]
+          if start.nil?
+            sorted_dates = appointment_hash[:requested_periods].map { |period| DateTime.parse(period[:start]) }.sort
+            future_dates = sorted_dates.select { |period| period > DateTime.now }
+            future_dates.any? ? future_dates.first : sorted_dates.first
+          else
+            DateTime.parse(start)
+          end
         end
 
         def parse_by_appointment_type(appointment_hash, type)
@@ -218,6 +234,9 @@ module Mobile
           when APPOINTMENT_TYPES[:va_video_connect_atlas],
             APPOINTMENT_TYPES[:va_video_connect_home],
             APPOINTMENT_TYPES[:va_video_connect_gfe]
+
+            location[:name] = appointment_hash.dig(:location, :name)
+
             if telehealth
               address = telehealth.dig(:atlas, :address)
 
@@ -257,11 +276,10 @@ module Mobile
 
         def location_phone(appointment_hash)
           phone = appointment_hash.dig(:location, :phone, :main)
-          return nil unless phone
 
           # captures area code (\d{3}) number (\d{3}-\d{4})
           # and optional extension (until the end of the string) (?:\sx(\d*))?$
-          phone_captures = phone.match(/^(\d{3})-(\d{3}-\d{4})(?:\sx(\d*))?$/)
+          phone_captures = phone&.match(/^(\d{3})-(\d{3}-\d{4})(?:\sx(\d*))?$/)
 
           if phone_captures.nil?
             Rails.logger.warn(
@@ -269,7 +287,7 @@ module Mobile
               facility_id: appointment_hash.dig(:location, :id),
               facility_phone: phone
             )
-            return nil
+            return { area_code: nil, number: nil, extension: nil }
           end
 
           {
@@ -277,11 +295,6 @@ module Mobile
             number: phone_captures[2].presence,
             extension: phone_captures[3].presence
           }
-        end
-
-        def time_zone(facility_id)
-          facility = Mobile::VA_FACILITIES_BY_ID["dfn-#{facility_id}"]
-          facility ? facility[:time_zone] : nil
         end
 
         def healthcare_provider(practitioners)

@@ -45,7 +45,7 @@ AppealsApi::Engine.routes.draw do
         resources :evidence_submissions, only: %i[create show]
       end
 
-      resources :notice_of_disagreements, only: %i[create show] do
+      resources :notice_of_disagreements, only: %i[index create show] do
         collection do
           get 'schema'
           post 'validate'
@@ -79,6 +79,7 @@ AppealsApi::Engine.routes.draw do
 
     namespace :v2, defaults: { format: 'json' } do
       get 'decision_reviews', to: 'docs#decision_reviews'
+      get 'hlr', to: 'docs#hlr'
     end
   end
 
@@ -147,6 +148,22 @@ AppealsApi::Engine.routes.draw do
       end
 
       resources :schemas, only: :show, param: :schema_type, controller: '/appeals_api/schemas/shared_schemas'
+    end
+  end
+
+  namespace :contestable_issues, defaults: { format: 'json' } do
+    namespace :v2 do
+      cpath = '/appeals_api/v2/decision_reviews/contestable_issues'
+
+      get 'contestable_issues/:decision_review_type', to: "#{cpath}#index"
+    end
+  end
+
+  namespace :legacy_appeals, defaults: { format: 'json' } do
+    namespace :v2 do
+      cpath = '/appeals_api/v2/decision_reviews/legacy_appeals'
+
+      get 'legacy_appeals', to: "#{cpath}#index"
     end
   end
 end

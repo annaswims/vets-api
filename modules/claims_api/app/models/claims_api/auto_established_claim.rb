@@ -94,6 +94,10 @@ module ClaimsApi
       end
     end
 
+    def self.get_by_id_and_icn(id, icn)
+      find_by(id: id, veteran_icn: icn)
+    end
+
     def set_md5
       headers = auth_headers.except('va_eauth_authenticationauthority',
                                     'va_eauth_service_transaction_id',
@@ -291,6 +295,7 @@ module ClaimsApi
         name = disability['name']
         name = truncate_disability_name(name: name) if name.length > 255
         name = sanitize_disablity_name(name: name, regex: invalid_characters) if name.match?(invalid_characters)
+        name = strip_disablity_name(name: name)
         disability['name'] = name
 
         disability
@@ -303,6 +308,10 @@ module ClaimsApi
 
     def sanitize_disablity_name(name:, regex:)
       name.gsub(regex, '')
+    end
+
+    def strip_disablity_name(name:)
+      name.strip
     end
 
     def invalid_change_of_address_ending_date?

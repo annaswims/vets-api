@@ -7,8 +7,8 @@ require 'dgi/forms/service/submission_service'
 module MebApi
   module V0
     class FormsController < MebApi::V0::BaseController
-      before_action :check_flipper
-      before_action :get_form_type
+      before_action :check_forms_flipper
+      before_action :get_form_type, except: :claimant_info
 
       def claim_letter
         claimant_response = claimant_service.get_claimant_info(@form_type)
@@ -27,10 +27,28 @@ module MebApi
         nil
       end
 
-      def sponsor
+      def claimant_info
+        response = claimant_service.get_claimant_info('Toe')
+
+        render json: response, serializer: ToeClaimantInfoSerializer
+      end
+
+      def sponsors
         response = sponsor_service.post_sponsor(@form_type)
 
         render json: response, serializer: SponsorsSerializer
+      end
+
+      def submit_claim
+        response = submission_service.submit_claim(params[:education_benefit].except(:form_id), @form_type)
+
+        clear_saved_form(params[:form_id]) if params[:form_id]
+
+        render json: {
+          data: {
+            'status': response.status
+          }
+        }
       end
 
       private

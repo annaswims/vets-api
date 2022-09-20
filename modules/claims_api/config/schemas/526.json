@@ -81,7 +81,7 @@
               "example": "Portland"
             },
             "country": {
-              "description": "Country Veteran resides in.",
+              "description": "Country Veteran resides in.  Value must match the values returned by the \"/countries\" endpoint on the [Benefits Reference Data API](https://developer.va.gov/explore/benefits/docs/benefits_reference_data?version=current).",
               "type": "string",
               "example": "USA"
             },
@@ -217,7 +217,7 @@
               "example": "Portland"
             },
             "country": {
-              "description": "New country Veteran resides in.",
+              "description": "New country Veteran resides in. Value must match the values returned by the \"/countries\" endpoint on the [Benefits Reference Data API](https://developer.va.gov/explore/benefits/docs/benefits_reference_data?version=current).",
               "type": "string",
               "example": "USA"
             },
@@ -1314,7 +1314,7 @@
       "example": false
     },
     "applicationExpirationDate": {
-      "description": "Time stamp of when claim expires in one year after submission.",
+      "description": "Time stamp of when claim expires.  If not provided, value will be set to 1 year in the future from current day.",
       "type": "string",
       "example": "2018-08-28T19:53:45+00:00"
     },
