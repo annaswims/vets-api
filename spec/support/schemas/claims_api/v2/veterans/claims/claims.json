@@ -23,14 +23,12 @@
       },
       "claimPhaseDates": {
         "type": "object",
-        "description": "List of claim phase dates.",
-        "items": {
-          "properties": {
-            "phaseChangeDates": {
-              "type": "date",
-              "nullable": true,
-              "description": "The date that the claim changed to its current phase"
-            }
+        "description": "list of phase dates for a claim",
+        "properties": {
+          "phaseChangeDates": {
+            "type": "date",
+            "nullable": true,
+            "description": "The date that the claim changed to its current phase"
           }
         }
       },
