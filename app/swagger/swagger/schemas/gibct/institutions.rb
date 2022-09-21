@@ -34,7 +34,7 @@ module Swagger
               property :links, '$ref': :GibctInstitutionsSelfLinks
               property :attributes do
                 key :$ref, :GibctInstitutionBase
-                key :$ref, :GibctInstitutionCategoryRating
+                property :institution_category_ratings, '$ref': :GibctInstitutionCategoryRating
                 property :type, type: :string,
                                 enum: ['OJT', 'PRIVATE', 'FOREIGN', 'CORRESPONDENCE', 'FLIGHT', 'FOR PROFIT', 'PUBLIC']
               end
@@ -58,7 +58,7 @@ module Swagger
 
             property :attributes do
               key :$ref, :GibctInstitutionBase
-              key :$ref, :GibctInstitutionCategoryRating
+              property :institution_category_ratings, '$ref': :GibctInstitutionCategoryRating
               property :type, type: :string,
                               enum: ['OJT', 'PRIVATE', 'FOREIGN', 'CORRESPONDENCE', 'FLIGHT', 'FOR PROFIT', 'PUBLIC']
               property :flight, type: :boolean
@@ -283,9 +283,9 @@ module Swagger
 
         swagger_schema :GibctInstitutionCategoryRating do
           key :type, :object
-          key :required,
-              %i[self category_name average_rating total_count rated1_count rated2_count rated3_count rated4_count
-                 rated5_count na_count]
+          # key :required,
+          #     %i[self category_name average_rating total_count rated1_count rated2_count rated3_count rated4_count
+          #        rated5_count na_count]
 
           property :self, type: :string
           property :category_name, type: :string
