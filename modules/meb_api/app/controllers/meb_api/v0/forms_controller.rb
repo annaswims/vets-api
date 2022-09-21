@@ -40,7 +40,8 @@ module MebApi
       end
 
       def submit_claim
-        response = submission_service.submit_claim(params[:education_benefit].except(:form_id), @form_type)
+        form_params = 
+        response = submission_service.submit_claim(params[:education_benefit], @form_type)
 
         clear_saved_form(params[:form_id]) if params[:form_id]
 
