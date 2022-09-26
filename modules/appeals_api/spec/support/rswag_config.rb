@@ -57,29 +57,43 @@ class AppealsApi::RswagConfig
 
   def schemas
     a = []
-    a << generic_schemas('#/components/schemas')
     case ENV['RSWAG_SECTION_SLUG']
     when 'hlr'
       a << hlr_v2_create_schemas
       a << hlr_v2_response_schemas('#/components/schemas')
+      a << contestable_issues_schema('#/components/schemas')
+      a << generic_schemas('#/components/schemas')
       a << shared_schemas
     when 'nod'
       a << nod_v2_create_schemas
       a << nod_v2_response_schemas('#/components/schemas')
+      a << contestable_issues_schema('#/components/schemas')
+      a << generic_schemas('#/components/schemas')
       a << shared_schemas
     when 'sc'
       a << sc_create_schemas
       a << sc_response_schemas('#/components/schemas')
+      a << contestable_issues_schema('#/components/schemas')
+      a << generic_schemas('#/components/schemas')
       a << shared_schemas
+    when 'contestable_issues'
+      a << contestable_issues_schema('#/components/schemas')
+      a << generic_schemas('#/components/schemas').slice(*%i[errorModel errorWithTitleAndDetail X-VA-SSN X-VA-File-Number])
+      a << shared_schemas.slice(*%i[non_blank_string])
+    when 'legacy_appeals'
+      a << legacy_appeals_schema('#/components/schemas')
+      a << generic_schemas('#/components/schemas').slice(*%i[errorModel errorWithTitleAndDetail X-VA-SSN X-VA-File-Number])
+      a << shared_schemas.slice(*%i[non_blank_string])
     else
       a << hlr_v2_create_schemas
       a << hlr_v2_response_schemas('#/components/schemas')
-      a << contestable_issues_schema('#/components/schemas')
       a << nod_v2_create_schemas
       a << nod_v2_response_schemas('#/components/schemas')
       a << sc_create_schemas
       a << sc_response_schemas('#/components/schemas')
+      a << contestable_issues_schema('#/components/schemas')
       a << legacy_appeals_schema('#/components/schemas')
+      a << generic_schemas('#/components/schemas')
     end
 
     a.reduce(&:merge).sort_by { |k, _| k.to_s.downcase }.to_h
@@ -134,30 +148,30 @@ class AppealsApi::RswagConfig
         'type': 'string',
         'format': 'date'
       },
-      'X-VA-Claimant-First-Name': {
+      'X-VA-NonVeteranClaimant-First-Name': {
         'allOf': [
           { 'description': 'first name' },
           { '$ref': nbs_ref }
         ]
       },
-      'X-VA-Claimant-Middle-Initial': {
+      'X-VA-NonVeteranClaimant-Middle-Initial': {
         'allOf': [
           { 'description': 'middle initial' },
           { '$ref': nbs_ref }
         ]
       },
-      'X-VA-Claimant-Last-Name': {
+      'X-VA-NonVeteranClaimant-Last-Name': {
         'allOf': [
           { 'description': 'last name' },
           { '$ref': nbs_ref }
         ]
       },
-      'X-VA-Claimant-Birth-Date': {
-        'description': "Claimant's birth date",
+      'X-VA-NonVeteranClaimant-Birth-Date': {
+        'description': "Non-veteran claimant's birth date",
         'type': 'string',
         'format': 'date'
       },
-      'X-VA-Claimant-SSN': {
+      'X-VA-NonVeteranClaimant-SSN': {
         'description': 'social security number',
         'type': 'string',
         'minLength': 9,
@@ -408,7 +422,8 @@ class AppealsApi::RswagConfig
   end
 
   def nod_v2_create_schemas
-    parse_create_schema('v2', '10182.json')
+    file = DocHelpers.wip_doc_enabled?(:segmented_apis, true) ? '10182_with_shared_refs.json' : '10182.json'
+    parse_create_schema('v2', file)
   end
 
   def nod_v2_response_schemas(ref_root)
@@ -462,6 +477,45 @@ class AppealsApi::RswagConfig
             }
           }
         }
+      },
+      'nodShowResponse': {
+        'type': 'object',
+        'properties': {
+          'data': {
+            'properties': {
+              'id': {
+                '$ref': "#{ref_root}/uuid"
+              },
+              'type': {
+                'type': 'string',
+                'enum': ['noticeOfDisagreement']
+              },
+              'attributes': {
+                'properties': {
+                  'status': {
+                    'type': 'string',
+                    'example': AppealsApi::NodStatus::STATUSES.first,
+                    'enum': AppealsApi::NodStatus::STATUSES
+                  },
+                  'updatedAt': {
+                    'description': 'The last time the submission was updated',
+                    'type': 'string',
+                    'format': 'date-time',
+                    'example': '2018-07-30T17:31:15.958Z'
+                  },
+                  'createdAt': {
+                    'description': 'The last time the submission was updated',
+                    'type': 'string',
+                    'format': 'date-time',
+                    'example': '2018-07-30T17:31:15.958Z'
+                  }
+                }
+              }
+            },
+            'required': %w[id type attributes]
+          }
+        },
+        'required': ['data']
       },
       'nodEvidenceSubmissionResponse': {
         'type': 'object',

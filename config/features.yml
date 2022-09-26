@@ -550,6 +550,10 @@ features:
     actor_type: user
     description: Sends notification to Slack channel if a new claim includes a PACT-related disability that RRD handles
     enable_in_development: true
+  rrd_asrd_doctype:
+    actor_type: user
+    description: Uploads RRD summary PDFs to EVSS with new document type "Automated Review Summary Document"
+    enable_in_development: true
   search_representative:
     actor_type: user
     description: Enable frontend application and cta for Search Representative application
@@ -743,6 +747,10 @@ features:
     actor_type: user
     enable_in_development: true
     description: Toggle for tickets with the label vaos-v2-next will be behind this flag
+  va_online_scheduling_clinic_filter:
+    actor_type: user
+    enable_in_development: true
+    description: Toggle for VAOS direct scheduling & appointment request clinic filtering
   va_online_scheduling_appointment_list:
     actor_type: user
     enable_in_development: true
@@ -761,6 +769,10 @@ features:
   virtual_agent_auth:
     actor_type: user
     description: Enables auth lock in order to access bot
+    enable_in_development: true
+  virtual_agent_user_access_records:
+    actor_type: user
+    description: Enables collection of user data for VBA
     enable_in_development: true
   yellow_ribbon_mvp_enhancement:
     actor_type: user
@@ -797,7 +809,7 @@ features:
     actor_type: user
     description: Enables access to digital 1095-B form download
     enable_in_development: true
-  show_meb_mailing_address_foreign:
+  show_meb_dgi40_features:
     actor_type: user
-    description: Allows the city and state inputs to change if a user lives on a military base outside the USA.
+    description: Enables the UI integration with the meb dgi
     enable_in_development: true

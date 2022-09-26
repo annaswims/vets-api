@@ -1,12 +1,4 @@
 GIT
-  remote: https://github.com/corgibytes/ruby-debug-ide
-  revision: 4778461bf622c208f355bc193c9726871a8ed71d
-  branch: feature-add-fixed-port-range
-  specs:
-    ruby-debug-ide (0.7.3)
-      rake (>= 0.8.1)
-
-GIT
   remote: https://github.com/department-of-veterans-affairs/active_model_serializers
   revision: 19015caa80227e5ae5d62179129edcaa43fb3d9d
   branch: master
@@ -42,11 +34,11 @@ GIT
 
 GIT
   remote: https://github.com/department-of-veterans-affairs/bgs-ext.git
-  revision: b4071a6fd8a684ea0c63fbf6ca30b942604ccdb4
+  revision: 9e7ad003261926c1c5865dd4738e91c57494d701
   specs:
     bgs_ext (0.21.2)
       httpclient
-      nokogiri (>= 1.8.5)
+      nokogiri (>= 1.13.6)
       savon (= 2.12)
 
 GIT
@@ -81,14 +73,6 @@ GIT
       nokogiri
       prawn
       prawn-table
-
-GIT
-  remote: https://github.com/resque/redis-namespace.git
-  revision: de6c3b9b01658b37e3ea776c52cf2eec3a89dcb3
-  ref: de6c3b9b01658b37e3ea776c52cf2eec3a89dcb3
-  specs:
-    redis-namespace (1.8.2)
-      redis (>= 3.0.4)
 
 PATH
   remote: modules
@@ -284,7 +268,7 @@ GEM
     config (4.0.0)
       deep_merge (~> 1.2, >= 1.2.1)
       dry-validation (~> 1.0, >= 1.0.0)
-    connection_pool (2.2.5)
+    connection_pool (2.3.0)
     content_disposition (1.0.0)
     cork (0.3.0)
       colored2 (~> 3.1)
@@ -321,8 +305,6 @@ GEM
       libdatadog (~> 0.7.0.1.0)
       libddwaf (~> 1.3.0.2.0)
       msgpack
-    debase (0.2.4.1)
-      debase-ruby_core_source (>= 0.10.2)
     debase-ruby_core_source (0.10.16)
     declarative (0.0.20)
     deep_merge (1.2.2)
@@ -372,7 +354,7 @@ GEM
       dry-schema (~> 1.8, >= 1.8.0)
     ecma-re-validator (0.4.0)
       regexp_parser (~> 2.2)
-    einhorn (0.8.2)
+    einhorn (1.0.0)
     erubi (1.11.0)
     et-orbi (1.2.7)
       tzinfo
@@ -475,10 +457,10 @@ GEM
       webrick
     google-apis-discovery_v1 (0.11.0)
       google-apis-core (>= 0.7, < 2.a)
-    google-apis-generator (0.9.0)
+    google-apis-generator (0.10.0)
       activesupport (>= 5.0)
       gems (~> 1.2)
-      google-apis-core (>= 0.7, < 2.a)
+      google-apis-core (>= 0.9.0, < 2.a)
       google-apis-discovery_v1 (~> 0.5)
       thor (>= 0.20, < 2.a)
     google-cloud-bigquery (1.39.0)
@@ -664,7 +646,7 @@ GEM
       activerecord (>= 5.2)
       request_store (~> 1.1)
     parallel (1.22.1)
-    parallel_tests (3.12.1)
+    parallel_tests (3.13.0)
       parallel
     parser (3.1.2.1)
       ast (~> 2.4.1)
@@ -759,6 +741,8 @@ GEM
       ffi (~> 1.0)
     rchardet (1.8.0)
     redis (4.8.0)
+    redis-namespace (1.9.0)
+      redis (>= 4)
     regexp_parser (2.5.0)
     representable (3.2.0)
       declarative (< 0.1.0)
@@ -839,7 +823,7 @@ GEM
       activesupport (>= 4.2.0)
       rack (>= 1.1)
       rubocop (>= 1.33.0, < 2.0)
-    rubocop-rspec (2.13.1)
+    rubocop-rspec (2.13.2)
       rubocop (~> 1.33)
     rubocop-thread_safety (0.4.4)
       rubocop (>= 0.53.0)
@@ -876,16 +860,16 @@ GEM
     shrine (3.4.0)
       content_disposition (~> 1.0)
       down (~> 5.1)
-    sidekiq (6.4.1)
-      connection_pool (>= 2.2.2)
+    sidekiq (6.5.7)
+      connection_pool (>= 2.2.5)
       rack (~> 2.0)
-      redis (>= 4.2.0)
-    sidekiq-ent (2.3.1)
+      redis (>= 4.5.0, < 5)
+    sidekiq-ent (2.5.2)
       einhorn (>= 0.7.4)
-      sidekiq (>= 6.3.0)
-      sidekiq-pro (>= 5.3.0)
-    sidekiq-pro (5.3.1)
-      sidekiq (>= 6.3.0)
+      sidekiq (>= 6.5.0)
+      sidekiq-pro (>= 5.5.0)
+    sidekiq-pro (5.5.4)
+      sidekiq (>= 6.5.6)
     sidekiq-scheduler (4.0.2)
       redis (>= 4.2.0)
       rufus-scheduler (~> 3.2)
@@ -909,7 +893,7 @@ GEM
       faraday (>= 0.9)
       json (>= 1.8)
     socksify (1.7.1)
-    spring (4.0.0)
+    spring (4.1.0)
     spring-commands-rspec (1.0.4)
       spring (>= 0.9.1)
     sprockets (4.1.1)
@@ -922,7 +906,7 @@ GEM
     ssrf_filter (1.0.7)
     staccato (0.5.3)
     statsd-instrument (3.4.0)
-    strong_migrations (1.3.0)
+    strong_migrations (1.3.1)
       activerecord (>= 5.2)
     super_diff (0.9.0)
       attr_extras (>= 6.2.4)
@@ -1037,7 +1021,6 @@ DEPENDENCIES
   database_cleaner
   date_validator
   ddtrace
-  debase
   debts_api!
   dhp_connected_devices!
   dry-struct
@@ -1133,7 +1116,7 @@ DEPENDENCIES
   rails_semantic_logger
   rainbow
   redis
-  redis-namespace!
+  redis-namespace
   request_store
   restforce
   rgeo-geojson
@@ -1149,7 +1132,6 @@ DEPENDENCIES
   rubocop-rails
   rubocop-rspec
   rubocop-thread_safety
-  ruby-debug-ide!
   ruby-saml
   rubyzip
   savon
