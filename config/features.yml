@@ -32,6 +32,10 @@ features:
     actor_type: user
     description: Submit 1010cg applications using a background job
     enable_in_development: false
+  career_counseling_confirmation_email:
+    actor_type: user
+    description: Enables Career Counseling claim email confirmation upon submission
+    enable_in_development: true
   hca_american_indian_enabled:
     actor_type: user
     description: Enables American Indian SIGI question page.
@@ -94,13 +98,9 @@ features:
     actor_type: user
     description: Enables the capture of user responses to demographics up-to-date questions
     enable_in_development: true
-  check_in_experience_translation_day_of_enabled:
+  check_in_experience_synthetic_metric_name:
     actor_type: user
-    description: Enables language translation for the day of check-in experience
-    enable_in_development: true
-  check_in_experience_translation_pre_check_in_enabled:
-    actor_type: user
-    description: Enables language translation for the pre-check-in experience
+    description: Enables updating the StatsD metric name for Synthetic check traffic
     enable_in_development: true
   check_in_experience_translation_disclaimer_spanish_enabled:
     actor_type: user
@@ -126,6 +126,10 @@ features:
     actor_type: cookie_id
     description: Enables lorota delete endpoint call for users exceeding max auth attempts
     enable_in_development: false
+  check_in_experience_travel_reimbursement:
+    actor_type: user
+    description: Enables travel reimbursement workflow for day-of check-in application.
+    enable_in_development: true
   ch31_vbms_form_confirmation_email:
     actor_type: user
     description: Enables Ch31 form email submission confirmation after central mail
@@ -145,6 +149,10 @@ features:
   combined_financial_status_report:
     actor_type: user
     description: Enables users to submit FSR forms for VHA and VBA debts
+    enable_in_development: true
+  combined_financial_status_report_enhancements:
+    actor_type: user
+    description: Enables users to interact with the new cFSR enhancements and avoid list loops
     enable_in_development: true
   communication_preferences:
     actor_type: user
@@ -194,6 +202,9 @@ features:
   debt_letters_show_letters:
     actor_type: user
     description: Enables debt letters
+  debt_letters_show_letters_vbms:
+    actor_type: user
+    description: Enables debt letter download from VBMS
   decision_review_hlr_email:
     actor_type: user
     description: Send email notification for successful HLR submission
@@ -217,6 +228,10 @@ features:
   decision_review_sc_pii_expunge_enabled:
     actor_type: user
     description: Enables the supplemental claim PII expunge job
+    enable_in_development: true
+  decision_review_icn_updater_enabled:
+    actor_type: user
+    description: Enables the ICN lookup job
     enable_in_development: true
   dependency_verification:
     actor_type: user
@@ -499,6 +514,9 @@ features:
     actor_type: user
     description: Enabling Public Websites-managed EHR CTAs to use Drupal EHR data, including for Cerner cutovers
     enable_in_development: true
+  pw_ehr_cta_use_slo:
+    actor_type: user
+    description: Use single-logout (SLO) paths for Public Websites-managed EHR CTAs
   request_locked_pdf_password:
     actor_type: user
     description: Ask for a password when an encrypted PDF is detected before uploading
@@ -531,9 +549,17 @@ features:
     actor_type: user
     description: Notifies MAS service that a MAS-relevant claim has come through
     enable_in_development: true
+  rrd_call_vro_service:
+    actor_type: user
+    description: Enables the RRD flow to call VRO for assessing health data and generating RRD PDF
+    enable_in_development: true
   rrd_new_pact_related_disability:
     actor_type: user
     description: Sends notification to Slack channel if a new claim includes a PACT-related disability that RRD handles
+    enable_in_development: true
+  rrd_asrd_doctype:
+    actor_type: user
+    description: Uploads RRD summary PDFs to EVSS with new document type "Automated Review Summary Document"
     enable_in_development: true
   search_representative:
     actor_type: user
@@ -613,7 +639,7 @@ features:
   sign_in_service_enabled:
     actor_type: cookie_id
     description: Enables the ability to use OAuth authentication via the Sign in Service (Identity)
-    enable_in_development: false
+    enable_in_development: true
   medical_copays_zero_debt:
     actor_type: user
     description: Enables zero debt balances feature on the medical copays application
@@ -728,6 +754,10 @@ features:
     actor_type: user
     enable_in_development: true
     description: Toggle for tickets with the label vaos-v2-next will be behind this flag
+  va_online_scheduling_clinic_filter:
+    actor_type: user
+    enable_in_development: true
+    description: Toggle for VAOS direct scheduling & appointment request clinic filtering
   va_online_scheduling_appointment_list:
     actor_type: user
     enable_in_development: true
@@ -746,6 +776,10 @@ features:
   virtual_agent_auth:
     actor_type: user
     description: Enables auth lock in order to access bot
+    enable_in_development: true
+  virtual_agent_user_access_records:
+    actor_type: user
+    description: Enables collection of user data for VBA
     enable_in_development: true
   yellow_ribbon_mvp_enhancement:
     actor_type: user
@@ -781,4 +815,8 @@ features:
   show_digital_form_1095b:
     actor_type: user
     description: Enables access to digital 1095-B form download
+    enable_in_development: true
+  show_meb_dgi40_features:
+    actor_type: user
+    description: Enables the UI integration with the meb dgi
     enable_in_development: true

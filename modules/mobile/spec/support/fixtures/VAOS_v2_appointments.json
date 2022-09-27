@@ -41,6 +41,9 @@
     "location":{
       "id":"442",
       "name":"Cheyenne VA Medical Center",
+      "time_zone" : {
+        "time_zone_id" : "America/Denver"
+      },
       "physical_address":{
         "type":"physical",
         "line":[
@@ -105,6 +108,9 @@
     "location":{
       "id":"442",
       "name":"Cheyenne VA Medical Center",
+      "time_zone" : {
+        "time_zone_id" : "America/Denver"
+      },
       "physical_address":{
         "type":"physical",
         "line":[
@@ -153,8 +159,37 @@
           "state":"OH",
           "postal_code":"45414",
           "text":"1601\nNeedmore Rd Ste 1\nDayton OH 45414"
-        }
+        },
+        "telecom":[
+          {
+            "system":"phone",
+            "value":"3214170822"
+          }
+        ]
       }
+    },
+    "location":{
+      "id":"442",
+      "name":"Cheyenne VA Medical Center",
+      "time_zone" : {
+        "time_zone_id" : "America/Denver"
+      },
+      "physical_address":{
+        "type":"physical",
+        "line":[
+          "2360 East Pershing Boulevard"
+        ],
+        "city":"Cheyenne",
+        "state":"WY",
+        "postal_code":"82001-5356"
+      },
+      "lat":41.148026,
+      "long":-104.786255,
+      "phone":{
+        "main":"307-778-7550"
+      },
+      "url":null,
+      "code":null
     }
   },
   {
@@ -210,6 +245,29 @@
 
         }
       }
+    },
+    "location":{
+      "id":"442",
+      "name":"Cheyenne VA Medical Center",
+      "time_zone" : {
+        "time_zone_id" : "America/Denver"
+      },
+      "physical_address":{
+        "type":"physical",
+        "line":[
+          "2360 East Pershing Boulevard"
+        ],
+        "city":"Cheyenne",
+        "state":"WY",
+        "postal_code":"82001-5356"
+      },
+      "lat":41.148026,
+      "long":-104.786255,
+      "phone":{
+        "main":"307-778-7550"
+      },
+      "url":null,
+      "code":null
     }
   },
   {
@@ -224,6 +282,9 @@
     "location":{
       "id":"442",
       "name":"Cheyenne VA Medical Center",
+      "time_zone" : {
+        "time_zone_id" : "America/Denver"
+      },
       "physical_address":{
         "type":"physical",
         "line":[
@@ -286,6 +347,9 @@
     "location":{
       "id":"442",
       "name":"Cheyenne VA Medical Center",
+      "time_zone" : {
+        "time_zone_id" : "America/Denver"
+      },
       "physical_address":{
         "type":"physical",
         "line":[
@@ -346,6 +410,9 @@
     "location":{
       "id":"442",
       "name":"Cheyenne VA Medical Center",
+      "time_zone" : {
+        "time_zone_id" : "America/Denver"
+      },
       "physical_address":{
         "type":"physical",
         "line":[
@@ -402,6 +469,9 @@
     "location":{
       "id":"442",
       "name":"Cheyenne VA Medical Center",
+      "time_zone" : {
+        "time_zone_id" : "America/Denver"
+      },
       "physical_address":{
         "type":"physical",
         "line":[
@@ -472,6 +542,9 @@
     "location":{
       "id":"442",
       "name":"Cheyenne VA Medical Center",
+      "time_zone" : {
+        "time_zone_id" : "America/Denver"
+      },
       "physical_address":{
         "type":"physical",
         "line":[
@@ -530,6 +603,9 @@
     "location":{
       "id":"442",
       "name":"Cheyenne VA Medical Center",
+      "time_zone" : {
+        "time_zone_id" : "America/Denver"
+      },
       "physical_address":{
         "type":"physical",
         "line":[
@@ -599,6 +675,9 @@
     "location":{
       "id":"442",
       "name":"Cheyenne VA Medical Center",
+      "time_zone" : {
+        "time_zone_id" : "America/Denver"
+      },
       "physical_address":{
         "type":"physical",
         "line":[

@@ -14,11 +14,11 @@ module VBADocuments
     include Sidekiq::Worker
     include VBADocuments::UploadValidations
 
-    sidekiq_options unique_until: :success
+    # Ensure that multiple jobs for the same GUID aren't spawned,
+    # to avoid race condition when parsing the multipart file
+    sidekiq_options unique_for: 30.days
 
     def perform(guid, caller_data, retries = 0)
-      return if cancelled?
-
       # @retries variable used via the CentralMail::Utilities which is included via VBADocuments::UploadValidations
       @retries = retries
       @cause = caller_data.nil? ? { caller: 'unknown' } : caller_data['caller']
@@ -34,20 +34,6 @@ module VBADocuments
         end
       end
       response&.success? ? true : false
-    end
-
-    def cancelled?
-      Sidekiq.redis do |c|
-        if c.respond_to? :exists?
-          c.exists?("cancelled-#{jid}")
-        else
-          c.exists("cancelled-#{jid}")
-        end
-      end
-    end
-
-    def self.cancel!(jid)
-      Sidekiq.redis { |c| c.setex("cancelled-#{jid}", 86_400, 1) }
     end
 
     private

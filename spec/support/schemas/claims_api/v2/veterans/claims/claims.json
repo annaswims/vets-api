@@ -21,6 +21,16 @@
         "description": "Date in YYYY-MM-DD the claim was first filed",
         "example": "2018-06-04"
       },
+      "claimPhaseDates": {
+        "type":"object",
+        "properties": {
+          "phaseChangeDate": {
+            "type": "date",
+            "nullable": true,
+            "description": "The date that the claim changed to its current phase"
+          }
+        }
+      },
       "closeDate": {
         "type": ["string", "null"],
         "format": "date",
@@ -46,6 +56,12 @@
         "type": "string",
         "description": "End product code of claim"
       },
+      "evidenceWaiverSubmitted5103": {
+        "type": "boolean",
+        "nullable": true,
+        "description": "If true, indicates a decision has been requested and/or a Waiver 5103 has been submitted",
+        "example": "false"
+      },
       "lighthouseId": {
         "type": "string",
         "nullable": true,
@@ -64,12 +80,6 @@
           "COMPLETE",
           "ERRORED"
         ]
-      },
-      "5103WaiverSubmitted": {
-        "type": "boolean",
-        "nullable": true,
-        "description": "If true, indicates a decision has been requested and/or a Waiver 5103 has been submitted",
-        "example": "false"
       }
     }
   }

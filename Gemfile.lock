@@ -1,12 +1,4 @@
 GIT
-  remote: https://github.com/corgibytes/ruby-debug-ide
-  revision: 4778461bf622c208f355bc193c9726871a8ed71d
-  branch: feature-add-fixed-port-range
-  specs:
-    ruby-debug-ide (0.7.3)
-      rake (>= 0.8.1)
-
-GIT
   remote: https://github.com/department-of-veterans-affairs/active_model_serializers
   revision: 19015caa80227e5ae5d62179129edcaa43fb3d9d
   branch: master
@@ -42,11 +34,11 @@ GIT
 
 GIT
   remote: https://github.com/department-of-veterans-affairs/bgs-ext.git
-  revision: 63aff093d3180009cd4d4cbb039e3b8748c5fe32
+  revision: 9e7ad003261926c1c5865dd4738e91c57494d701
   specs:
     bgs_ext (0.21.2)
       httpclient
-      nokogiri (>= 1.8.5)
+      nokogiri (>= 1.13.6)
       savon (= 2.12)
 
 GIT
@@ -81,14 +73,6 @@ GIT
       nokogiri
       prawn
       prawn-table
-
-GIT
-  remote: https://github.com/resque/redis-namespace.git
-  revision: de6c3b9b01658b37e3ea776c52cf2eec3a89dcb3
-  ref: de6c3b9b01658b37e3ea776c52cf2eec3a89dcb3
-  specs:
-    redis-namespace (1.8.2)
-      redis (>= 3.0.4)
 
 PATH
   remote: modules
@@ -139,67 +123,67 @@ GEM
   remote: https://enterprise.contribsys.com/
   specs:
     Ascii85 (1.1.0)
-    aasm (5.3.0)
+    aasm (5.3.1)
       concurrent-ruby (~> 1.0)
-    actioncable (6.1.6.1)
-      actionpack (= 6.1.6.1)
-      activesupport (= 6.1.6.1)
+    actioncable (6.1.7)
+      actionpack (= 6.1.7)
+      activesupport (= 6.1.7)
       nio4r (~> 2.0)
       websocket-driver (>= 0.6.1)
-    actionmailbox (6.1.6.1)
-      actionpack (= 6.1.6.1)
-      activejob (= 6.1.6.1)
-      activerecord (= 6.1.6.1)
-      activestorage (= 6.1.6.1)
-      activesupport (= 6.1.6.1)
+    actionmailbox (6.1.7)
+      actionpack (= 6.1.7)
+      activejob (= 6.1.7)
+      activerecord (= 6.1.7)
+      activestorage (= 6.1.7)
+      activesupport (= 6.1.7)
       mail (>= 2.7.1)
-    actionmailer (6.1.6.1)
-      actionpack (= 6.1.6.1)
-      actionview (= 6.1.6.1)
-      activejob (= 6.1.6.1)
-      activesupport (= 6.1.6.1)
+    actionmailer (6.1.7)
+      actionpack (= 6.1.7)
+      actionview (= 6.1.7)
+      activejob (= 6.1.7)
+      activesupport (= 6.1.7)
       mail (~> 2.5, >= 2.5.4)
       rails-dom-testing (~> 2.0)
-    actionpack (6.1.6.1)
-      actionview (= 6.1.6.1)
-      activesupport (= 6.1.6.1)
+    actionpack (6.1.7)
+      actionview (= 6.1.7)
+      activesupport (= 6.1.7)
       rack (~> 2.0, >= 2.0.9)
       rack-test (>= 0.6.3)
       rails-dom-testing (~> 2.0)
       rails-html-sanitizer (~> 1.0, >= 1.2.0)
-    actiontext (6.1.6.1)
-      actionpack (= 6.1.6.1)
-      activerecord (= 6.1.6.1)
-      activestorage (= 6.1.6.1)
-      activesupport (= 6.1.6.1)
+    actiontext (6.1.7)
+      actionpack (= 6.1.7)
+      activerecord (= 6.1.7)
+      activestorage (= 6.1.7)
+      activesupport (= 6.1.7)
       nokogiri (>= 1.8.5)
-    actionview (6.1.6.1)
-      activesupport (= 6.1.6.1)
+    actionview (6.1.7)
+      activesupport (= 6.1.7)
       builder (~> 3.1)
       erubi (~> 1.4)
       rails-dom-testing (~> 2.0)
       rails-html-sanitizer (~> 1.1, >= 1.2.0)
-    activejob (6.1.6.1)
-      activesupport (= 6.1.6.1)
+    activejob (6.1.7)
+      activesupport (= 6.1.7)
       globalid (>= 0.3.6)
-    activemodel (6.1.6.1)
-      activesupport (= 6.1.6.1)
-    activerecord (6.1.6.1)
-      activemodel (= 6.1.6.1)
-      activesupport (= 6.1.6.1)
+    activemodel (6.1.7)
+      activesupport (= 6.1.7)
+    activerecord (6.1.7)
+      activemodel (= 6.1.7)
+      activesupport (= 6.1.7)
     activerecord-import (1.4.0)
       activerecord (>= 4.2)
     activerecord-postgis-adapter (7.1.1)
       activerecord (~> 6.1)
       rgeo-activerecord (~> 7.0.0)
-    activestorage (6.1.6.1)
-      actionpack (= 6.1.6.1)
-      activejob (= 6.1.6.1)
-      activerecord (= 6.1.6.1)
-      activesupport (= 6.1.6.1)
+    activestorage (6.1.7)
+      actionpack (= 6.1.7)
+      activejob (= 6.1.7)
+      activerecord (= 6.1.7)
+      activesupport (= 6.1.7)
       marcel (~> 1.0)
       mini_mime (>= 1.1.0)
-    activesupport (6.1.6.1)
+    activesupport (6.1.7)
       concurrent-ruby (~> 1.0, >= 1.0.2)
       i18n (>= 1.6, < 2)
       minitest (>= 5.1)
@@ -216,8 +200,8 @@ GEM
     attr_extras (6.2.5)
     awesome_print (1.9.2)
     aws-eventstream (1.2.0)
-    aws-partitions (1.608.0)
-    aws-sdk-core (3.131.3)
+    aws-partitions (1.630.0)
+    aws-sdk-core (3.147.0)
       aws-eventstream (~> 1, >= 1.0.2)
       aws-partitions (~> 1, >= 1.525.0)
       aws-sigv4 (~> 1.1)
@@ -229,10 +213,10 @@ GEM
       aws-sdk-core (~> 3, >= 3.127.0)
       aws-sdk-kms (~> 1)
       aws-sigv4 (~> 1.4)
-    aws-sdk-sns (1.53.0)
+    aws-sdk-sns (1.55.0)
       aws-sdk-core (~> 3, >= 3.127.0)
       aws-sigv4 (~> 1.1)
-    aws-sigv4 (1.5.0)
+    aws-sigv4 (1.5.1)
       aws-eventstream (~> 1, >= 1.0.2)
     axiom-types (0.1.1)
       descendants_tracker (~> 0.0.4)
@@ -284,7 +268,7 @@ GEM
     config (4.0.0)
       deep_merge (~> 1.2, >= 1.2.1)
       dry-validation (~> 1.0, >= 1.0.0)
-    connection_pool (2.2.5)
+    connection_pool (2.3.0)
     content_disposition (1.0.0)
     cork (0.3.0)
       colored2 (~> 3.1)
@@ -321,8 +305,6 @@ GEM
       libdatadog (~> 0.7.0.1.0)
       libddwaf (~> 1.3.0.2.0)
       msgpack
-    debase (0.2.4.1)
-      debase-ruby_core_source (>= 0.10.2)
     debase-ruby_core_source (0.10.16)
     declarative (0.0.20)
     deep_merge (1.2.2)
@@ -372,8 +354,8 @@ GEM
       dry-schema (~> 1.8, >= 1.8.0)
     ecma-re-validator (0.4.0)
       regexp_parser (~> 2.2)
-    einhorn (0.8.2)
-    erubi (1.10.0)
+    einhorn (1.0.0)
+    erubi (1.11.0)
     et-orbi (1.2.7)
       tzinfo
     ethon (0.15.0)
@@ -385,7 +367,7 @@ GEM
     factory_bot_rails (6.2.0)
       factory_bot (~> 6.2.0)
       railties (>= 5.0.0)
-    faker (2.22.0)
+    faker (2.23.0)
       i18n (>= 1.8.11, < 2)
     fakeredis (0.8.0)
       redis (~> 4.1)
@@ -464,7 +446,7 @@ GEM
       google-apis-generator (~> 0.1)
     google-apis-bigquery_v2 (0.36.0)
       google-apis-core (>= 0.7, < 2.a)
-    google-apis-core (0.7.0)
+    google-apis-core (0.9.0)
       addressable (~> 2.5, >= 2.5.1)
       googleauth (>= 0.16.2, < 2.a)
       httpclient (>= 2.8.1, < 3.a)
@@ -475,10 +457,10 @@ GEM
       webrick
     google-apis-discovery_v1 (0.11.0)
       google-apis-core (>= 0.7, < 2.a)
-    google-apis-generator (0.9.0)
+    google-apis-generator (0.10.0)
       activesupport (>= 5.0)
       gems (~> 1.2)
-      google-apis-core (>= 0.7, < 2.a)
+      google-apis-core (>= 0.9.0, < 2.a)
       google-apis-discovery_v1 (~> 0.5)
       thor (>= 0.20, < 2.a)
     google-cloud-bigquery (1.39.0)
@@ -493,7 +475,7 @@ GEM
     google-cloud-env (1.6.0)
       faraday (>= 0.17.3, < 3.0)
     google-cloud-errors (1.2.0)
-    google-protobuf (3.21.5)
+    google-protobuf (3.21.6)
     googleauth (1.2.0)
       faraday (>= 0.17.3, < 3.a)
       jwt (>= 1.4, < 3.0)
@@ -530,7 +512,7 @@ GEM
     hashdiff (1.0.1)
     hashery (2.1.2)
     hashie (3.6.0)
-    holidays (8.5.0)
+    holidays (8.6.0)
     http-accept (1.7.0)
     http-cookie (1.0.4)
       domain_name (~> 0.5)
@@ -560,7 +542,7 @@ GEM
     jsonapi-parser (0.1.1.beta3)
     jsonapi-renderer (0.1.1.beta1)
     jwe (0.4.0)
-    jwt (2.4.1)
+    jwt (2.5.0)
     kms_encrypted (1.4.0)
       activesupport (>= 5.2)
     kramdown (2.4.0)
@@ -577,7 +559,7 @@ GEM
       rb-fsevent (~> 0.10, >= 0.10.3)
       rb-inotify (~> 0.9, >= 0.9.10)
     lockbox (1.0.0)
-    loofah (2.18.0)
+    loofah (2.19.0)
       crass (~> 1.0.2)
       nokogiri (>= 1.5.9)
     lumberjack (1.2.8)
@@ -596,7 +578,7 @@ GEM
     mini_magick (4.11.0)
     mini_mime (1.1.2)
     mini_portile2 (2.8.0)
-    minitest (5.16.2)
+    minitest (5.16.3)
     msgpack (1.5.4)
     multi_json (1.15.0)
     multi_xml (0.6.0)
@@ -664,7 +646,7 @@ GEM
       activerecord (>= 5.2)
       request_store (~> 1.1)
     parallel (1.22.1)
-    parallel_tests (3.11.1)
+    parallel_tests (3.13.0)
       parallel
     parser (3.1.2.1)
       ast (~> 2.4.1)
@@ -683,8 +665,8 @@ GEM
       hashery (~> 2.0)
       ruby-rc4
       ttfunk
-    pg (1.4.2)
-    pg_query (2.1.3)
+    pg (1.4.3)
+    pg_query (2.1.4)
       google-protobuf (>= 3.19.2)
     pg_search (2.3.6)
       activerecord (>= 5.2)
@@ -698,11 +680,11 @@ GEM
     pry (0.14.1)
       coderay (~> 1.1)
       method_source (~> 1.0)
-    pry-byebug (3.10.0)
+    pry-byebug (3.10.1)
       byebug (~> 11.0)
       pry (>= 0.13, < 0.15)
     public_suffix (5.0.0)
-    puma (5.6.4)
+    puma (5.6.5)
       nio4r (~> 2.0)
     pundit (2.2.0)
       activesupport (>= 3.0.0)
@@ -717,22 +699,23 @@ GEM
       rack
     rack-test (1.1.0)
       rack (>= 1.0, < 3)
+    rack-timeout (0.6.3)
     rack-vcr (0.1.6)
       vcr (>= 2.9)
-    rails (6.1.6.1)
-      actioncable (= 6.1.6.1)
-      actionmailbox (= 6.1.6.1)
-      actionmailer (= 6.1.6.1)
-      actionpack (= 6.1.6.1)
-      actiontext (= 6.1.6.1)
-      actionview (= 6.1.6.1)
-      activejob (= 6.1.6.1)
-      activemodel (= 6.1.6.1)
-      activerecord (= 6.1.6.1)
-      activestorage (= 6.1.6.1)
-      activesupport (= 6.1.6.1)
+    rails (6.1.7)
+      actioncable (= 6.1.7)
+      actionmailbox (= 6.1.7)
+      actionmailer (= 6.1.7)
+      actionpack (= 6.1.7)
+      actiontext (= 6.1.7)
+      actionview (= 6.1.7)
+      activejob (= 6.1.7)
+      activemodel (= 6.1.7)
+      activerecord (= 6.1.7)
+      activestorage (= 6.1.7)
+      activesupport (= 6.1.7)
       bundler (>= 1.15.0)
-      railties (= 6.1.6.1)
+      railties (= 6.1.7)
       sprockets-rails (>= 2.0.0)
     rails-dom-testing (2.0.3)
       activesupport (>= 4.2.0)
@@ -745,9 +728,9 @@ GEM
       rack
       railties (>= 5.1)
       semantic_logger (~> 4.9)
-    railties (6.1.6.1)
-      actionpack (= 6.1.6.1)
-      activesupport (= 6.1.6.1)
+    railties (6.1.7)
+      actionpack (= 6.1.7)
+      activesupport (= 6.1.7)
       method_source
       rake (>= 12.2)
       thor (~> 1.0)
@@ -757,7 +740,9 @@ GEM
     rb-inotify (0.10.1)
       ffi (~> 1.0)
     rchardet (1.8.0)
-    redis (4.7.1)
+    redis (4.8.0)
+    redis-namespace (1.9.0)
+      redis (>= 4)
     regexp_parser (2.5.0)
     representable (3.2.0)
       declarative (< 0.1.0)
@@ -814,14 +799,14 @@ GEM
     rspec-support (3.11.0)
     rspec_junit_formatter (0.5.1)
       rspec-core (>= 2, < 4, != 2.12.0)
-    rswag-specs (2.5.1)
+    rswag-specs (2.6.0)
       activesupport (>= 3.1, < 7.1)
       json-schema (~> 2.2)
       railties (>= 3.1, < 7.1)
-    rswag-ui (2.5.1)
+    rswag-ui (2.6.0)
       actionpack (>= 3.1, < 7.1)
       railties (>= 3.1, < 7.1)
-    rubocop (1.35.1)
+    rubocop (1.36.0)
       json (~> 2.3)
       parallel (~> 1.10)
       parser (>= 3.1.2.1)
@@ -834,12 +819,12 @@ GEM
     rubocop-ast (1.21.0)
       parser (>= 3.1.1.0)
     rubocop-junit-formatter (0.1.4)
-    rubocop-rails (2.15.2)
+    rubocop-rails (2.16.1)
       activesupport (>= 4.2.0)
       rack (>= 1.1)
-      rubocop (>= 1.7.0, < 2.0)
-    rubocop-rspec (2.12.1)
-      rubocop (~> 1.31)
+      rubocop (>= 1.33.0, < 2.0)
+    rubocop-rspec (2.13.2)
+      rubocop (~> 1.33)
     rubocop-thread_safety (0.4.4)
       rubocop (>= 0.53.0)
     ruby-progressbar (1.11.0)
@@ -875,16 +860,16 @@ GEM
     shrine (3.4.0)
       content_disposition (~> 1.0)
       down (~> 5.1)
-    sidekiq (6.4.1)
-      connection_pool (>= 2.2.2)
+    sidekiq (6.5.7)
+      connection_pool (>= 2.2.5)
       rack (~> 2.0)
-      redis (>= 4.2.0)
-    sidekiq-ent (2.3.1)
+      redis (>= 4.5.0, < 5)
+    sidekiq-ent (2.5.2)
       einhorn (>= 0.7.4)
-      sidekiq (>= 6.3.0)
-      sidekiq-pro (>= 5.3.0)
-    sidekiq-pro (5.3.1)
-      sidekiq (>= 6.3.0)
+      sidekiq (>= 6.5.0)
+      sidekiq-pro (>= 5.5.0)
+    sidekiq-pro (5.5.4)
+      sidekiq (>= 6.5.6)
     sidekiq-scheduler (4.0.2)
       redis (>= 4.2.0)
       rufus-scheduler (~> 3.2)
@@ -908,7 +893,7 @@ GEM
       faraday (>= 0.9)
       json (>= 1.8)
     socksify (1.7.1)
-    spring (4.0.0)
+    spring (4.1.0)
     spring-commands-rspec (1.0.4)
       spring (>= 0.9.1)
     sprockets (4.1.1)
@@ -920,8 +905,8 @@ GEM
       sprockets (>= 3.0.0)
     ssrf_filter (1.0.7)
     staccato (0.5.3)
-    statsd-instrument (3.3.0)
-    strong_migrations (1.2.0)
+    statsd-instrument (3.4.0)
+    strong_migrations (1.3.1)
       activerecord (>= 5.2)
     super_diff (0.9.0)
       attr_extras (>= 6.2.4)
@@ -949,7 +934,7 @@ GEM
     unf (0.1.4)
       unf_ext
     unf_ext (0.0.8)
-    unicode-display_width (2.2.0)
+    unicode-display_width (2.3.0)
     uri_template (0.7.0)
     utf8-cleaner (1.0.0)
       activesupport
@@ -1036,7 +1021,6 @@ DEPENDENCIES
   database_cleaner
   date_validator
   ddtrace
-  debase
   debts_api!
   dhp_connected_devices!
   dry-struct
@@ -1125,13 +1109,14 @@ DEPENDENCIES
   rack-attack
   rack-cors
   rack-test
+  rack-timeout
   rack-vcr
-  rails (~> 6.1.6)
+  rails (~> 6.1.7)
   rails-session_cookie
   rails_semantic_logger
   rainbow
   redis
-  redis-namespace!
+  redis-namespace
   request_store
   restforce
   rgeo-geojson
@@ -1147,7 +1132,6 @@ DEPENDENCIES
   rubocop-rails
   rubocop-rspec
   rubocop-thread_safety
-  ruby-debug-ide!
   ruby-saml
   rubyzip
   savon

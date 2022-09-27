@@ -6,35 +6,36 @@ module ClaimsApi
   module V2
     module Blueprints
       class ClaimBlueprint < Blueprinter::Base
-        field :benefit_claim_type_code
-        field :claim_id
-        field :claim_type
-        field :contention_list
+        field :claim_type_code
         field :claim_date
+        field :claim_id
+        field :claim_phase_dates
+        field :claim_type
         field :close_date
+        field :contention_list
         field :decision_letter_sent
         field :development_letter_sent
         field :documents_needed
         field :end_product_code
+        field :evidence_waiver_submitted_5103
         field :errors
         field :jurisdiction
         field :lighthouse_id
         field :max_est_claim_date
         field :min_est_claim_date
         field :status do |claim, _options|
-          ClaimsApi::BGSClaimStatusMapper.new(claim[:status]).name
+          ClaimsApi::BGSClaimStatusMapper.new(claim).name
         end
         field :submitter_application_code
         field :submitter_role_code
+        field :supporting_documents
         field :temp_jurisdiction
         field :tracked_items
-        field :supporting_documents
-        field '5103_waiver_submitted'.to_sym
 
         transform ClaimsApi::V2::Blueprints::Transformers::LowerCamelTransformer
 
         view :list do
-          exclude :benefit_claim_type_code
+          exclude :claim_type_code
           exclude :contention_list
           exclude :errors
           exclude :jurisdiction

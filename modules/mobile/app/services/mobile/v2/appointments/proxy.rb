@@ -6,15 +6,23 @@ module Mobile
   module V2
     module Appointments
       class Proxy
+        VAOS_STATUSES = %w[proposed cancelled booked fulfilled arrived].freeze
+
         def initialize(user)
           @user = user
         end
 
-        def get_appointments(start_date:, end_date:, pagination_params:)
-          response = vaos_v2_appointments_service.get_appointments(start_date, end_date, nil, pagination_params)
+        def get_appointments(start_date:, end_date:, include_pending:, pagination_params: {})
+          statuses = include_pending ? VAOS_STATUSES : VAOS_STATUSES.excluding('proposed')
+
+          # VAOS V2 appointments service accepts pagination params but either it formats them incorrectly
+          # or the upstream serice does not use them.
+          response = vaos_v2_appointments_service.get_appointments(start_date, end_date, statuses.join(','),
+                                                                   pagination_params)
 
           appointments = merge_clinic_facility_address(response[:data])
           appointments = merge_auxiliary_clinic_info(appointments)
+          appointments = merge_provider_names(appointments)
 
           appointments = vaos_v2_to_v0_appointment_adapter.parse(appointments)
 
@@ -76,6 +84,15 @@ module Mobile
           nil
         end
 
+        def merge_provider_names(appointments)
+          provider_names_proxy = ProviderNames.new(@user)
+          appointments.each do |appt|
+            practitioners_list = appt[:practitioners]
+            names = provider_names_proxy.form_names_from_appointment_practitioners_list(practitioners_list)
+            appt[:healthcare_provider] = names
+          end
+        end
+
         def vaos_mobile_facility_service
           VAOS::V2::MobileFacilityService.new(@user)
         end
@@ -86,10 +103,6 @@ module Mobile
 
         def vaos_v2_to_v0_appointment_adapter
           Mobile::V0::Adapters::VAOSV2Appointments.new
-        end
-
-        def v2_systems_service
-          VAOS::V2::SystemsService.new(@user)
         end
       end
     end

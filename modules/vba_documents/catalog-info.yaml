@@ -3,7 +3,6 @@ kind: API
 metadata:
   name: vba_documents
   description: Benefits Intake API for submitted pdf claims.
-  namespace: lighthouse-ninjapigs
   title: Benefits Intake API
   tags:
     - benefits
@@ -19,5 +18,6 @@ spec:
   type: openapi
   lifecycle: production
   owner: lighthouse-ninjapigs
+  system: vets-api
   definition:
     $text: https://dev-api.va.gov/services/vba_documents/docs/v1/api

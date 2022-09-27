@@ -376,7 +376,7 @@
           },
           {
             "in": "header",
-            "name": "X-VA-Claimant-First-Name",
+            "name": "X-VA-NonVeteranClaimant-First-Name",
             "required": false,
             "description": "Non-Veteran claimant's first name",
             "schema": {
@@ -385,7 +385,7 @@
           },
           {
             "in": "header",
-            "name": "X-VA-Claimant-Middle-Initial",
+            "name": "X-VA-NonVeteranClaimant-Middle-Initial",
             "required": false,
             "description": "Non-Veteran claimant's middle initial",
             "schema": {
@@ -394,7 +394,7 @@
           },
           {
             "in": "header",
-            "name": "X-VA-Claimant-Last-Name",
+            "name": "X-VA-NonVeteranClaimant-Last-Name",
             "required": false,
             "description": "Non-Veteran claimant's last name",
             "schema": {
@@ -403,7 +403,7 @@
           },
           {
             "in": "header",
-            "name": "X-VA-Claimant-SSN",
+            "name": "X-VA-NonVeteranClaimant-SSN",
             "required": false,
             "description": "Non-Veteran claimant's SSN",
             "schema": {
@@ -412,7 +412,7 @@
           },
           {
             "in": "header",
-            "name": "X-VA-Claimant-Birth-Date",
+            "name": "X-VA-NonVeteranClaimant-Birth-Date",
             "required": false,
             "description": "Non-Veteran claimant's Birth Date",
             "schema": {
@@ -995,35 +995,7 @@
                     "attributes": {
                       "status": "pending",
                       "updatedAt": "2020-01-02T03:04:05.067Z",
-                      "createdAt": "2020-01-02T03:04:05.067Z",
-                      "formData": {
-                        "data": {
-                          "type": "higherLevelReview",
-                          "attributes": {
-                            "informalConference": false,
-                            "benefitType": "lifeInsurance",
-                            "veteran": {
-                              "homeless": false,
-                              "address": {
-                                "addressLine1": "123 Some St.",
-                                "city": "Sometown",
-                                "countryCodeISO2": "US",
-                                "zipCode5": "12345"
-                              }
-                            },
-                            "socOptIn": true
-                          }
-                        },
-                        "included": [
-                          {
-                            "type": "contestableIssue",
-                            "attributes": {
-                              "issue": "left shoulder",
-                              "decisionDate": "1920-12-01"
-                            }
-                          }
-                        ]
-                      }
+                      "createdAt": "2020-01-02T03:04:05.067Z"
                     }
                   }
                 },
@@ -1488,10 +1460,6 @@
                     "nonBlankString": {
                       "type": "string",
                       "pattern": "[^ \\f\\n\\r\\t\\v\\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000\\ufeff]"
-                    },
-                    "date": {
-                      "type": "string",
-                      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
                     },
                     "hlrCreatePhone": {
                       "type": "object",
@@ -3433,7 +3401,8 @@
                                     ]
                                   },
                                   "decisionDate": {
-                                    "$ref": "#/definitions/date"
+                                    "type": "string",
+                                    "format": "date"
                                   },
                                   "decisionIssueId": {
                                     "type": "integer"
@@ -3445,7 +3414,8 @@
                                     "type": "string"
                                   },
                                   "socDate": {
-                                    "$ref": "#/definitions/date"
+                                    "type": "string",
+                                    "format": "date"
                                   },
                                   "disagreementArea": {
                                     "type": "string",
@@ -3564,7 +3534,7 @@
           },
           {
             "in": "header",
-            "name": "X-VA-Claimant-First-Name",
+            "name": "X-VA-NonVeteranClaimant-First-Name",
             "required": false,
             "description": "Non-Veteran claimant's first name",
             "schema": {
@@ -3573,7 +3543,7 @@
           },
           {
             "in": "header",
-            "name": "X-VA-Claimant-Middle-Initial",
+            "name": "X-VA-NonVeteranClaimant-Middle-Initial",
             "required": false,
             "description": "Non-Veteran claimant's middle initial",
             "schema": {
@@ -3582,7 +3552,7 @@
           },
           {
             "in": "header",
-            "name": "X-VA-Claimant-Last-Name",
+            "name": "X-VA-NonVeteranClaimant-Last-Name",
             "required": false,
             "description": "Non-Veteran claimant's last name",
             "schema": {
@@ -3591,7 +3561,7 @@
           },
           {
             "in": "header",
-            "name": "X-VA-Claimant-SSN",
+            "name": "X-VA-NonVeteranClaimant-SSN",
             "required": false,
             "description": "Non-Veteran claimant's SSN",
             "schema": {
@@ -3600,7 +3570,7 @@
           },
           {
             "in": "header",
-            "name": "X-VA-Claimant-Birth-Date",
+            "name": "X-VA-NonVeteranClaimant-Birth-Date",
             "required": false,
             "description": "Non-Veteran claimant's Birth Date",
             "schema": {
@@ -4282,7 +4252,7 @@
           },
           {
             "in": "header",
-            "name": "X-VA-Claimant-First-Name",
+            "name": "X-VA-NonVeteranClaimant-First-Name",
             "required": false,
             "description": "Non-Veteran claimant's first name",
             "schema": {
@@ -4291,7 +4261,7 @@
           },
           {
             "in": "header",
-            "name": "X-VA-Claimant-Middle-Initial",
+            "name": "X-VA-NonVeteranClaimant-Middle-Initial",
             "required": false,
             "description": "Non-Veteran claimant's middle initial",
             "schema": {
@@ -4300,7 +4270,7 @@
           },
           {
             "in": "header",
-            "name": "X-VA-Claimant-Last-Name",
+            "name": "X-VA-NonVeteranClaimant-Last-Name",
             "required": false,
             "description": "Non-Veteran claimant's last name",
             "schema": {
@@ -4309,7 +4279,7 @@
           },
           {
             "in": "header",
-            "name": "X-VA-Claimant-Birth-Date",
+            "name": "X-VA-NonVeteranClaimant-Birth-Date",
             "required": false,
             "description": "Non-Veteran claimant's Birth Date",
             "schema": {
@@ -4742,57 +4712,7 @@
                     "attributes": {
                       "status": "pending",
                       "updatedAt": "2020-01-02T03:04:05.067Z",
-                      "createdAt": "2020-01-02T03:04:05.067Z",
-                      "formData": {
-                        "data": {
-                          "type": "noticeOfDisagreement",
-                          "attributes": {
-                            "veteran": {
-                              "homeless": false,
-                              "address": {
-                                "addressLine1": "123 Main St",
-                                "city": "North Pole",
-                                "countryCodeISO2": "CA",
-                                "zipCode5": "00000"
-                              },
-                              "phone": {
-                                "areaCode": "555",
-                                "phoneNumber": "8001111"
-                              },
-                              "email": "clause@north.com",
-                              "timezone": "America/Chicago"
-                            },
-                            "representative": {
-                              "name": "Tony Danza"
-                            },
-                            "boardReviewOption": "evidence_submission",
-                            "requestingExtension": false,
-                            "appealingVhaDenial": false
-                          }
-                        },
-                        "included": [
-                          {
-                            "type": "contestableIssue",
-                            "attributes": {
-                              "issue": "tinnitus",
-                              "decisionDate": "1900-01-01",
-                              "decisionIssueId": 1,
-                              "ratingIssueReferenceId": "2",
-                              "ratingDecisionReferenceId": "3",
-                              "disagreementArea": "Effective Date"
-                            }
-                          },
-                          {
-                            "type": "contestableIssue",
-                            "attributes": {
-                              "issue": "left knee",
-                              "decisionDate": "1900-01-02",
-                              "decisionIssueId": 4,
-                              "ratingIssueReferenceId": "5"
-                            }
-                          }
-                        ]
-                      }
+                      "createdAt": "2020-01-02T03:04:05.067Z"
                     }
                   }
                 },
@@ -4984,12 +4904,6 @@
                         "countryCodeISO2",
                         "zipCode5"
                       ]
-                    },
-                    "date": {
-                      "type": "string",
-                      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
-                      "maxLength": 10,
-                      "minLength": 10
                     },
                     "phone": {
                       "type": "object",
@@ -5923,7 +5837,8 @@
                                     "maxLength": 180
                                   },
                                   "decisionDate": {
-                                    "$ref": "#/definitions/date"
+                                    "type": "string",
+                                    "format": "date"
                                   },
                                   "decisionIssueId": {
                                     "type": "integer"
@@ -6775,7 +6690,7 @@
           },
           {
             "in": "header",
-            "name": "X-VA-Claimant-First-Name",
+            "name": "X-VA-NonVeteranClaimant-First-Name",
             "required": false,
             "description": "Non-Veteran claimant's first name",
             "schema": {
@@ -6784,7 +6699,7 @@
           },
           {
             "in": "header",
-            "name": "X-VA-Claimant-Middle-Initial",
+            "name": "X-VA-NonVeteranClaimant-Middle-Initial",
             "required": false,
             "description": "Non-Veteran claimant's middle initial",
             "schema": {
@@ -6793,7 +6708,7 @@
           },
           {
             "in": "header",
-            "name": "X-VA-Claimant-Last-Name",
+            "name": "X-VA-NonVeteranClaimant-Last-Name",
             "required": false,
             "description": "Non-Veteran claimant's last name",
             "schema": {
@@ -6833,45 +6748,7 @@
                         "attributes": {
                           "status": "pending",
                           "updatedAt": "2020-01-02T03:04:05.067Z",
-                          "createdAt": "2020-01-02T03:04:05.067Z",
-                          "formData": {
-                            "data": {
-                              "type": "supplementalClaim",
-                              "attributes": {
-                                "benefitType": "fiduciary",
-                                "claimantType": "veteran",
-                                "veteran": {
-                                  "address": {
-                                    "addressLine1": "123 Main St",
-                                    "city": "New York",
-                                    "countryCodeISO2": "US",
-                                    "zipCode5": "30012"
-                                  },
-                                  "phone": {
-                                    "areaCode": "555",
-                                    "phoneNumber": "8001111"
-                                  },
-                                  "email": "josie@example.com",
-                                  "timezone": "America/Chicago"
-                                },
-                                "socOptIn": false,
-                                "evidenceSubmission": {
-                                  "evidenceType": [
-                                    "upload"
-                                  ]
-                                }
-                              }
-                            },
-                            "included": [
-                              {
-                                "type": "contestableIssue",
-                                "attributes": {
-                                  "issue": "right shoulder",
-                                  "decisionDate": "1900-01-06"
-                                }
-                              }
-                            ]
-                          }
+                          "createdAt": "2020-01-02T03:04:05.067Z"
                         }
                       }
                     }
@@ -7678,12 +7555,6 @@
                         "countryCodeISO2",
                         "zipCode5"
                       ]
-                    },
-                    "date": {
-                      "type": "string",
-                      "pattern": "^[0-9]{4}(-[0-9]{2}){2}$",
-                      "minLength": 10,
-                      "maxLength": 10
                     },
                     "phone": {
                       "type": "object",
@@ -8631,10 +8502,12 @@
                                                   "type": "object",
                                                   "properties": {
                                                     "startDate": {
-                                                      "$ref": "#/definitions/date"
+                                                      "type": "string",
+                                                      "format": "date"
                                                     },
                                                     "endDate": {
-                                                      "$ref": "#/definitions/date"
+                                                      "type": "string",
+                                                      "format": "date"
                                                     }
                                                   },
                                                   "required": [
@@ -8777,7 +8650,8 @@
                                     "maxLength": 140
                                   },
                                   "decisionDate": {
-                                    "$ref": "#/definitions/date"
+                                    "type": "string",
+                                    "format": "date"
                                   },
                                   "decisionIssueId": {
                                     "type": "integer"
@@ -8793,7 +8667,8 @@
                                     "maxLength": 255
                                   },
                                   "socDate": {
-                                    "$ref": "#/definitions/date"
+                                    "type": "string",
+                                    "format": "date"
                                   }
                                 },
                                 "required": [
@@ -8906,7 +8781,7 @@
           },
           {
             "in": "header",
-            "name": "X-VA-Claimant-First-Name",
+            "name": "X-VA-NonVeteranClaimant-First-Name",
             "required": false,
             "description": "Non-Veteran claimant's first name",
             "schema": {
@@ -8915,7 +8790,7 @@
           },
           {
             "in": "header",
-            "name": "X-VA-Claimant-Last-Name",
+            "name": "X-VA-NonVeteranClaimant-Last-Name",
             "required": false,
             "description": "Non-Veteran claimant's last name",
             "schema": {
@@ -9905,12 +9780,6 @@
             }
           }
         }
-      },
-      "date": {
-        "type": "string",
-        "pattern": "^[0-9]{4}(-[0-9]{2}){2}$",
-        "minLength": 10,
-        "maxLength": 10
       },
       "documentUploadMetadata": {
         "type": "object",
@@ -12081,7 +11950,8 @@
                       ]
                     },
                     "decisionDate": {
-                      "$ref": "#/components/schemas/date"
+                      "type": "string",
+                      "format": "date"
                     },
                     "decisionIssueId": {
                       "type": "integer"
@@ -12093,7 +11963,8 @@
                       "type": "string"
                     },
                     "socDate": {
-                      "$ref": "#/components/schemas/date"
+                      "type": "string",
+                      "format": "date"
                     },
                     "disagreementArea": {
                       "type": "string",
@@ -12472,7 +12343,8 @@
                       "maxLength": 180
                     },
                     "decisionDate": {
-                      "$ref": "#/components/schemas/date"
+                      "type": "string",
+                      "format": "date"
                     },
                     "decisionIssueId": {
                       "type": "integer"
@@ -12866,10 +12738,12 @@
                                     "type": "object",
                                     "properties": {
                                       "startDate": {
-                                        "$ref": "#/components/schemas/date"
+                                        "type": "string",
+                                        "format": "date"
                                       },
                                       "endDate": {
-                                        "$ref": "#/components/schemas/date"
+                                        "type": "string",
+                                        "format": "date"
                                       }
                                     },
                                     "required": [
@@ -13012,7 +12886,8 @@
                       "maxLength": 140
                     },
                     "decisionDate": {
-                      "$ref": "#/components/schemas/date"
+                      "type": "string",
+                      "format": "date"
                     },
                     "decisionIssueId": {
                       "type": "integer"
@@ -13028,7 +12903,8 @@
                       "maxLength": 255
                     },
                     "socDate": {
-                      "$ref": "#/components/schemas/date"
+                      "type": "string",
+                      "format": "date"
                     }
                   },
                   "required": [
@@ -13977,38 +13853,16 @@
         ]
       },
       "X-VA-Birth-Date": {
-        "allOf": [
-          {
-            "description": "birth date"
-          },
-          {
-            "minLength": 10
-          },
-          {
-            "maxLength": 10
-          },
-          {
-            "$ref": "#/components/schemas/date"
-          }
-        ]
+        "description": "Veteran's birth date",
+        "type": "string",
+        "format": "date"
       },
-      "X-VA-Claimant-Birth-Date": {
-        "allOf": [
-          {
-            "description": "birth date"
-          },
-          {
-            "minLength": 10
-          },
-          {
-            "maxLength": 10
-          },
-          {
-            "$ref": "#/components/schemas/date"
-          }
-        ]
+      "X-VA-NonVeteranClaimant-Birth-Date": {
+        "description": "Claimant's birth date",
+        "type": "string",
+        "format": "date"
       },
-      "X-VA-Claimant-First-Name": {
+      "X-VA-NonVeteranClaimant-First-Name": {
         "allOf": [
           {
             "description": "first name"
@@ -14018,7 +13872,7 @@
           }
         ]
       },
-      "X-VA-Claimant-Last-Name": {
+      "X-VA-NonVeteranClaimant-Last-Name": {
         "allOf": [
           {
             "description": "last name"
@@ -14028,7 +13882,7 @@
           }
         ]
       },
-      "X-VA-Claimant-Middle-Initial": {
+      "X-VA-NonVeteranClaimant-Middle-Initial": {
         "allOf": [
           {
             "description": "middle initial"
@@ -14038,7 +13892,7 @@
           }
         ]
       },
-      "X-VA-Claimant-SSN": {
+      "X-VA-NonVeteranClaimant-SSN": {
         "allOf": [
           {
             "description": "social security number"

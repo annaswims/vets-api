@@ -9,9 +9,9 @@ require_relative 'configuration'
 require 'mpi/errors/errors'
 require 'mpi/messages/add_person_proxy_add_message'
 require 'mpi/messages/add_person_implicit_search_message'
-require 'mpi/messages/find_profile_message'
-require 'mpi/messages/find_profile_message_identifier'
-require 'mpi/messages/find_profile_message_edipi'
+require 'mpi/messages/find_profile_by_attributes'
+require 'mpi/messages/find_profile_by_identifier'
+require 'mpi/messages/find_profile_by_edipi'
 require 'mpi/messages/update_profile_message'
 require 'mpi/responses/add_person_response'
 require 'mpi/responses/find_profile_response'
@@ -229,13 +229,20 @@ module MPI
                                                         birth_date: user_identity.birth_date,
                                                         idme_uuid: user_identity.idme_uuid,
                                                         logingov_uuid: user_identity.logingov_uuid,
-                                                        first_name: user_identity.first_name).to_xml
+                                                        first_name: user_identity.first_name).perform
     end
 
     def create_add_person_proxy_message(user_identity)
       raise Common::Exceptions::ValidationErrors, user_identity unless user_identity.valid?
+      return if user_identity.icn_with_aaid.blank?
 
-      MPI::Messages::AddPersonProxyAddMessage.new(user_identity).to_xml if user_identity.icn_with_aaid.present?
+      MPI::Messages::AddPersonProxyAddMessage.new(last_name: user_identity.last_name,
+                                                  ssn: user_identity.ssn,
+                                                  birth_date: user_identity.birth_date,
+                                                  icn: user_identity.icn,
+                                                  edipi: user_identity.edipi,
+                                                  search_token: user_identity.search_token,
+                                                  first_name: user_identity.first_name).perform
     end
 
     def create_update_profile_message(user_identity)
@@ -248,7 +255,7 @@ module MPI
                                               idme_uuid: user_identity.idme_uuid,
                                               logingov_uuid: user_identity.logingov_uuid,
                                               edipi: user_identity.edipi,
-                                              first_name: user_identity.first_name).to_xml
+                                              first_name: user_identity.first_name).perform
     end
 
     def create_profile_message(user_identity,
@@ -274,7 +281,7 @@ module MPI
 
     def message_icn(user_identity, search_type)
       Raven.tags_context(mvi_find_profile: 'icn')
-      MPI::Messages::FindProfileMessageIdentifier.new(user_identity.mhv_icn, search_type: search_type).to_xml
+      MPI::Messages::FindProfileByIdentifier.new(identifier: user_identity.mhv_icn, search_type: search_type).perform
     end
 
     def message_identifier(identifier, identifier_type, search_type)
@@ -287,12 +294,12 @@ module MPI
                               Constants::LOGINGOV_IDENTIFIER
                             end
       correlation_identifier = "#{identifier}^PN^#{identifier_constant}^USDVA^A"
-      MPI::Messages::FindProfileMessageIdentifier.new(correlation_identifier, search_type: search_type).to_xml
+      MPI::Messages::FindProfileByIdentifier.new(identifier: correlation_identifier, search_type: search_type).perform
     end
 
     def message_edipi(user_identity, search_type)
       Raven.tags_context(mvi_find_profile: 'edipi')
-      MPI::Messages::FindProfileMessageEdipi.new(user_identity.edipi, search_type: search_type).to_xml
+      MPI::Messages::FindProfileByEdipi.new(edipi: user_identity.edipi, search_type: search_type).perform
     end
 
     def message_user_attributes(user_identity, search_type, orch_search: false)
@@ -309,12 +316,12 @@ module MPI
         ssn: user_identity.ssn,
         gender: user_identity.gender
       }
-      MPI::Messages::FindProfileMessage.new(
-        profile,
+      MPI::Messages::FindProfileByAttributes.new(
+        profile: profile,
         search_type: search_type,
         orch_search: orch_search,
         edipi: orch_search == true ? user_identity.edipi : nil
-      ).to_xml
+      ).perform
     end
   end
 end

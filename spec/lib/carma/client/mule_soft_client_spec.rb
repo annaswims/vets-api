@@ -8,6 +8,16 @@ module CARMA
     describe MuleSoftClient do
       let(:client) { described_class.new }
 
+      describe '#raise_error_unless_success' do
+        context 'with a 202 status code' do
+          it 'returns nil' do
+            expect(
+              client.send(:raise_error_unless_success, '', 202)
+            ).to eq(nil)
+          end
+        end
+      end
+
       describe 'submitting 10-10CG' do
         let(:config) { double('config') }
         let(:exp_headers) { { client_id: '1234', client_secret: 'abcd' } }
@@ -20,12 +30,13 @@ module CARMA
           allow(client).to receive(:config).and_return(config)
           allow(config).to receive(:base_request_headers).and_return(exp_headers)
           allow(config).to receive(:timeout).and_return(10)
+          allow(config).to receive(:settings).and_return(OpenStruct.new(async_timeout: 60))
         end
 
         describe '#create_submission_v2' do
           context 'with a records error' do
             it 'raises RecordParseError' do
-              expect(client).to receive(:do_post).with('v2/application/1010CG/submit', {}).and_return(
+              expect(client).to receive(:do_post).with('v2/application/1010CG/submit', {}, 60).and_return(
                 { 'data' => { 'carmacase' => { 'createdAt' => '2022-08-04 16:44:37', 'id' => 'aB93S0000000FTqSAM' } },
                   'record' => { 'hasErrors' => true,
                                 'results' => [{ 'referenceId' => '1010CG', 'id' => '0683S000000YBIFQA4',
@@ -87,6 +98,8 @@ module CARMA
             expect(response).to receive(:status).and_return(201)
             allow(response).to receive(:body).and_return(body)
           end
+
+          let(:exp_opts) { { timeout: 60 } }
 
           it 'POSTs to the correct resource' do
             expect(client).to receive(:perform).with(:post, 'v1/application/1010CG/addDocument', payload, exp_headers,

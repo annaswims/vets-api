@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_08_09_191220) do
+ActiveRecord::Schema.define(version: 2022_09_20_211515) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gin"
@@ -267,6 +267,14 @@ ActiveRecord::Schema.define(version: 2022_08_09_191220) do
     t.index ["evss_id"], name: "index_claims_api_auto_established_claims_on_evss_id"
     t.index ["md5"], name: "index_claims_api_auto_established_claims_on_md5"
     t.index ["source"], name: "index_claims_api_auto_established_claims_on_source"
+  end
+
+  create_table "claims_api_evidence_waiver_submissions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.text "auth_headers_ciphertext"
+    t.text "encrypted_kms_key"
+    t.string "cid"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
   end
 
   create_table "claims_api_intent_to_files", force: :cascade do |t|
@@ -665,6 +673,15 @@ ActiveRecord::Schema.define(version: 2022_08_09_191220) do
     t.index ["user_uuid", "mhv_correlation_id"], name: "index_mhv_accounts_on_user_uuid_and_mhv_correlation_id", unique: true
   end
 
+  create_table "mhv_opt_in_flags", force: :cascade do |t|
+    t.uuid "user_account_id"
+    t.string "feature", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["feature"], name: "index_mhv_opt_in_flags_on_feature"
+    t.index ["user_account_id"], name: "index_mhv_opt_in_flags_on_user_account_id"
+  end
+
   create_table "mobile_users", force: :cascade do |t|
     t.string "icn", null: false
     t.datetime "created_at", precision: 6, null: false
@@ -896,6 +913,8 @@ ActiveRecord::Schema.define(version: 2022_08_09_191220) do
     t.datetime "verified_at"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.string "backing_idme_uuid"
+    t.index ["backing_idme_uuid"], name: "index_user_verifications_on_backing_idme_uuid"
     t.index ["dslogon_uuid"], name: "index_user_verifications_on_dslogon_uuid", unique: true
     t.index ["idme_uuid"], name: "index_user_verifications_on_idme_uuid", unique: true
     t.index ["logingov_uuid"], name: "index_user_verifications_on_logingov_uuid", unique: true
@@ -1006,6 +1025,7 @@ ActiveRecord::Schema.define(version: 2022_08_09_191220) do
     t.text "dob_ciphertext"
     t.text "encrypted_kms_key"
     t.date "verified_decryptable_at"
+    t.string "middle_initial"
     t.index ["representative_id", "first_name", "last_name"], name: "index_vso_grp", unique: true
     t.check_constraint "representative_id IS NOT NULL", name: "veteran_representatives_representative_id_null"
   end
@@ -1017,6 +1037,19 @@ ActiveRecord::Schema.define(version: 2022_08_09_191220) do
     t.uuid "guid", null: false
     t.json "response"
     t.index ["guid"], name: "index_vic_submissions_on_guid", unique: true
+  end
+
+  create_table "virtual_agent_user_access_records", force: :cascade do |t|
+    t.string "action_type", null: false
+    t.string "first_name"
+    t.string "last_name"
+    t.string "ssn", null: false
+    t.string "icn", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["action_type"], name: "index_virtual_agent_user_access_records_on_action_type"
+    t.index ["icn"], name: "index_virtual_agent_user_access_records_on_icn"
+    t.index ["ssn"], name: "index_virtual_agent_user_access_records_on_ssn"
   end
 
   create_table "webhooks_notification_attempt_assocs", id: false, force: :cascade do |t|
@@ -1067,6 +1100,7 @@ ActiveRecord::Schema.define(version: 2022_08_09_191220) do
   add_foreign_key "deprecated_user_accounts", "user_verifications"
   add_foreign_key "in_progress_forms", "user_accounts"
   add_foreign_key "inherited_proof_verified_user_accounts", "user_accounts"
+  add_foreign_key "mhv_opt_in_flags", "user_accounts"
   add_foreign_key "oauth_sessions", "user_accounts"
   add_foreign_key "oauth_sessions", "user_verifications"
   add_foreign_key "user_verifications", "user_accounts"

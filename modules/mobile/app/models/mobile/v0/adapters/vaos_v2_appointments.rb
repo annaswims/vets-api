@@ -20,7 +20,6 @@ module Mobile
         }.freeze
 
         HIDDEN_STATUS = %w[
-          arrived
           noshow
           pending
         ].freeze
@@ -28,6 +27,7 @@ module Mobile
         STATUSES = {
           booked: 'BOOKED',
           fulfilled: 'BOOKED',
+          arrived: 'BOOKED',
           cancelled: 'CANCELLED',
           hidden: 'HIDDEN',
           proposed: 'SUBMITTED'
@@ -46,6 +46,17 @@ module Mobile
         VIDEO_GFE_CODE = 'MOBILE_GFE'
         PHONE_KIND = 'phone'
         COVID_SERVICE = 'covid'
+
+        # Only a subset of types of service that requires human readable conversion
+        SERVICE_TYPES = {
+          outpatientMentalHealth: 'Mental Health',
+          moveProgram: 'Move Program',
+          foodAndNutrition: 'Nutrition and Food',
+          clinicalPharmacyPrimaryCare: 'Clinical Pharmacy Primary Care',
+          primaryCare: 'Primary Care',
+          homeSleepTesting: 'Home Sleep Testing',
+          socialWork: 'Social Work'
+        }.freeze
 
         # Takes a result set of VAOS v2 appointments from the appointments web service
         # and returns the set adapted to a common schema.
@@ -76,8 +87,8 @@ module Mobile
           sta6aid = facility_id
           type = parse_by_appointment_type(appointment_hash, appointment_hash[:kind])
           start_date_utc = start_date_utc(appointment_hash)
-          time_zone = time_zone(facility_id)
-          start_date_local = start_date_utc.in_time_zone(time_zone)
+          time_zone = timezone(appointment_hash, facility_id)
+          start_date_local = start_date_utc&.in_time_zone(time_zone)
           status = status(appointment_hash)
           adapted_hash = {
             id: appointment_hash[:id],
@@ -86,7 +97,7 @@ module Mobile
             comment: appointment_hash[:comment] || appointment_hash.dig(:reason_code, :text),
             facility_id: facility_id,
             sta6aid: sta6aid,
-            healthcare_provider: healthcare_provider(appointment_hash[:practitioners]),
+            healthcare_provider: appointment_hash[:healthcare_provider],
             healthcare_service: healthcare_service(appointment_hash, type),
             location: location(type, appointment_hash),
             minutes_duration: minutes_duration(appointment_hash[:minutes_duration], type),
@@ -102,7 +113,7 @@ module Mobile
             is_pending: status == STATUSES[:proposed],
             proposed_times: proposed_times(appointment_hash[:requested_periods]),
             type_of_care: type_of_care(appointment_hash[:service_type], type),
-            patient_phone_number: contact(appointment_hash.dig(:contact, :telecom), CONTACT_TYPE[:phone]),
+            patient_phone_number: patient_phone_number(appointment_hash),
             patient_email: contact(appointment_hash.dig(:contact, :telecom), CONTACT_TYPE[:email]),
             best_time_to_call: appointment_hash[:preferred_times_for_phone_call],
             friendly_location_name: appointment_hash.dig(:extension, :cc_location, :practice_name)
@@ -115,6 +126,28 @@ module Mobile
         end
         # rubocop:enable Metrics/MethodLength
 
+        def patient_phone_number(appointment_hash)
+          phone_number = contact(appointment_hash.dig(:contact, :telecom), CONTACT_TYPE[:phone])
+
+          return nil unless phone_number
+
+          parsed_phone = parse_phone(phone_number)
+          joined_phone = "#{parsed_phone[:area_code]}-#{parsed_phone[:number]}"
+          joined_phone += "x#{parsed_phone[:extension]}" if parsed_phone[:extension]
+          joined_phone
+        end
+
+        def timezone(appointment_hash, facility_id)
+          time_zone = appointment_hash.dig(:location, :time_zone, :time_zone_id)
+          return time_zone if time_zone
+
+          return nil unless facility_id
+
+          # not always correct if clinic is different time zone than parent
+          facility = Mobile::VA_FACILITIES_BY_ID["dfn-#{facility_id[0..2]}"]
+          facility ? facility[:time_zone] : nil
+        end
+
         def cancel_id(appointment_hash)
           return nil unless appointment_hash[:cancellable]
 
@@ -122,7 +155,11 @@ module Mobile
         end
 
         def type_of_care(service_type, type)
-          va?(type) ? nil : service_type
+          return nil if service_type.nil? || va?(type)
+
+          service_type = SERVICE_TYPES[service_type.to_sym] || service_type
+
+          service_type.titleize
         end
 
         def cancellation_reason(cancellation_reason)
@@ -219,6 +256,14 @@ module Mobile
                 state: cc_location.dig(:address, :state),
                 zip_code: cc_location.dig(:address, :postal_code)
               }
+              if cc_location[:telecom].present?
+                phone_number = cc_location[:telecom]&.find do |contact|
+                  contact[:system] == CONTACT_TYPE[:phone]
+                end&.dig(:value)
+
+                location[:phone] = parse_phone(phone_number)
+              end
+
             end
           when APPOINTMENT_TYPES[:va_video_connect_atlas],
             APPOINTMENT_TYPES[:va_video_connect_home],
@@ -256,51 +301,31 @@ module Mobile
             end
             location[:lat] = appointment_hash.dig(:location, :lat)
             location[:long] = appointment_hash.dig(:location, :long)
-            location[:phone] = location_phone(appointment_hash)
+            location[:phone] = parse_phone(appointment_hash.dig(:location, :phone, :main))
           end
 
           location
         end
         # rubocop:enable Metrics/MethodLength
 
-        def location_phone(appointment_hash)
-          phone = appointment_hash.dig(:location, :phone, :main)
-
+        def parse_phone(phone)
           # captures area code (\d{3}) number (\d{3}-\d{4})
           # and optional extension (until the end of the string) (?:\sx(\d*))?$
-          phone_captures = phone&.match(/^(\d{3})-(\d{3}-\d{4})(?:\sx(\d*))?$/)
+          phone_captures = phone&.match(/^\(?(\d{3})\)?.?(\d{3})-?(\d{4})(?:\sx(\d*))?$/)
 
           if phone_captures.nil?
             Rails.logger.warn(
-              'mobile appointments failed to parse VAOS V2 facility phone number',
-              facility_id: appointment_hash.dig(:location, :id),
-              facility_phone: phone
+              'mobile appointments failed to parse VAOS V2 phone number',
+              phone: phone
             )
             return { area_code: nil, number: nil, extension: nil }
           end
 
           {
             area_code: phone_captures[1].presence,
-            number: phone_captures[2].presence,
-            extension: phone_captures[3].presence
+            number: "#{phone_captures[2].presence}-#{phone_captures[3].presence}",
+            extension: phone_captures[4].presence
           }
-        end
-
-        def time_zone(facility_id)
-          return nil unless facility_id
-
-          facility = Mobile::VA_FACILITIES_BY_ID["dfn-#{facility_id[0..2]}"]
-          facility ? facility[:time_zone] : nil
-        end
-
-        def healthcare_provider(practitioners)
-          return nil if practitioners.nil? || practitioners.none? { |prac| prac[:name] }
-
-          practitioners.map do |practitioner|
-            first_name = practitioner.dig(:name, :given)&.join(' ')&.strip
-            last_name = practitioner.dig(:name, :family)
-            [first_name, last_name].compact.join(' ').presence
-          end.compact.join(', ')
         end
 
         def healthcare_service(appointment_hash, type)

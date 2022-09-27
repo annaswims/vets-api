@@ -199,14 +199,14 @@ describe AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController, type:
       uuid = create(:notice_of_disagreement_v2).id
       get("#{path}#{uuid}")
       expect(response.status).to eq(200)
-      expect(parsed.dig('data', 'attributes', 'formData')).to be_a Hash
+      expect(parsed['data']['attributes'].key?('form_data')).to be false
     end
 
     it 'behaves the same on new path' do
       uuid = create(:notice_of_disagreement_v2).id
       get("#{new_base_path 'forms/10182'}/#{uuid}")
       expect(response.status).to eq(200)
-      expect(parsed.dig('data', 'attributes', 'formData')).to be_a Hash
+      expect(parsed['data']['attributes'].key?('form_data')).to be false
     end
 
     it 'allow for status simulation' do
@@ -344,7 +344,7 @@ describe AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController, type:
       expect(missing_claimant_error['title']).to eq 'Missing required fields'
       expect(missing_claimant_error['source']['pointer']).to eq '/data/attributes'
       expect(missing_claimant_error['detail']).to eq(
-        "Claimant headers were provided but missing '/data/attributes/claimant' field"
+        "Non-veteran claimant headers were provided but missing '/data/attributes/claimant' field"
       )
       expect(missing_claimant_error['meta']['missing_fields']).to eq ['claimant']
     end
