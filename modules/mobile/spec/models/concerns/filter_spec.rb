@@ -28,54 +28,54 @@ describe Mobile::V0::Concerns::Filter, type: :request do
 
   after { Timecop.return }
 
-  describe '.filter' do
+  def fetch_appointments
+    VCR.use_cassette('appointments/get_facilities', match_requests_on: %i[method uri]) do
+      VCR.use_cassette('appointments/get_cc_appointments_default', match_requests_on: %i[method uri]) do
+        VCR.use_cassette('appointments/get_appointments_default', match_requests_on: %i[method uri]) do
+          get '/mobile/v0/appointments', headers: iam_headers, params: params
+        end
+      end
+    end
+  end
 
-    let(:filters) { { healthcare_provider: 'Joseph Murphy', healthcare_service: 'Audiology Center'} }
-    let(:params) { { page: { number: 1, size: 10 }, useCache: false, filter: filters } }
+  describe '.filter' do
+    let(:filters) { { healthcare_provider: 'Joseph Murphy', healthcare_service: 'Audiology Center' } }
+    let(:params) { { page: { number: 1, size: 10 }, useCache: false, **filters } }
     let(:parsed_body) { JSON.parse(response.body) }
 
     context 'filter does not exist on model' do
-      let(:filters) {{ street_name: 'Professor Bigglesworth' }}
+      let(:filters) { { street_name: 'Professor Bigglesworth' } }
 
       it 'raises an error' do
-        VCR.use_cassette('appointments/get_facilities', match_requests_on: %i[method uri]) do
-          VCR.use_cassette('appointments/get_cc_appointments_default', match_requests_on: %i[method uri]) do
-            VCR.use_cassette('appointments/get_appointments_default', match_requests_on: %i[method uri]) do
-              get '/mobile/v0/appointments', headers: iam_headers, params: params
-            end
-          end
-        end
+        fetch_appointments
         expect(parsed_body['errors'].first['meta']['exception']).to eq('NOT FILTERABLE')
       end
     end
 
     context 'bad filter type' do
-      let(:filters) {{ healthcare_provider: [:foo, :bar] }}
+      let(:filters) { { healthcare_provider: %i[foo bar] } }
+
       it 'raises an error if the filter is not a string or integer' do
-        VCR.use_cassette('appointments/get_facilities', match_requests_on: %i[method uri]) do
-          VCR.use_cassette('appointments/get_cc_appointments_default', match_requests_on: %i[method uri]) do
-            VCR.use_cassette('appointments/get_appointments_default', match_requests_on: %i[method uri]) do
-              get '/mobile/v0/appointments', headers: iam_headers, params: params
-            end
-          end
-        end
+        fetch_appointments
         expect(parsed_body['errors'].first['meta']['exception']).to eq('BAD FILTERS')
       end
     end
 
-    it 'returns only the matching records' do
-      VCR.use_cassette('appointments/get_facilities', match_requests_on: %i[method uri]) do
-        VCR.use_cassette('appointments/get_cc_appointments_default', match_requests_on: %i[method uri]) do
-          VCR.use_cassette('appointments/get_appointments_default', match_requests_on: %i[method uri]) do
-            get '/mobile/v0/appointments', headers: iam_headers, params: params
-          end
-        end
+    context 'filter is not formatted correctly' do
+      let(:filters) { { filter: [{ healthcare_provider: { orEqual: 'bar' } }, { healthcare_provider: { orEqual: 'foo' } }] } }
+
+      it 'raises an error' do
+        fetch_appointments
+        expect(parsed_body).to be_truthy
       end
-      expect(parsed_body['data'].collect{ |d| d['id']}).to eq(['8a488e986bb064d7016bb429f6260012'])
+    end
+
+    it 'returns only the matching records' do
+      fetch_appointments
+      expect(parsed_body['data'].collect { |d| d['id'] }).to eq(['8a488e986bb064d7016bb429f6260012'])
     end
 
     it 'handles andEquals' do
-
     end
   end
 end

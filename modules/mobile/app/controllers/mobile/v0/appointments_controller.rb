@@ -26,7 +26,9 @@ module Mobile
 
         appointments = fetch_appointments(validated_params)
         appointments = filter_by_date_range(appointments, validated_params)
-        page_appointments, page_meta_data = paginate(appointments, validated_params)
+
+        filtered_appointments = Mobile::V0::Concerns::Filter.filter(appointments, params[:filter])
+        page_appointments, page_meta_data = paginate(filtered_appointments, validated_params)
 
         render json: Mobile::V0::AppointmentSerializer.new(page_appointments, page_meta_data)
       end
