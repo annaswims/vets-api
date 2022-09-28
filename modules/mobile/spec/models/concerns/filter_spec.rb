@@ -62,7 +62,9 @@ describe Mobile::V0::Concerns::Filter, type: :request do
     end
 
     context 'filter is not formatted correctly' do
-      let(:filters) { { filter: [{ healthcare_provider: { orEqual: 'bar' } }, { healthcare_provider: { orEqual: 'foo' } }] } }
+      let(:filters) do
+        { filter: [{ healthcare_provider: { orEqual: 'bar' } }, { healthcare_provider: { orEqual: 'foo' } }] }
+      end
 
       it 'raises an error' do
         fetch_appointments

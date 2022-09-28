@@ -4,8 +4,9 @@ module Mobile
   module V0
     module Concerns
       class Filter
-        PERMITTED_OPERATIONS = %q[orEqual andEqual notEqual]
+        PERMITTED_OPERATIONS = %w[orEqual andEqual notEqual].freeze
         attr_reader :records
+
         def initialize(records)
           @records = records
         end
@@ -49,7 +50,7 @@ module Mobile
           raise 'BAD FILTERS' unless filters.values.all? { |v| v.class.in?([String, Integer]) }
         end
 
-        def filter_records(filters)
+        def filter_records(_filters)
           records.filter! { |r| r[k.to_sym] == v }
         end
       end
