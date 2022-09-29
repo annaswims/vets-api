@@ -4,10 +4,11 @@ module ClaimsApi
   class VBMSUploader
     include SentryLogging
 
-    def initialize(filepath:, file_number:, doc_type:)
+    def initialize(filepath:, file_number:, doc_type:, subject: nil)
       @filepath = filepath
       @file_number = file_number
       @doc_type = doc_type
+      @subject = subject
     end
 
     # rubocop:disable Metrics/MethodLength
@@ -59,8 +60,8 @@ module ClaimsApi
         file_number: file_number,
         va_receive_date: Time.zone.now,
         doc_type: @doc_type,
-        source: 'BVA',
-        subject: @doc_type,
+        source: 'VBA',
+        subject: @subject || @doc_type,
         new_mail: true
       )
       client.send_request(vbms_request)

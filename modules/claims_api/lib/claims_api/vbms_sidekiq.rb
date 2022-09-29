@@ -10,7 +10,8 @@ module ClaimsApi
       uploader = VBMSUploader.new(
         filepath: path,
         file_number: retrieve_veteran_file_number(power_of_attorney: power_of_attorney),
-        doc_type: '295'
+        doc_type: '295',
+        subject: 'PowerOfAttorney'
       )
       upload_response = uploader.upload!
       power_of_attorney.update(
