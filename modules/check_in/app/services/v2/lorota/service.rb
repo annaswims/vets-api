@@ -114,15 +114,15 @@ module V2
         case Oj.load(e.original_body).fetch('error').strip.downcase
         when *LOROTA_401_ERROR_MESSAGES
           retry_attempt_count = redis_client.retry_attempt_count(uuid: check_in.uuid) || 0
-          if retry_attempt_count < max_auth_retry_limit
+          if retry_attempt_count < max_auth_retry_limit.to_i
             redis_client.save_retry_attempt_count(uuid: check_in.uuid, retry_count: retry_attempt_count + 1)
             raise e
-            # else
-            # call delete endpoint
-            # throw 410 exception
+          else
+            chip_service.delete
+            raise CheckIn::V2::CheckinServiceException.new(status: '410', original_body: e.original_body)
           end
         when LOROTA_UUID_NOT_FOUND
-          # raise 404 custom exception
+          raise CheckIn::V2::CheckinServiceException.new(status: '404', original_body: e.original_body)
         else
           raise e
         end
