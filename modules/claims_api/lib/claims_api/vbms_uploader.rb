@@ -60,7 +60,7 @@ module ClaimsApi
         file_number: file_number,
         va_receive_date: Time.zone.now,
         doc_type: @doc_type,
-        source: 'LH-B', #proposed change from 'BVA',
+        source: 'LH-B', # proposed change from 'BVA',
         subject: @subject || @doc_type,
         new_mail: true
       )
