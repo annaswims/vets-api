@@ -85,7 +85,7 @@ module DebtManagementCenter
       def generate_payload
       d = {
           "personalIdentification" => {
-              "ssn" => Faker::Number.number(digits: 10).to_s,
+              "ssn" => Faker::Number.number(digits: 4).to_s,
               "fileNumber" => Faker::Number.number(digits: 10).to_s,
               "fsrReason" => Faker::Lorem.word
           },
@@ -287,7 +287,7 @@ module DebtManagementCenter
                   "courtLocation" => Faker::Address.city,
                   "docketNumber" => Faker::Number.number(digits: 8).to_s
               },
-              "additionalComments" => Faker::Lorem.paragraph
+              "additionalComments" => "The house stood on a slight rise just on the edge of the village. It stood on its own and looked out over a broad spread of West Country farmland. Not a remarkable house by any means—it was about thirty years old, squattish, squarish, made of brick, and had four windows set in the front of a size and proportion which more or less exactly failed to please the eye. The only person for whom the house was in any way special was Arthur Dent, and that was only because it happened to be the one he lived in. He had lived in it for about three years, ever since he had moved out of London because it made him nervous and irritable. He was about thirty as well, tall, dark-haired and never quite at ease with himself. The thing that used to worry him most was the fact that people always used to ask him what he was looking so worried about. He worked in local radio which he always used to tell his friends was a lot more interesting than they probably thought. It was, too—most of his friends worked in advertising.On Wednesday night it had rained very heavily, the lane was wet and muddy, but the Thursday morning sun was bright and clear as it shone on Arthur Dent’s house for what was to be the last time." 
           },
           "applicantCertifications" => {
               "veteranSignature" => Faker::Name.name,
