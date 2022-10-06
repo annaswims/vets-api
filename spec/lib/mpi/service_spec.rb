@@ -24,11 +24,16 @@ describe MPI::Service do
   let(:error_texts) { ['Internal System Error'] }
   let(:error_display_name) { 'Internal System Error' }
   let(:id_extension) { '200VGOV-1373004c-e23e-4d94-90c5-5b101f6be54a' }
-  let(:error_details) do
+  let(:add_person_error_details) do
     { other: [{ codeSystem: code_system,
                 code: mpi_error_code,
                 displayName: error_display_name }],
       error_details: { ack_detail_code: ack_detail_code,
+                       id_extension: id_extension,
+                       error_texts: error_texts } }
+  end
+  let(:find_profile_error_details) do
+    { error_details: { ack_detail_code: ack_detail_code,
                        id_extension: id_extension,
                        error_texts: error_texts } }
   end
@@ -102,7 +107,7 @@ describe MPI::Service do
         {
           birls_id: '796104437',
           participant_id: '13367440',
-          other: [{ codeSystem: '2.16.840.1.113883.4.349', code: 'WRN206', displayName: 'Existing Key Identifier' }]
+          other: [{ codeSystem: MPI::Constants::VA_ROOT_OID, code: 'WRN206', displayName: 'Existing Key Identifier' }]
         }
       end
 
@@ -141,7 +146,7 @@ describe MPI::Service do
             expect(exception.status).to eq '502'
             expect(exception.source).to eq MPI::Service
 
-            expect(mpi_error_details).to eq(error_details)
+            expect(mpi_error_details).to eq(add_person_error_details)
           end
         end
       end
@@ -169,7 +174,7 @@ describe MPI::Service do
             expect(exception.status).to eq '502'
             expect(exception.source).to eq MPI::Service
 
-            expect(mpi_error_details).to eq(error_details)
+            expect(mpi_error_details).to eq(add_person_error_details)
           end
         end
       end
@@ -274,7 +279,7 @@ describe MPI::Service do
           expect(exception.status).to eq '502'
           expect(exception.source).to eq MPI::Service
 
-          expect(mpi_error_details).to eq(error_details)
+          expect(mpi_error_details).to eq(add_person_error_details)
         end
       end
     end
@@ -324,6 +329,41 @@ describe MPI::Service do
   describe '.update_profile' do
     before do
       expect(MPI::Messages::UpdateProfileMessage).to receive(:new).once.and_call_original
+    end
+
+    context 'malformed request' do
+      let(:user) do
+        build(:user,
+              :loa3,
+              ssn: ssn,
+              first_name: first_name,
+              last_name: last_name,
+              birth_date: birth_date,
+              icn: icn,
+              idme_uuid: idme_uuid)
+      end
+      let(:ssn) { 796_111_863 }
+      let(:first_name) { nil }
+      let(:last_name) { 'lincoln' }
+      let(:birth_date) { '18090212' }
+      let(:icn) { '1013677101V363970' }
+      let(:idme_uuid) { 'b2fab2b56af045e1a9e2394347af91ef' }
+      let(:expected_response_codes) { { idme_uuid: idme_uuid } }
+      let(:missing_keys) { [:first_name] }
+      let(:expected_sentry_warning) do
+        "MVI update_profile request error: Required values missing: #{missing_keys}"
+      end
+
+      before { stub_mpi(build(:mvi_profile, given_names: [first_name])) }
+
+      it 'responds with nil' do
+        expect(subject.update_profile(user)).to eq(nil)
+      end
+
+      it 'logs a message to sentry' do
+        expect(subject).to receive(:log_message_to_sentry).with(expected_sentry_warning, :warn)
+        subject.update_profile(user)
+      end
     end
 
     context 'valid request' do
@@ -379,7 +419,7 @@ describe MPI::Service do
           expect(exception.status).to eq '502'
           expect(exception.source).to eq MPI::Service
 
-          expect(mpi_error_details).to eq(error_details)
+          expect(mpi_error_details).to eq(add_person_error_details)
         end
       end
     end
@@ -410,7 +450,7 @@ describe MPI::Service do
           expect(exception.status).to eq '502'
           expect(exception.source).to eq MPI::Service
 
-          expect(mpi_error_details).to eq(error_details)
+          expect(mpi_error_details).to eq(add_person_error_details)
         end
       end
     end
@@ -476,7 +516,6 @@ describe MPI::Service do
         it 'calls the find profile with an orchestrated search', run_at: 'Thu, 06 Feb 2020 23:59:36 GMT' do
           allow(SecureRandom).to receive(:uuid).and_return('b4d9a901-8f2f-46c0-802f-3eeb99c51dfb')
           allow(Socket).to receive(:ip_address_list).and_return([Addrinfo.ip('1.1.1.1')])
-          allow(Settings.mvi).to receive(:vba_orchestration).and_return(true)
 
           VCR.use_cassette('mpi/find_candidate/orch_search_with_attributes', VCR::MATCH_EVERYTHING) do
             response = described_class.new.find_profile(user, orch_search: true)
@@ -504,7 +543,7 @@ describe MPI::Service do
 
   describe '.find_profile with icn', run_at: 'Wed, 21 Feb 2018 20:19:01 GMT' do
     before do
-      expect(MPI::Messages::FindProfileMessageIdentifier).to receive(:new).once.and_call_original
+      expect(MPI::Messages::FindProfileByIdentifier).to receive(:new).once.and_call_original
     end
 
     context 'valid requests' do
@@ -603,25 +642,31 @@ describe MPI::Service do
     end
 
     context 'invalid requests' do
-      it 'responds with a SERVER_ERROR if ICN is invalid', :aggregate_failures do
-        allow(user).to receive(:mhv_icn).and_return('invalid-icn-is-here^NI')
-        expect(subject).to receive(:log_exception_to_sentry)
+      let(:expected_rails_log) { 'MVI Record Not Found' }
 
-        VCR.use_cassette('mpi/find_candidate/invalid_icn') do
-          response = subject.find_profile(user)
+      context 'invalid ICN' do
+        it 'responds with a SERVER_ERROR', :aggregate_failures do
+          allow(user).to receive(:mhv_icn).and_return('invalid-icn-is-here^NI')
+          expect(Rails.logger).to receive(:info).with(expected_rails_log)
 
-          server_error_502_expectations_for(response)
+          VCR.use_cassette('mpi/find_candidate/invalid_icn') do
+            response = subject.find_profile(user)
+
+            record_not_found_404_expectations_for(response)
+          end
         end
       end
 
-      it 'responds with a SERVER_ERROR if ICN has no matches', :aggregate_failures do
-        allow(user).to receive(:mhv_icn).and_return('1008714781V416999')
-        expect(subject).to receive(:log_exception_to_sentry)
+      context 'ICN has no matches' do
+        it 'responds with a SERVER_ERROR', :aggregate_failures do
+          allow(user).to receive(:mhv_icn).and_return('1008714781V416999')
+          expect(Rails.logger).to receive(:info).with(expected_rails_log)
 
-        VCR.use_cassette('mpi/find_candidate/icn_not_found') do
-          response = subject.find_profile(user)
+          VCR.use_cassette('mpi/find_candidate/icn_not_found') do
+            response = subject.find_profile(user)
 
-          server_error_502_expectations_for(response)
+            record_not_found_404_expectations_for(response)
+          end
         end
       end
     end
@@ -629,7 +674,7 @@ describe MPI::Service do
 
   describe '.find_profile with edipi', run_at: 'Wed, 21 Feb 2018 20:19:01 GMT' do
     before do
-      expect(MPI::Messages::FindProfileMessageEdipi).to receive(:new).once.and_call_original
+      expect(MPI::Messages::FindProfileByEdipi).to receive(:new).once.and_call_original
     end
 
     context 'valid requests' do
@@ -659,7 +704,7 @@ describe MPI::Service do
   describe '.find_profile with logingov uuid' do
     before do
       stub_mpi(build(:mvi_profile, edipi: nil))
-      allow(MPI::Messages::FindProfileMessageIdentifier).to receive(:new).and_call_original
+      allow(MPI::Messages::FindProfileByIdentifier).to receive(:new).and_call_original
     end
 
     context 'valid requests' do
@@ -667,12 +712,13 @@ describe MPI::Service do
       let(:logingov_uuid) { 'some-logingov-uuid' }
       let(:logingov_identifier) { MPI::Constants::LOGINGOV_IDENTIFIER }
       let(:correlation_identifier) { "#{logingov_uuid}^PN^#{logingov_identifier}^USDVA^A" }
-      let(:search_type) { { search_type: MPI::Constants::CORRELATION_WITH_RELATIONSHIP_DATA } }
+      let(:search_type) { MPI::Constants::CORRELATION_WITH_RELATIONSHIP_DATA }
 
       it 'fetches profile when no mhv_icn or edipi exists, but logingov_uuid is present' do
         VCR.use_cassette('mpi/find_candidate/valid') do
           expect(Raven).to receive(:tags_context).once.with(mvi_find_profile: 'logingov')
-          expect(MPI::Messages::FindProfileMessageIdentifier).to receive(:new).with(correlation_identifier, search_type)
+          expect(MPI::Messages::FindProfileByIdentifier).to receive(:new).with(identifier: correlation_identifier,
+                                                                               search_type: search_type)
           response = subject.find_profile(user)
           expect(response.status).to eq('OK')
           expect(response.profile.given_names).to eq(%w[Mitchell G])
@@ -694,7 +740,7 @@ describe MPI::Service do
   describe '.find_profile with idme uuid' do
     before do
       stub_mpi(build(:mvi_profile, edipi: nil))
-      allow(MPI::Messages::FindProfileMessageIdentifier).to receive(:new).and_call_original
+      allow(MPI::Messages::FindProfileByIdentifier).to receive(:new).and_call_original
     end
 
     context 'valid requests' do
@@ -702,12 +748,13 @@ describe MPI::Service do
       let(:idme_uuid) { 'some-idme-uuid' }
       let(:idme_identifier) { MPI::Constants::IDME_IDENTIFIER }
       let(:correlation_identifier) { "#{idme_uuid}^PN^#{idme_identifier}^USDVA^A" }
-      let(:search_type) { { search_type: MPI::Constants::CORRELATION_WITH_RELATIONSHIP_DATA } }
+      let(:search_type) { MPI::Constants::CORRELATION_WITH_RELATIONSHIP_DATA }
 
       it 'fetches profile when no mhv_icn or edipi exists, but idme_uuid is present' do
         VCR.use_cassette('mpi/find_candidate/valid') do
           expect(Raven).to receive(:tags_context).once.with(mvi_find_profile: 'idme')
-          expect(MPI::Messages::FindProfileMessageIdentifier).to receive(:new).with(correlation_identifier, search_type)
+          expect(MPI::Messages::FindProfileByIdentifier).to receive(:new).with(identifier: correlation_identifier,
+                                                                               search_type: search_type)
           response = subject.find_profile(user)
           expect(response.status).to eq('OK')
           expect(response.profile.given_names).to eq(%w[Mitchell G])
@@ -729,7 +776,7 @@ describe MPI::Service do
   describe '.find_profile without icn' do
     context 'valid request' do
       before do
-        expect(MPI::Messages::FindProfileMessageEdipi).to receive(:new).once.and_call_original
+        expect(MPI::Messages::FindProfileByEdipi).to receive(:new).once.and_call_original
       end
 
       it 'calls the find_profile endpoint with a find candidate message' do
@@ -792,20 +839,27 @@ describe MPI::Service do
     end
 
     context 'when a MVI invalid request response is returned' do
+      let(:id_extension) { '200VGOV-2c3c0c78-5e44-4ad2-b542-11388c3e45cd' }
+      let(:error_texts) { ['MVI[S]:INVALID REQUEST'] }
+      let(:expected_rails_log) { 'MVI Record Not Found' }
+
       it 'raises a invalid request error', :aggregate_failures do
         invalid_xml = File.read('spec/support/mpi/find_candidate_invalid_request.xml')
         allow_any_instance_of(MPI::Service).to receive(:create_profile_message).and_return(invalid_xml)
-        expect(subject).to receive(:log_exception_to_sentry)
+        expect(Rails.logger).to receive(:info).with(expected_rails_log)
 
         VCR.use_cassette('mpi/find_candidate/invalid') do
           response = subject.find_profile(user)
-          server_error_502_expectations_for(response)
+          record_not_found_404_expectations_for(response)
         end
       end
     end
 
     context 'when a MVI internal system problem response is returned' do
       let(:body) { File.read('spec/support/mpi/find_candidate_ar_code_database_error_response.xml') }
+      let(:ack_detail_code) { 'AR' }
+      let(:id_extension) { 'MCID-12345' }
+      let(:error_texts) { ['Environment Database Error'] }
 
       it 'raises a invalid request error', :aggregate_failures do
         expect(subject).to receive(:log_exception_to_sentry)
@@ -847,7 +901,7 @@ describe MPI::Service do
 
     context 'when no subject is returned in the response body' do
       before do
-        expect(MPI::Messages::FindProfileMessageEdipi).to receive(:new).once.and_call_original
+        expect(MPI::Messages::FindProfileByEdipi).to receive(:new).once.and_call_original
       end
 
       let(:user_hash) do
@@ -905,7 +959,7 @@ describe MPI::Service do
 
     context 'when MVI returns 500 but VAAFI sends 200' do
       before do
-        expect(MPI::Messages::FindProfileMessageEdipi).to receive(:new).once.and_call_original
+        expect(MPI::Messages::FindProfileByEdipi).to receive(:new).once.and_call_original
       end
 
       %w[internal_server_error internal_server_error_2].each do |cassette|
@@ -925,7 +979,7 @@ describe MPI::Service do
 
     context 'when MVI multiple match failure response' do
       before do
-        expect(MPI::Messages::FindProfileMessageEdipi).to receive(:new).once.and_call_original
+        expect(MPI::Messages::FindProfileByEdipi).to receive(:new).once.and_call_original
       end
 
       it 'raises MPI::Errors::RecordNotFound', :aggregate_failures do
@@ -1050,6 +1104,7 @@ end
 
 def server_error_502_expectations_for(response)
   exception = response.error.errors.first
+  mpi_error_details = response.error.original_body
 
   expect(response.class).to eq MPI::Responses::FindProfileResponse
   expect(response.status).to eq server_error
@@ -1058,6 +1113,7 @@ def server_error_502_expectations_for(response)
   expect(exception.code).to eq 'MVI_502'
   expect(exception.status).to eq '502'
   expect(exception.source).to eq MPI::Service
+  expect(mpi_error_details).to eq find_profile_error_details
 end
 
 def server_error_503_expectations_for(response)

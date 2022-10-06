@@ -10,12 +10,12 @@ module V0
     end
 
     def download_coe
-      coe_url = lgy_service.coe_url
-      render json: { data: { attributes: { url: coe_url } } }, status: :ok
+      res = lgy_service.get_coe_file
+
+      send_data(res.body, type: 'application/pdf', disposition: 'inline')
     end
 
     def submit_coe_claim
-      load_user
       claim = SavedClaim::CoeClaim.new(form: filtered_params[:form])
 
       unless claim.save
@@ -41,33 +41,29 @@ module V0
     end
 
     def document_upload
-      load_user
+      status = 201
 
+      # Each document is uploaded individually
       attachments.each do |attachment|
         file_extension = attachment['file_type']
 
         if %w[jpg jpeg png pdf].include? file_extension.downcase
-          file_data = attachment['file']
-          index = file_data.index(';base64,') || 0
-          file_data = file_data[index + 8..] if index.positive?
-
-          document_data = {
-            'documentType' => file_extension,
-            'description' => attachment['document_type'],
-            'contentsBase64' => file_data,
-            'fileName' => attachment['file_name']
-          }
+          document_data = document_data(attachment)
 
           response = lgy_service.post_document(payload: document_data)
-          render(json: response.status)
+          unless response.status == 201
+            status = response.status
+            break
+          end
         end
       end
+      render(json: status)
     end
 
     def document_download
-      document_url = lgy_service.get_document_url(params[:id])
+      res = lgy_service.get_document(params[:id])
 
-      render json: { data: { attributes: { url: document_url } } }, status: :ok
+      send_data(res.body, type: 'application/pdf', disposition: 'inline')
     end
 
     private
@@ -86,6 +82,19 @@ module V0
 
     def stats_key
       'api.lgy_coe'
+    end
+
+    def document_data(attachment)
+      file_data = attachment['file']
+      index = file_data.index(';base64,') || 0
+      file_data = file_data[index + 8..] if index.positive?
+
+      {
+        'documentType' => attachment['file_type'],
+        'description' => attachment['document_type'],
+        'contentsBase64' => file_data,
+        'fileName' => attachment['file_name']
+      }
     end
   end
 end

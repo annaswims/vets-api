@@ -82,6 +82,7 @@ search_click_tracking:
 
 vba_documents:
   enable_download_endpoint: true
+  enable_validate_document_endpoint: true
 
 modules_appeals_api:
   documentation:
@@ -96,6 +97,14 @@ bgs:
   client_station_id: 281
   client_username: VAgovAPI
   url: https://internal-dsva-vagov-dev-fwdproxy-1893365470.us-gov-west-1.elb.amazonaws.com:4447
+  # To create a new VCR cassette:
+  # 1. Uncomment these lines
+  # 2. Create an empty cassette file
+  # 3. Run the test against that file, VCR should fill it
+  # 4. Replace localhost in the file with the url above
+  # 5. Re-comment these lines:
+  # url: https://localhost:4447
+  # ssl_verify_mode: "none"
 
 flipper:
   admin_user_emails:
@@ -195,6 +204,13 @@ sidekiq:
   github_oauth_secret: 000xxx
 
 check_in:
+  travel_reimbursement_api:
+    auth_url: https://login.microsoftonline.us
+    tenant_id: 6d4d703a-2d9a-4c2a-ac90-976e52eacb52
+    client_id: 9f124d0c-e3d0-4a02-a540-64def7ef3889
+    client_secret: f3b721aa-f9c1-4ff2-bf47-9b3a30757013
+    scope: a7a9a4e6-44e6-4e55-a30f-43cd841ec68d/.default
+    service_name: BTSSS-API
   authentication:
     max_auth_retry_limit: 3
     retry_attempt_expiry: 604800 # 7 Days
@@ -252,7 +268,7 @@ dgi:
     public_key_path: modules/meb_api/spec/fixtures/dgi_public_test.pem
     private_key_path: modules/meb_api/spec/fixtures/dgi_private_test.pem
   vets:
-    url: "http://localhost:8070/vets-service/v1/"
+    url: "https://jenkins.ld.afsp.io:32512/vets-service/v1/" # Docker setup for microservice
     mock: false
 rack:
   cookie_secret: "xxxxx"
@@ -278,3 +294,15 @@ form_10_10cg:
       client_id: BEEFCAFE1234
       client_secret: C0FFEEFACE4321
       timeout: 10
+
+vha:
+  sharepoint:
+    sharepoint_url: "fake_url.com"
+    client_id: "51dadf135qwwc"
+    client_secret: "xxxxxxxxx"
+    tenant_id: "ad21angkl35dadf43ad56"
+    resource: "23asdb54ada655a3"
+    service_name: "VHA-SHAREPOINT"
+    base_path: "/base"
+    authentication_url: "https://fake_auth_url.com"
+    mock: true

@@ -497,7 +497,7 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "af11925f-e7bc-4bb1-b9f3-72f7f4c93937",
+                    "id": "ef8eda12-afb2-4b11-b987-6138c6bf4b6b",
                     "type": "claims_api_claim",
                     "attributes": {
                       "evss_id": 600118851,
@@ -546,11 +546,11 @@
                       "status": "Initial review",
                       "supporting_documents": [
                         {
-                          "id": "8d8f0840-a83a-404d-8bc2-7a1c749583e5",
+                          "id": "27034074-a93b-46ef-99d3-b94a81804570",
                           "type": "claim_supporting_document",
                           "md5": "d927c7e283b3158a54822a493d06181d",
                           "filename": "extras.pdf",
-                          "uploaded_at": "2022-08-11T20:35:07.934Z"
+                          "uploaded_at": "2022-08-24T19:51:12.363Z"
                         }
                       ]
                     }
@@ -1003,21 +1003,21 @@
                                   "description": "Address Veteran resides in.",
                                   "type": "string",
                                   "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                  "maxLength": 20,
+                                  "maxLength": 30,
                                   "example": "1234 Couch Street"
                                 },
                                 "addressLine2": {
                                   "description": "Additional Address Information Veteran resides in.",
                                   "type": "string",
                                   "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                  "maxLength": 20,
+                                  "maxLength": 30,
                                   "example": "Apt. 22"
                                 },
                                 "addressLine3": {
                                   "description": "Additional Address Information Veteran resides in.",
                                   "type": "string",
                                   "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                  "maxLength": 20,
+                                  "maxLength": 30,
                                   "example": "Box 123"
                                 },
                                 "city": {
@@ -1027,7 +1027,7 @@
                                   "example": "Portland"
                                 },
                                 "country": {
-                                  "description": "Country Veteran resides in.",
+                                  "description": "Country Veteran resides in.  Value must match the values returned by the \"/countries\" endpoint on the [Benefits Reference Data API](https://developer.va.gov/explore/benefits/docs/benefits_reference_data?version=current).",
                                   "type": "string",
                                   "example": "USA"
                                 },
@@ -1156,14 +1156,14 @@
                                   "description": "New Address Veteran resides in.",
                                   "type": "string",
                                   "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                  "maxLength": 20,
+                                  "maxLength": 30,
                                   "example": "1234 Couch Street"
                                 },
                                 "addressLine2": {
                                   "description": "New Additional Address Information Veteran resides in.",
                                   "type": "string",
                                   "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                  "maxLength": 20,
+                                  "maxLength": 30,
                                   "example": "Apt. 22"
                                 },
                                 "city": {
@@ -1173,7 +1173,7 @@
                                   "example": "Portland"
                                 },
                                 "country": {
-                                  "description": "New country Veteran resides in.",
+                                  "description": "New country Veteran resides in. Value must match the values returned by the \"/countries\" endpoint on the [Benefits Reference Data API](https://developer.va.gov/explore/benefits/docs/benefits_reference_data?version=current).",
                                   "type": "string",
                                   "example": "USA"
                                 },
@@ -2346,7 +2346,7 @@
                           "example": false
                         },
                         "applicationExpirationDate": {
-                          "description": "Time stamp of when claim expires in one year after submission.",
+                          "description": "Time stamp of when claim expires.  If not provided, value will be set to 1 year in the future from current day.",
                           "type": "string",
                           "example": "2018-08-28T19:53:45+00:00"
                         },
@@ -2441,7 +2441,7 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "e12a769c-b812-469b-a188-58d00f7671ff",
+                    "id": "e8d8ebe4-9cc7-4745-9947-ce4732036194",
                     "type": "claims_api_claim",
                     "attributes": {
                       "evss_id": null,
@@ -2459,13 +2459,13 @@
                       "current_phase_back": null,
                       "requested_decision": null,
                       "claim_type": null,
-                      "updated_at": "2022-08-11T20:35:08.435Z",
+                      "updated_at": "2022-08-24T19:51:12.831Z",
                       "contention_list": null,
                       "va_representative": null,
                       "events_timeline": [
 
                       ],
-                      "token": "e12a769c-b812-469b-a188-58d00f7671ff",
+                      "token": "e8d8ebe4-9cc7-4745-9947-ce4732036194",
                       "status": "pending",
                       "flashes": [
                         "Hardship",
@@ -2692,7 +2692,7 @@
                         {
                           "status": 422,
                           "detail": "The request body isn't a JSON object: \"This is not valid JSON\"",
-                          "source": false
+                          "source": ""
                         }
                       ]
                     }
@@ -2722,10 +2722,7 @@
                             "description": "HTTP error detail"
                           },
                           "source": {
-                            "type": [
-                              "string",
-                              "boolean"
-                            ]
+                            "type": "string"
                           }
                         }
                       }
@@ -2867,21 +2864,21 @@
                                     "description": "Address Veteran resides in.",
                                     "type": "string",
                                     "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                    "maxLength": 20,
+                                    "maxLength": 30,
                                     "example": "1234 Couch Street"
                                   },
                                   "addressLine2": {
                                     "description": "Additional Address Information Veteran resides in.",
                                     "type": "string",
                                     "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                    "maxLength": 20,
+                                    "maxLength": 30,
                                     "example": "Apt. 22"
                                   },
                                   "addressLine3": {
                                     "description": "Additional Address Information Veteran resides in.",
                                     "type": "string",
                                     "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                    "maxLength": 20,
+                                    "maxLength": 30,
                                     "example": "Box 123"
                                   },
                                   "city": {
@@ -2891,7 +2888,7 @@
                                     "example": "Portland"
                                   },
                                   "country": {
-                                    "description": "Country Veteran resides in.",
+                                    "description": "Country Veteran resides in.  Value must match the values returned by the \"/countries\" endpoint on the [Benefits Reference Data API](https://developer.va.gov/explore/benefits/docs/benefits_reference_data?version=current).",
                                     "type": "string",
                                     "example": "USA"
                                   },
@@ -3020,14 +3017,14 @@
                                     "description": "New Address Veteran resides in.",
                                     "type": "string",
                                     "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                    "maxLength": 20,
+                                    "maxLength": 30,
                                     "example": "1234 Couch Street"
                                   },
                                   "addressLine2": {
                                     "description": "New Additional Address Information Veteran resides in.",
                                     "type": "string",
                                     "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                    "maxLength": 20,
+                                    "maxLength": 30,
                                     "example": "Apt. 22"
                                   },
                                   "city": {
@@ -3037,7 +3034,7 @@
                                     "example": "Portland"
                                   },
                                   "country": {
-                                    "description": "New country Veteran resides in.",
+                                    "description": "New country Veteran resides in. Value must match the values returned by the \"/countries\" endpoint on the [Benefits Reference Data API](https://developer.va.gov/explore/benefits/docs/benefits_reference_data?version=current).",
                                     "type": "string",
                                     "example": "USA"
                                   },
@@ -4210,7 +4207,7 @@
                             "example": false
                           },
                           "applicationExpirationDate": {
-                            "description": "Time stamp of when claim expires in one year after submission.",
+                            "description": "Time stamp of when claim expires.  If not provided, value will be set to 1 year in the future from current day.",
                             "type": "string",
                             "example": "2018-08-28T19:53:45+00:00"
                           },
@@ -4318,7 +4315,7 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "91eebf00-6483-4818-9d8d-74d4141d355e",
+                    "id": "bc7458c1-ae0b-4509-aeb6-418ff47bdef2",
                     "type": "claims_api_claim",
                     "attributes": {
                       "evss_id": null,
@@ -4336,13 +4333,13 @@
                       "current_phase_back": null,
                       "requested_decision": null,
                       "claim_type": null,
-                      "updated_at": "2022-08-11T20:35:08.813Z",
+                      "updated_at": "2022-08-24T19:51:13.231Z",
                       "contention_list": null,
                       "va_representative": null,
                       "events_timeline": [
 
                       ],
-                      "token": "91eebf00-6483-4818-9d8d-74d4141d355e",
+                      "token": "bc7458c1-ae0b-4509-aeb6-418ff47bdef2",
                       "status": "pending",
                       "flashes": [
                         "Hardship",
@@ -4980,10 +4977,7 @@
                             "description": "HTTP error detail"
                           },
                           "source": {
-                            "type": [
-                              "string",
-                              "boolean"
-                            ]
+                            "type": "string"
                           }
                         }
                       }
@@ -5125,21 +5119,21 @@
                                     "description": "Address Veteran resides in.",
                                     "type": "string",
                                     "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                    "maxLength": 20,
+                                    "maxLength": 30,
                                     "example": "1234 Couch Street"
                                   },
                                   "addressLine2": {
                                     "description": "Additional Address Information Veteran resides in.",
                                     "type": "string",
                                     "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                    "maxLength": 20,
+                                    "maxLength": 30,
                                     "example": "Apt. 22"
                                   },
                                   "addressLine3": {
                                     "description": "Additional Address Information Veteran resides in.",
                                     "type": "string",
                                     "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                    "maxLength": 20,
+                                    "maxLength": 30,
                                     "example": "Box 123"
                                   },
                                   "city": {
@@ -5149,7 +5143,7 @@
                                     "example": "Portland"
                                   },
                                   "country": {
-                                    "description": "Country Veteran resides in.",
+                                    "description": "Country Veteran resides in.  Value must match the values returned by the \"/countries\" endpoint on the [Benefits Reference Data API](https://developer.va.gov/explore/benefits/docs/benefits_reference_data?version=current).",
                                     "type": "string",
                                     "example": "USA"
                                   },
@@ -5278,14 +5272,14 @@
                                     "description": "New Address Veteran resides in.",
                                     "type": "string",
                                     "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                    "maxLength": 20,
+                                    "maxLength": 30,
                                     "example": "1234 Couch Street"
                                   },
                                   "addressLine2": {
                                     "description": "New Additional Address Information Veteran resides in.",
                                     "type": "string",
                                     "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                    "maxLength": 20,
+                                    "maxLength": 30,
                                     "example": "Apt. 22"
                                   },
                                   "city": {
@@ -5295,7 +5289,7 @@
                                     "example": "Portland"
                                   },
                                   "country": {
-                                    "description": "New country Veteran resides in.",
+                                    "description": "New country Veteran resides in. Value must match the values returned by the \"/countries\" endpoint on the [Benefits Reference Data API](https://developer.va.gov/explore/benefits/docs/benefits_reference_data?version=current).",
                                     "type": "string",
                                     "example": "USA"
                                   },
@@ -6468,7 +6462,7 @@
                             "example": false
                           },
                           "applicationExpirationDate": {
-                            "description": "Time stamp of when claim expires in one year after submission.",
+                            "description": "Time stamp of when claim expires.  If not provided, value will be set to 1 year in the future from current day.",
                             "type": "string",
                             "example": "2018-08-28T19:53:45+00:00"
                           },
@@ -6576,7 +6570,7 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "2ab61dcf-26e6-48a8-a12b-7fc397e8e613",
+                    "id": "26800ec4-60b1-43ac-89ac-68366ca068b6",
                     "type": "claims_api_claim",
                     "attributes": {
                       "evss_id": null,
@@ -6590,7 +6584,7 @@
                       "decision_letter_sent": null,
                       "requested_decision": null,
                       "claim_type": null,
-                      "updated_at": "2022-08-11T20:35:09.685Z",
+                      "updated_at": "2022-08-24T19:51:14.024Z",
                       "contention_list": null,
                       "va_representative": null,
                       "events_timeline": [
@@ -6599,7 +6593,7 @@
                       "status": "pending",
                       "supporting_documents": [
                         {
-                          "id": "2b909112-e8dc-47be-a0f3-0b2c51f37f4a",
+                          "id": "12f02667-2ee3-4294-b005-8eb8faca0c8f",
                           "type": "claim_supporting_document",
                           "md5": null,
                           "filename": null,
@@ -7311,10 +7305,7 @@
                             "description": "HTTP error detail"
                           },
                           "source": {
-                            "type": [
-                              "string",
-                              "boolean"
-                            ]
+                            "type": "string"
                           }
                         }
                       }
@@ -7971,10 +7962,7 @@
                             "description": "HTTP error detail"
                           },
                           "source": {
-                            "type": [
-                              "string",
-                              "boolean"
-                            ]
+                            "type": "string"
                           }
                         }
                       }
@@ -8105,7 +8093,7 @@
                                   "description": "Street address with number and name.",
                                   "type": "string",
                                   "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                  "maxLength": 20
+                                  "maxLength": 30
                                 },
                                 "aptUnitNumber": {
                                   "type": "integer"
@@ -8186,6 +8174,7 @@
                                 "COAST GUARD",
                                 "MARINE CORPS",
                                 "NAVY",
+                                "SPACE FORCE",
                                 "OTHER"
                               ],
                               "example": "ARMY"
@@ -8194,7 +8183,7 @@
                               "description": "For a 'service branch' of value 'other', please provide the service branch name.",
                               "type": "string",
                               "maxLength": 50,
-                              "example": "Space Force"
+                              "example": "Air National Guard"
                             }
                           }
                         },
@@ -8239,7 +8228,7 @@
                                   "description": "Street address with number and name.",
                                   "type": "string",
                                   "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                  "maxLength": 20
+                                  "maxLength": 30
                                 },
                                 "aptUnitNumber": {
                                   "type": "integer"
@@ -8368,7 +8357,7 @@
                                   "description": "Street address with number and name.",
                                   "type": "string",
                                   "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                  "maxLength": 20
+                                  "maxLength": 30
                                 },
                                 "aptUnitNumber": {
                                   "type": "integer"
@@ -8541,11 +8530,11 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "af3a3431-144f-4057-a95a-8e2bf2f19191",
+                    "id": "1690c43f-e7b3-4035-b019-6a288d9d6516",
                     "type": "claims_api_power_of_attorneys",
                     "attributes": {
                       "status": "pending",
-                      "date_request_accepted": "2022-08-11",
+                      "date_request_accepted": "2022-08-24",
                       "representative": {
                         "service_organization": {
                           "poa_code": "074"
@@ -8740,10 +8729,7 @@
                             "description": "HTTP error detail"
                           },
                           "source": {
-                            "type": [
-                              "string",
-                              "boolean"
-                            ]
+                            "type": "string"
                           }
                         }
                       }
@@ -8809,7 +8795,7 @@
                                     "description": "Street address with number and name.",
                                     "type": "string",
                                     "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                    "maxLength": 20
+                                    "maxLength": 30
                                   },
                                   "aptUnitNumber": {
                                     "type": "integer"
@@ -8890,6 +8876,7 @@
                                   "COAST GUARD",
                                   "MARINE CORPS",
                                   "NAVY",
+                                  "SPACE FORCE",
                                   "OTHER"
                                 ],
                                 "example": "ARMY"
@@ -8898,7 +8885,7 @@
                                 "description": "For a 'service branch' of value 'other', please provide the service branch name.",
                                 "type": "string",
                                 "maxLength": 50,
-                                "example": "Space Force"
+                                "example": "Air National Guard"
                               }
                             }
                           },
@@ -8943,7 +8930,7 @@
                                     "description": "Street address with number and name.",
                                     "type": "string",
                                     "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                    "maxLength": 20
+                                    "maxLength": 30
                                   },
                                   "aptUnitNumber": {
                                     "type": "integer"
@@ -9072,7 +9059,7 @@
                                     "description": "Street address with number and name.",
                                     "type": "string",
                                     "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                    "maxLength": 20
+                                    "maxLength": 30
                                   },
                                   "aptUnitNumber": {
                                     "type": "integer"
@@ -9258,11 +9245,11 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "28a23eeb-cacb-4485-835c-86aca24dcedc",
+                    "id": "bbee908f-7e3c-4c7e-b303-672e52825b1b",
                     "type": "claims_api_power_of_attorneys",
                     "attributes": {
                       "status": "submitted",
-                      "date_request_accepted": "2022-08-11",
+                      "date_request_accepted": "2022-08-24",
                       "representative": {
                         "service_organization": {
                           "poa_code": "074"
@@ -9776,11 +9763,11 @@
               "application/json": {
                 "example": {
                   "data": {
-                    "id": "a87df89c-31f3-4d6e-8a4b-a0fbdfe09c9b",
+                    "id": "62980cf7-c25b-403e-8122-581dca604eaa",
                     "type": "claims_api_power_of_attorneys",
                     "attributes": {
                       "status": "submitted",
-                      "date_request_accepted": "2022-08-11",
+                      "date_request_accepted": "2022-08-24",
                       "representative": {
                         "service_organization": {
                           "poa_code": "074"
@@ -10555,10 +10542,7 @@
                             "description": "HTTP error detail"
                           },
                           "source": {
-                            "type": [
-                              "string",
-                              "boolean"
-                            ]
+                            "type": "string"
                           }
                         }
                       }
@@ -10624,7 +10608,7 @@
                                     "description": "Street address with number and name.",
                                     "type": "string",
                                     "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                    "maxLength": 20
+                                    "maxLength": 30
                                   },
                                   "aptUnitNumber": {
                                     "type": "integer"
@@ -10705,6 +10689,7 @@
                                   "COAST GUARD",
                                   "MARINE CORPS",
                                   "NAVY",
+                                  "SPACE FORCE",
                                   "OTHER"
                                 ],
                                 "example": "ARMY"
@@ -10713,7 +10698,7 @@
                                 "description": "For a 'service branch' of value 'other', please provide the service branch name.",
                                 "type": "string",
                                 "maxLength": 50,
-                                "example": "Space Force"
+                                "example": "Air National Guard"
                               }
                             }
                           },
@@ -10758,7 +10743,7 @@
                                     "description": "Street address with number and name.",
                                     "type": "string",
                                     "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                    "maxLength": 20
+                                    "maxLength": 30
                                   },
                                   "aptUnitNumber": {
                                     "type": "integer"
@@ -10887,7 +10872,7 @@
                                     "description": "Street address with number and name.",
                                     "type": "string",
                                     "pattern": "^([-a-zA-Z0-9'.,&#]([-a-zA-Z0-9'.,&# ])?)+$",
-                                    "maxLength": 20
+                                    "maxLength": 30
                                   },
                                   "aptUnitNumber": {
                                     "type": "integer"

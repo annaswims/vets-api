@@ -13,6 +13,7 @@ module Login
       @logingov_uuid = user.logingov_uuid
       @icn = user.icn.presence
       @deprecated_log = nil
+      @user_account_mismatch_log = nil
     end
 
     def perform
@@ -21,7 +22,15 @@ module Login
 
     private
 
-    attr_reader :user_uuid, :login_type, :mhv_uuid, :idme_uuid, :dslogon_uuid, :logingov_uuid, :icn, :deprecated_log
+    attr_reader :user_uuid,
+                :login_type,
+                :mhv_uuid,
+                :idme_uuid,
+                :dslogon_uuid,
+                :logingov_uuid,
+                :icn,
+                :deprecated_log,
+                :user_account_mismatch_log
 
     MHV_TYPE = :mhv_uuid
     IDME_TYPE = :idme_uuid
@@ -39,30 +48,37 @@ module Login
 
       ActiveRecord::Base.transaction do
         update_existing_user_verification if user_verification_needs_to_be_updated?
+        update_backing_idme_uuid if backing_idme_uuid_has_changed?
         create_user_verification if user_verification.nil?
-      rescue Errors::VerifiedUserAccountMismatch => e
-        Rails.logger.info(
-          "[Login::UserVerifier] User Account Mismatch for UserVerification id=#{user_verification.id}, " \
-          "UserAccount id=#{user_verification.user_account.id}, icn=#{user_verification.user_account.icn}, " \
-          "conflicts with UserAccount id=#{existing_user_account.id} icn=#{existing_user_account.icn}"
-        )
-        raise e
       end
 
       Rails.logger.info(deprecated_log) if deprecated_log
+      Rails.logger.info(user_account_mismatch_log) if user_account_mismatch_log
       user_verification
     end
 
     def update_existing_user_verification
       if existing_user_account
         if user_verification.verified?
-          raise Errors::VerifiedUserAccountMismatch
+          @user_account_mismatch_log = '[Login::UserVerifier] User Account Mismatch for ' \
+                                       "UserVerification id=#{user_verification.id}, " \
+                                       "UserAccount id=#{user_verification.user_account.id}, " \
+                                       "icn=#{user_verification.user_account.icn}, conflicts with " \
+                                       "UserAccount id=#{existing_user_account.id} " \
+                                       "icn=#{existing_user_account.icn} " \
+                                       "Setting UserVerification id=#{user_verification.id} " \
+                                       "association to UserAccount id=#{existing_user_account.id}"
+          user_verification.update(user_account: existing_user_account)
         else
           deprecate_unverified_user_account
         end
       else
         update_newly_verified_user
       end
+    end
+
+    def update_backing_idme_uuid
+      user_verification.update(backing_idme_uuid: backing_idme_uuid)
     end
 
     def deprecate_unverified_user_account
@@ -82,13 +98,21 @@ module Login
     def create_user_verification
       verified_at = icn ? Time.zone.now : nil
       UserVerification.create!(type => identifier,
-                               user_account: existing_user_account ||
-                               UserAccount.new(icn: icn),
+                               user_account: existing_user_account || UserAccount.new(icn: icn),
+                               backing_idme_uuid: backing_idme_uuid,
                                verified_at: verified_at)
     end
 
     def user_verification_needs_to_be_updated?
-      user_verification && icn.present? && user_verification.user_account != existing_user_account
+      return false unless user_verification
+
+      icn.present? && user_verification.user_account != existing_user_account
+    end
+
+    def backing_idme_uuid_has_changed?
+      return false unless user_verification
+
+      backing_idme_uuid != user_verification.backing_idme_uuid
     end
 
     def set_deprecated_log(deprecated_user_account_id, user_verification_id, user_account_id)
@@ -112,6 +136,14 @@ module Login
 
     def user_verification
       @user_verification ||= identifier ? UserVerification.find_by(type => identifier) : nil
+    end
+
+    def backing_idme_uuid
+      @backing_idme_uuid ||= type_with_backing_idme_uuid ? idme_uuid : nil
+    end
+
+    def type_with_backing_idme_uuid
+      type == MHV_TYPE || type == DSLOGON_TYPE
     end
 
     def type

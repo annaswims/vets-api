@@ -16,17 +16,17 @@ describe SignIn::Logingov::Service do
     }
   end
   let(:user_info) do
-    {
-      sub: user_uuid,
-      iss: 'https://idp.int.identitysandbox.gov/',
-      email: email,
-      email_verified: true,
-      given_name: first_name,
-      family_name: last_name,
-      birthdate: birth_date,
-      social_security_number: ssn,
-      verified_at: 1_635_465_286
-    }
+    OpenStruct.new({
+                     sub: user_uuid,
+                     iss: 'https://idp.int.identitysandbox.gov/',
+                     email: email,
+                     email_verified: true,
+                     given_name: first_name,
+                     family_name: last_name,
+                     birthdate: birth_date,
+                     social_security_number: ssn,
+                     verified_at: 1_635_465_286
+                   })
   end
   let(:first_name) { 'Bob' }
   let(:last_name) { 'User' }
@@ -42,6 +42,12 @@ describe SignIn::Logingov::Service do
 
   describe '#render_auth' do
     let(:response) { subject.render_auth(state: state, acr: acr).to_s }
+    let(:expected_log) { "[SignIn][Logingov][Service] Rendering auth, state: #{state}, acr: #{acr}" }
+
+    it 'logs information to rails logger' do
+      expect(Rails.logger).to receive(:info).with(expected_log)
+      response
+    end
 
     it 'renders the oauth_get_form template' do
       expect(response).to include('form id="oauth-form"')
@@ -74,9 +80,38 @@ describe SignIn::Logingov::Service do
   end
 
   describe '#token' do
-    it 'returns an access token' do
-      VCR.use_cassette('identity/logingov_200_responses') do
-        expect(subject.token(code)).to eq(token)
+    context 'when the request is successful' do
+      let(:expected_log) { "[SignIn][Logingov][Service] Token Success, code: #{code}" }
+
+      it 'logs information to rails logger' do
+        VCR.use_cassette('identity/logingov_200_responses') do
+          expect(Rails.logger).to receive(:info).with(expected_log)
+          subject.token(code)
+        end
+      end
+
+      it 'returns an access token' do
+        VCR.use_cassette('identity/logingov_200_responses') do
+          expect(subject.token(code)).to eq(token)
+        end
+      end
+    end
+
+    context 'when an issue occurs with the client request' do
+      let(:expected_error) { Common::Client::Errors::ClientError }
+      let(:expected_error_message) do
+        "[SignIn][Logingov][Service] Cannot perform Token request, status: #{status}, description: #{description}"
+      end
+      let(:status) { 'some-status' }
+      let(:description) { 'some-description' }
+      let(:raised_error) { Common::Client::Errors::ClientError.new(nil, status, { error: description }) }
+
+      before do
+        allow_any_instance_of(described_class).to receive(:perform).and_raise(raised_error)
+      end
+
+      it 'raises a client error with expected message' do
+        expect { subject.token(code) }.to raise_error(expected_error, expected_error_message)
       end
     end
   end
@@ -85,6 +120,24 @@ describe SignIn::Logingov::Service do
     it 'returns a user attributes' do
       VCR.use_cassette('identity/logingov_200_responses') do
         expect(subject.user_info(token)).to eq(user_info)
+      end
+    end
+
+    context 'when an issue occurs with the client request' do
+      let(:expected_error) { Common::Client::Errors::ClientError }
+      let(:expected_error_message) do
+        "[SignIn][Logingov][Service] Cannot perform UserInfo request, status: #{status}, description: #{description}"
+      end
+      let(:status) { 'some-status' }
+      let(:description) { 'some-description' }
+      let(:raised_error) { Common::Client::Errors::ClientError.new(nil, status, { error: description }) }
+
+      before do
+        allow_any_instance_of(described_class).to receive(:perform).and_raise(raised_error)
+      end
+
+      it 'raises a client error with expected message' do
+        expect { subject.user_info(token) }.to raise_error(expected_error, expected_error_message)
       end
     end
   end

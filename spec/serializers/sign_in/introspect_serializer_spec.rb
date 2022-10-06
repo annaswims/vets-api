@@ -5,7 +5,10 @@ require 'rails_helper'
 RSpec.describe SignIn::IntrospectSerializer do
   subject { serialize(user, serializer_class: described_class) }
 
-  let(:user) { create(:user, :loa3, middle_name: 'some-middle-name') }
+  let(:user) { create(:user, :loa3, middle_name: middle_name, logingov_uuid: logingov_uuid, idme_uuid: idme_uuid) }
+  let(:middle_name) { 'some-middle-name' }
+  let(:logingov_uuid) { 'some-logingov-uuid' }
+  let(:idme_uuid) { 'some-idme-uuid' }
   let(:data) { JSON.parse(subject)['data'] }
   let(:attributes) { data['attributes'] }
 
@@ -39,6 +42,14 @@ RSpec.describe SignIn::IntrospectSerializer do
 
   it 'returns serialized #gender data' do
     expect(attributes['gender']).to be_present
+  end
+
+  it 'returns serialized #idme_uuid data' do
+    expect(attributes['idme_uuid']).to be_present
+  end
+
+  it 'returns serialized #logingov_uuid data' do
+    expect(attributes['logingov_uuid']).to be_present
   end
 
   it 'returns serialized #ssn data' do
@@ -102,18 +113,6 @@ RSpec.describe SignIn::IntrospectSerializer do
 
     it 'returns verified value that maps to existing loa3? function' do
       expect(attributes['verified']).to eq(expected_verified)
-    end
-  end
-
-  describe '#access_token_ttl' do
-    let(:expected_validity_minutes) { SignIn::Constants::AccessToken::VALIDITY_LENGTH_MINUTES.minutes }
-
-    it 'returns serialized #access_token_ttl data' do
-      expect(attributes['access_token_ttl']).to be_present
-    end
-
-    it 'returns integer representing access token validity in seconds' do
-      expect(attributes['access_token_ttl']).to eq(expected_validity_minutes.seconds.to_i)
     end
   end
 end

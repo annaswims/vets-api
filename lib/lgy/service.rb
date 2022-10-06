@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require 'lgy/aws_uploader'
 require 'lgy/configuration'
 require 'common/client/base'
 
@@ -15,7 +14,6 @@ module LGY
     def initialize(edipi:, icn:)
       @edipi = edipi
       @icn = icn
-      @temp_folder = 'tmp/lgy_coe'
     end
 
     def coe_status
@@ -79,6 +77,23 @@ module LGY
         )
         response.body
       end
+    rescue Faraday::ResourceNotFound => e
+      # We have been getting 404s from this endpoint, and it is not currently
+      # clear why. LGY recently stated they have an exception wrapper in place
+      # "that is blocking the exception messages [we] should be seeing that
+      # would provide the reason for the [404 errors]." LGY intends to "remove
+      # the wrapper so that the exception messages ... flow through." If these
+      # errors end up being helpful and end up making their way into the
+      # response body, we should make sure that we surface that response body to
+      # Sentry. Once these 404 errors are resolved, we may consider removing
+      # this error handler.
+      log_message_to_sentry(
+        'COE application submission 404\'d!',
+        :error,
+        { response_body: e.response[:body], response_headers: e.response[:headers] },
+        { team: 'vfs-ebenefits' }
+      )
+      raise e
     rescue Common::Client::Errors::ClientError => e
       raise e
     end
@@ -97,22 +112,6 @@ module LGY
       return e if e.status == 404
 
       raise e
-    end
-
-    def coe_url
-      response = get_coe_file
-      # return if 404
-
-      FileUtils.mkdir_p(@temp_folder)
-      filename = "#{@temp_folder}/#{DateTime.now.strftime('%Q')}.pdf"
-      File.open(filename, 'wb') do |f|
-        f.write(response.body)
-      end
-
-      coe_url = LGY::AwsUploader.get_s3_link(filename)
-      File.delete(filename)
-
-      coe_url
     end
 
     def post_document(payload:)
@@ -139,13 +138,13 @@ module LGY
       end
     end
 
-    def get_document(id:)
+    def get_document(id)
       with_monitoring do
         perform(
           :get,
           "#{end_point}/document/#{id}/file",
           { 'edipi' => @edipi, 'icn' => @icn },
-          request_headers
+          request_headers.merge(pdf_headers)
         )
       end
     rescue Common::Client::Errors::ClientError => e
@@ -153,21 +152,6 @@ module LGY
       return e if e.status == 404
 
       raise e
-    end
-
-    def get_document_url(id:)
-      response = get_document(id: id)
-
-      FileUtils.mkdir_p(@temp_folder)
-      filename = "#{@temp_folder}/#{DateTime.now.strftime('%Q')}.pdf"
-      File.open(filename, 'wb') do |f|
-        f.write(response.body)
-      end
-
-      document_url = LGY::AwsUploader.get_s3_link(filename)
-      File.delete(filename)
-
-      document_url
     end
 
     def request_headers

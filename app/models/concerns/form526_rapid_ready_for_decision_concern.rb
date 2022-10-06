@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'mail_automation/client'
+require 'lighthouse/veterans_health/client'
 
 module Form526RapidReadyForDecisionConcern
   extend ActiveSupport::Concern
@@ -89,17 +90,6 @@ module Form526RapidReadyForDecisionConcern
 
   def diagnostic_codes
     disabilities.map { |disability| disability['diagnosticCode'] }
-  end
-
-  def forward_to_mas?
-    return false unless Flipper.enabled?(:rrd_mas_disability_tracking)
-
-    # only use the first diagnostic code because we can only support single-issue claims
-
-    diagnostic_codes.size == 1 &&
-      RapidReadyForDecision::Constants::MAS_DISABILITIES.include?(diagnostic_codes.first) &&
-      disabilities.first['disabilityActionType']&.upcase == 'INCREASE' &&
-      !pending_eps?
   end
 
   def insert_classification_codes

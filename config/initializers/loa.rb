@@ -13,6 +13,12 @@ module LOA
   IDME_LOA2_VETS = 'http://idmanagement.gov/ns/assurance/loa/2/vets'
   IDME_LOA3_VETS = 'http://idmanagement.gov/ns/assurance/loa/3/vets'
 
+  # Some inbound logins originate from Salesforce with '2fa'/'mfa' appended.
+  IDME_LOA1_2FA = 'http://idmanagement.gov/ns/assurance/loa/1/2fa'
+  IDME_LOA1_MFA = 'http://idmanagement.gov/ns/assurance/loa/1/mfa'
+  IDME_LOA3_2FA = 'http://idmanagement.gov/ns/assurance/loa/3/2fa'
+  IDME_LOA3_MFA = 'http://idmanagement.gov/ns/assurance/loa/3/mfa'
+
   # ID.me and VA are gradually consolidating on the standard LOA-based
   # authentication context values but currently only the LOA3 one is used
   # within vets-api
@@ -23,7 +29,7 @@ module LOA
   MHV_PREMIUM_VERIFIED = %w[Premium].freeze
 
   # DSLogon accounts with these assurance levels are considered LOA3
-  DSLOGON_PREMIUM_VERIFIED = %w[2 3].freeze
+  DSLOGON_PREMIUM_VERIFIED = [DSLOGON_ASSURANCE_TWO = '2', DSLOGON_ASSURANCE_THREE = '3'].freeze
 
   IDME_MHV_LOA1 = 'myhealthevet'
   IDME_MHV_LOA3 = 'myhealthevet_loa3'

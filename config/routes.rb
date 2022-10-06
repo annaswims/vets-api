@@ -70,6 +70,7 @@ Rails.application.routes.draw do
       get 'user_submissions'
       get 'separation_locations'
     end
+    get 'benefits_reference_data/*path', to: 'benefits_reference_data#get_data'
 
     resources :financial_status_reports, only: %i[create] do
       collection do
@@ -326,6 +327,8 @@ Rails.application.routes.draw do
 
     get 'feature_toggles', to: 'feature_toggles#index'
 
+    resource :mhv_opt_in_flags, only: %i[show create]
+
     namespace :contact_us do
       resources :inquiries, only: %i[index create]
     end
@@ -334,7 +337,7 @@ Rails.application.routes.draw do
       get 'status'
       get 'download_coe'
       get 'documents'
-      get 'document_download'
+      get 'document_download/:id', action: 'document_download'
       post 'submit_coe_claim'
       post 'document_upload'
     end

@@ -24,6 +24,7 @@ module SignIn
     class CodeChallengeMethodMismatchError < StandardError; end
     class CodeChallengeMalformedError < StandardError; end
     class CodeChallengeMismatchError < StandardError; end
+    class StateCodeInvalidError < StandardError; end
     class StatePayloadError < StandardError; end
     class StatePayloadSignatureMismatchError < StandardError; end
     class StatePayloadMalformedJWTError < StandardError; end
@@ -47,5 +48,6 @@ module SignIn
     class MPIMalformedAccountError < StandardError; end
     class AccessDeniedError < StandardError; end
     class CredentialProviderError < StandardError; end
+    class MHVMissingMPIRecordError < StandardError; end
   end
 end

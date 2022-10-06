@@ -21,13 +21,17 @@ module RapidReadyForDecision
       end
     end
 
+    def document_type
+      'L1489'
+    end
+
     def add_upload(confirmation_code)
       data = JSON.parse(submission.form_json)
       uploads = data['form526_uploads'] || []
       new_upload = {
         name: file_upload_name,
         confirmationCode: confirmation_code,
-        attachmentId: 'L048'
+        attachmentId: document_type
       }
       uploads.append(new_upload)
       data['form526_uploads'] = uploads

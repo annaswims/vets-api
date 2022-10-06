@@ -5,12 +5,13 @@ require 'sign_in/idme/service'
 
 describe SignIn::Idme::Service do
   let(:code) { '04e3f01f11764b50becb0cdcb618b804' }
+  let(:scope) { 'http://idmanagement.gov/ns/assurance/loa/3' }
   let(:token) do
     {
       access_token: '0f5ebddd60d0451782214e6705cac5d1',
       token_type: 'bearer',
       expires_in: 300,
-      scope: 'http://idmanagement.gov/ns/assurance/loa/3',
+      scope: scope,
       refresh_token: '26f282c510a740bb9c27aeed65fc08c4',
       refresh_expires_in: 604_800
     }
@@ -38,8 +39,8 @@ describe SignIn::Idme::Service do
       }
     )
   end
-  let(:expiration_time) { 1_652_159_422 }
-  let(:current_time) { 1_652_141_421 }
+  let(:expiration_time) { 1_664_830_422 }
+  let(:current_time) { 1_664_812_422 }
   let(:idme_originating_url) { 'https://api.idmelabs.com/oidc' }
   let(:state) { 'some-state' }
   let(:acr) { 'some-acr' }
@@ -66,9 +67,15 @@ describe SignIn::Idme::Service do
     let(:expected_authorization_page) { "#{base_path}/#{auth_path}" }
     let(:base_path) { 'some-base-path' }
     let(:auth_path) { 'oauth/authorize' }
+    let(:expected_log) { "[SignIn][Idme][Service] Rendering auth, state: #{state}, acr: #{acr}" }
 
     before do
       allow(Settings.idme).to receive(:oauth_url).and_return(base_path)
+    end
+
+    it 'logs information to rails logger' do
+      expect(Rails.logger).to receive(:info).with(expected_log)
+      response
     end
 
     it 'renders the oauth_get_form template' do
@@ -82,6 +89,15 @@ describe SignIn::Idme::Service do
 
   describe '#token' do
     context 'when the request is successful' do
+      let(:expected_log) { "[SignIn][Idme][Service] Token Success, code: #{code}, scope: #{scope}" }
+
+      it 'logs information to rails logger' do
+        VCR.use_cassette('identity/idme_200_responses') do
+          expect(Rails.logger).to receive(:info).with(expected_log)
+          subject.token(code)
+        end
+      end
+
       it 'returns an access token' do
         VCR.use_cassette('identity/idme_200_responses') do
           expect(subject.token(code)).to eq(token)
@@ -91,10 +107,15 @@ describe SignIn::Idme::Service do
 
     context 'when an issue occurs with the client request' do
       let(:expected_error) { Common::Client::Errors::ClientError }
-      let(:expected_error_message) { 'Cannot perform Token request' }
+      let(:expected_error_message) do
+        "[SignIn][Idme][Service] Cannot perform Token request, status: #{status}, description: #{description}"
+      end
+      let(:status) { 'some-status' }
+      let(:description) { 'some-description' }
+      let(:raised_error) { Common::Client::Errors::ClientError.new(nil, status, { error_description: description }) }
 
       before do
-        allow_any_instance_of(described_class).to receive(:perform).and_raise(Common::Client::Errors::ClientError)
+        allow_any_instance_of(described_class).to receive(:perform).and_raise(raised_error)
       end
 
       it 'raises a client error with expected message' do
@@ -112,10 +133,15 @@ describe SignIn::Idme::Service do
 
     context 'when an issue occurs with the client request' do
       let(:expected_error) { Common::Client::Errors::ClientError }
-      let(:expected_error_message) { 'Cannot perform UserInfo request' }
+      let(:expected_error_message) do
+        "[SignIn][Idme][Service] Cannot perform UserInfo request, status: #{status}, description: #{description}"
+      end
+      let(:status) { 'some-status' }
+      let(:description) { 'some-description' }
+      let(:raised_error) { Common::Client::Errors::ClientError.new(nil, status, { error_description: description }) }
 
       before do
-        allow_any_instance_of(described_class).to receive(:perform).and_raise(Common::Client::Errors::ClientError)
+        allow_any_instance_of(described_class).to receive(:perform).and_raise(raised_error)
       end
 
       it 'raises a client error with expected message' do
@@ -125,7 +151,7 @@ describe SignIn::Idme::Service do
 
     context 'when an issue occurs with the JWE decryption' do
       let(:expected_error) { SignIn::Idme::Errors::JWEDecodeError }
-      let(:expected_error_message) { 'JWE is malformed' }
+      let(:expected_error_message) { '[SignIn][Idme][Service] JWE is malformed' }
       let(:malformed_jwe) { OpenStruct.new({ body: 'some-malformed-jwe'.to_json }) }
 
       before do
@@ -139,7 +165,7 @@ describe SignIn::Idme::Service do
 
     context 'when the JWT decoding does not match expected verification' do
       let(:expected_error) { SignIn::Idme::Errors::JWTVerificationError }
-      let(:expected_error_message) { 'JWT body does not match signature' }
+      let(:expected_error_message) { '[SignIn][Idme][Service] JWT body does not match signature' }
       let(:mismatched_public_key) { OpenSSL::PKey::RSA.generate(2048) }
       let(:idme_configuration) { SignIn::Idme::Configuration }
 
@@ -157,7 +183,7 @@ describe SignIn::Idme::Service do
     context 'when the JWT has expired' do
       let(:current_time) { expiration_time + 100 }
       let(:expected_error) { SignIn::Idme::Errors::JWTExpiredError }
-      let(:expected_error_message) { 'JWT has expired' }
+      let(:expected_error_message) { '[SignIn][Idme][Service] JWT has expired' }
 
       it 'raises a jwe expired error with expected message' do
         VCR.use_cassette('identity/idme_200_responses') do
@@ -170,7 +196,7 @@ describe SignIn::Idme::Service do
       let(:current_time) { expiration_time + 100 }
       let(:jwt_decode_error) { JWT::DecodeError }
       let(:expected_error) { SignIn::Idme::Errors::JWTDecodeError }
-      let(:expected_error_message) { 'JWT is malformed' }
+      let(:expected_error_message) { '[SignIn][Idme][Service] JWT is malformed' }
 
       before do
         allow(JWT).to receive(:decode).and_raise(jwt_decode_error)

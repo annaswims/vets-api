@@ -13,6 +13,7 @@ module SignIn
       def render_auth(state: SecureRandom.hex, acr: LOA::IDME_LOA1_VETS)
         renderer = ActionController::Base.renderer
         renderer.controller.prepend_view_path(Rails.root.join('lib', 'sign_in', 'templates'))
+        Rails.logger.info("[SignIn][Idme][Service] Rendering auth, state: #{state}, acr: #{acr}")
         renderer.render(template: 'oauth_get_form',
                         locals: {
                           url: auth_url,
@@ -44,9 +45,10 @@ module SignIn
         response = perform(
           :post, config.token_path, token_params(code), { 'Content-Type' => 'application/json' }
         )
+        Rails.logger.info("[SignIn][Idme][Service] Token Success, code: #{code}, scope: #{response.body[:scope]}")
         response.body
       rescue Common::Client::Errors::ClientError => e
-        raise e, 'Cannot perform Token request'
+        raise_client_error(e, 'Token')
       end
 
       def user_info(token)
@@ -54,10 +56,17 @@ module SignIn
         decrypted_jwe = jwe_decrypt(JSON.parse(response.body))
         jwt_decode(decrypted_jwe)
       rescue Common::Client::Errors::ClientError => e
-        raise e, 'Cannot perform UserInfo request'
+        raise_client_error(e, 'UserInfo')
       end
 
       private
+
+      def raise_client_error(client_error, function_name)
+        status = client_error.status
+        description = client_error.body && client_error.body[:error_description]
+        raise client_error, "[SignIn][Idme][Service] Cannot perform #{function_name} request, " \
+                            "status: #{status}, description: #{description}"
+      end
 
       def standard_attributes(user_info, credential_level, client_id)
         loa_current = ial_to_loa(credential_level.current_ial)
@@ -131,7 +140,7 @@ module SignIn
       def jwe_decrypt(encrypted_jwe)
         JWE.decrypt(encrypted_jwe, config.ssl_key)
       rescue JWE::DecodeError
-        raise Errors::JWEDecodeError, 'JWE is malformed'
+        raise Errors::JWEDecodeError, '[SignIn][Idme][Service] JWE is malformed'
       end
 
       def jwt_decode(encoded_jwt)
@@ -147,11 +156,11 @@ module SignIn
         )&.first
         OpenStruct.new(decoded_jwt)
       rescue JWT::VerificationError
-        raise Errors::JWTVerificationError, 'JWT body does not match signature'
+        raise Errors::JWTVerificationError, '[SignIn][Idme][Service] JWT body does not match signature'
       rescue JWT::ExpiredSignature
-        raise Errors::JWTExpiredError, 'JWT has expired'
+        raise Errors::JWTExpiredError, '[SignIn][Idme][Service] JWT has expired'
       rescue JWT::DecodeError
-        raise Errors::JWTDecodeError, 'JWT is malformed'
+        raise Errors::JWTDecodeError, '[SignIn][Idme][Service] JWT is malformed'
       end
 
       def auth_url

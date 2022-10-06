@@ -382,7 +382,9 @@ module PdfFill
           },
           'additionalComments' => {
             key: 'vaco5655[0].#subform[1].Field136[0]',
-            question_num: 36
+            question_num: 36,
+            question_text: 'Additional Comments',
+            limit: 450
           }
         }
       }.freeze
@@ -472,7 +474,7 @@ module PdfFill
       end
 
       def merge_debts
-        @form_data['installmentContractsAndOtherDebts'].map do |debt|
+        @form_data['installmentContractsAndOtherDebts']&.map do |debt|
           debt['nameAndAddress'] = merge_name_and_address(debt, 'creditor')
           debt['dateAndPurpose'] = "#{debt['dateStarted']} #{debt['purpose']}"
         end

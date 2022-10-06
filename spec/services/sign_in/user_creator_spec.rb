@@ -95,7 +95,7 @@ RSpec.describe SignIn::UserCreator do
       end
 
       shared_context 'user creation blocked' do
-        it 'raises the expected error error' do
+        it 'raises the expected error' do
           expect_any_instance_of(described_class).to receive(:log_message_to_sentry).with(expected_error_message,
                                                                                           'warn')
 
@@ -204,7 +204,12 @@ RSpec.describe SignIn::UserCreator do
           let(:expected_error_message) { 'User MPI record cannot be updated' }
           let(:expected_error_code) { SignIn::Constants::ErrorCode::GENERIC_EXTERNAL_ISSUE }
 
-          it_behaves_like 'user creation blocked'
+          it 'makes a log to sentry' do
+            expect_any_instance_of(described_class).to receive(:log_message_to_sentry).with(expected_error_message,
+                                                                                            'warn')
+
+            subject
+          end
         end
 
         it 'makes an mpi call to update correlation record' do
@@ -238,6 +243,26 @@ RSpec.describe SignIn::UserCreator do
           expect(code_container.code_challenge).to eq(code_challenge)
           expect(code_container.credential_email).to eq(csp_email)
           expect(code_container.client_id).to eq(client_id)
+        end
+
+        context 'when there is an existing user verification for the authenticating user' do
+          let!(:user_verification) { create(:logingov_user_verification, logingov_uuid: csp_id) }
+
+          it 'does not make a new va gov user log' do
+            expect_any_instance_of(SignIn::Logger).not_to receive(:info)
+            subject
+          end
+        end
+
+        context 'when there is not a previously existing user verification for the authenticating user' do
+          let(:user_verification) { nil }
+          let(:user_uuid) { SecureRandom.UUID }
+          let(:expected_log) { "New VA.gov user, type=#{service_name}" }
+
+          it 'does not make a new va gov user log' do
+            expect_any_instance_of(SignIn::Logger).to receive(:info).with(expected_log)
+            subject
+          end
         end
 
         context 'when there is a mismatch with credential and mpi attributes' do

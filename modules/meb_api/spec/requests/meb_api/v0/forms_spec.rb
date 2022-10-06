@@ -37,32 +37,35 @@ Rspec.describe MebApi::V0::FormsController, type: :request do
       sign_in_as(user)
     end
 
-    describe 'POST form_sponsor' do
+    describe 'POST form_sponsors' do
       context 'Retrieves sponsors for Toes' do
         it 'returns a 200 status when it' do
           VCR.use_cassette('dgi/forms/sponsor_toes') do
-            post '/meb_api/v0/forms_sponsor', params: { "ssn": '796121200', "form_type": 'Toes' }
+            post '/meb_api/v0/forms_sponsors'
             expect(response).to have_http_status(:ok)
           end
         end
       end
 
-      context 'Retrieves sponsors for FryDea' do
-        it 'returns a 200 status when it' do
-          VCR.use_cassette('dgi/forms/sponsor_fry_dea') do
-            post '/meb_api/v0/forms_sponsor', params: { "ssn": '796121200', "form_type": 'FryDea' }
-            expect(response).to have_http_status(:ok)
-          end
-        end
-      end
+      # @NOTE: This is commentted out as we've removed the form_type param from the controller.
+      # Once that is added back this test is valid.
+      # context 'Retrieves sponsors for FryDea' do
+      #   it 'returns a 200 status when it' do
+      #     VCR.use_cassette('dgi/forms/sponsor_fry_dea') do
+      #       post '/meb_api/v0/forms_sponsors', params: { "form_type": 'FryDea' }
+      #       expect(response).to have_http_status(:ok)
+      #     end
+      #   end
+      # end
     end
 
-    describe 'GET /meb_api/v0/claim_letter/fry' do
-      context 'Retrieves a fry veterans claim letter' do
-        it 'returns a 200 status when given claimant id as parameter' do
-          VCR.use_cassette('dgi/get_fry_claim_letter') do
-            get '/meb_api/v0/claim_letter/fry'
+    describe 'GET /meb_api/v0/toe/claimant_info' do
+      context 'Looks up veteran in LTS ' do
+        it 'returns a 200 with toe claimant info' do
+          VCR.use_cassette('dgi/post_toe_claimant_info') do
+            get '/meb_api/v0/forms_claimant_info'
             expect(response).to have_http_status(:ok)
+            expect(response).to match_response_schema('dgi/toe_claimant_info_response', { strict: false })
           end
         end
       end

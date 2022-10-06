@@ -9,8 +9,16 @@ describe Mobile::V0::Adapters::VAOSV2Appointments, aggregate_failures: true do
 
   let(:adapted_appointments) { subject.parse(JSON.parse(appointment_fixtures, symbolize_names: true)) }
 
+  before do
+    Timecop.freeze(Time.zone.parse('2022-08-25T19:25:00Z'))
+  end
+
+  after do
+    Timecop.return
+  end
+
   it 'returns a list of appointments at the expected size' do
-    expect(adapted_appointments.size).to eq(6)
+    expect(adapted_appointments.size).to eq(11)
   end
 
   context 'with a cancelled VA appointment' do
@@ -131,7 +139,7 @@ describe Mobile::V0::Adapters::VAOSV2Appointments, aggregate_failures: true do
       expect(booked_cc[:healthcare_service]).to eq('CC practice name')
       expect(booked_cc[:location][:name]).to eq('CC practice name')
       expect(booked_cc[:friendly_location_name]).to eq('CC practice name')
-      expect(booked_cc[:type_of_care]).to eq('primaryCare')
+      expect(booked_cc[:type_of_care]).to eq('Primary Care')
       expect(booked_cc.as_json).to eq({
                                         'id' => '72106',
                                         'appointment_type' => 'COMMUNITY_CARE',
@@ -153,8 +161,8 @@ describe Mobile::V0::Adapters::VAOSV2Appointments, aggregate_failures: true do
                                           'lat' => nil,
                                           'long' => nil,
                                           'phone' => {
-                                            'area_code' => nil,
-                                            'number' => nil,
+                                            'area_code' => '321',
+                                            'number' => '417-0822',
                                             'extension' => nil
                                           },
                                           'url' => nil,
@@ -162,17 +170,17 @@ describe Mobile::V0::Adapters::VAOSV2Appointments, aggregate_failures: true do
                                         },
                                         'minutes_duration' => 60,
                                         'phone_only' => false,
-                                        'start_date_local' => '2022-01-11T10:00:00.000-05:00',
+                                        'start_date_local' => '2022-01-11T08:00:00.000-07:00',
                                         'start_date_utc' => '2022-01-11T15:00:00.000+00:00',
                                         'status' => 'BOOKED',
                                         'status_detail' => nil,
-                                        'time_zone' => 'America/New_York',
+                                        'time_zone' => 'America/Denver',
                                         'vetext_id' => nil,
                                         'reason' => nil,
                                         'is_covid_vaccine' => false,
                                         'is_pending' => false,
                                         'proposed_times' => nil,
-                                        'type_of_care' => 'primaryCare',
+                                        'type_of_care' => 'Primary Care',
                                         'patient_phone_number' => nil,
                                         'patient_email' => nil,
                                         'best_time_to_call' => nil,
@@ -188,7 +196,7 @@ describe Mobile::V0::Adapters::VAOSV2Appointments, aggregate_failures: true do
       expect(proposed_cc[:is_pending]).to eq(true)
       expect(proposed_cc[:status]).to eq('SUBMITTED')
       expect(proposed_cc[:appointment_type]).to eq('COMMUNITY_CARE')
-      expect(proposed_cc[:type_of_care]).to eq('primaryCare')
+      expect(proposed_cc[:type_of_care]).to eq('Primary Care')
       expect(proposed_cc[:proposed_times]).to eq([{ "date": '01/26/2022', "time": 'AM' }])
       expect(proposed_cc.as_json).to eq({
                                           'id' => '72105',
@@ -220,11 +228,11 @@ describe Mobile::V0::Adapters::VAOSV2Appointments, aggregate_failures: true do
                                           },
                                           'minutes_duration' => 60,
                                           'phone_only' => false,
-                                          'start_date_local' => '2022-01-25T19:00:00.000-05:00',
+                                          'start_date_local' => '2022-01-25T17:00:00.000-07:00',
                                           'start_date_utc' => '2022-01-26T00:00:00.000+00:00',
                                           'status' => 'SUBMITTED',
                                           'status_detail' => nil,
-                                          'time_zone' => 'America/New_York',
+                                          'time_zone' => 'America/Denver',
                                           'vetext_id' => nil,
                                           'reason' => nil,
                                           'is_covid_vaccine' => false,
@@ -235,8 +243,8 @@ describe Mobile::V0::Adapters::VAOSV2Appointments, aggregate_failures: true do
                                               'time' => 'AM'
                                             }
                                           ],
-                                          'type_of_care' => 'primaryCare',
-                                          'patient_phone_number' => '2566832029',
+                                          'type_of_care' => 'Primary Care',
+                                          'patient_phone_number' => '256-683-2029',
                                           'patient_email' => 'Aarathi.poldass@va.gov',
                                           'best_time_to_call' => [
                                             'Morning'
@@ -299,7 +307,7 @@ describe Mobile::V0::Adapters::VAOSV2Appointments, aggregate_failures: true do
                                             { 'date' => '09/28/2021', 'time' => 'AM' }
                                           ],
                                           'type_of_care' => nil,
-                                          'patient_phone_number' => '7175555555',
+                                          'patient_phone_number' => '717-555-5555',
                                           'patient_email' => 'Aarathi.poldass@va.gov',
                                           'best_time_to_call' => [
                                             'Evening'
@@ -355,17 +363,263 @@ describe Mobile::V0::Adapters::VAOSV2Appointments, aggregate_failures: true do
                                        'is_covid_vaccine' => false,
                                        'is_pending' => true,
                                        'proposed_times' => [
-                                         { 'date' => '10/01/2021', 'time' => 'PM' },
-                                         { 'date' => '01/03/2022', 'time' => 'PM' }
+                                         { 'date' => '10/01/2021', 'time' => 'PM' }
                                        ],
                                        'type_of_care' => nil,
-                                       'patient_phone_number' => '7175555555',
+                                       'patient_phone_number' => '717-555-5555',
                                        'patient_email' => 'judy.morrison@id.me',
                                        'best_time_to_call' => [
                                          'Morning'
                                        ],
                                        'friendly_location_name' => nil
                                      })
+    end
+  end
+
+  context 'with a telehealth Home appointment' do
+    let(:home_va) { adapted_appointments[6] }
+
+    it 'has expected fields' do
+      expect(home_va[:appointment_type]).to eq('VA_VIDEO_CONNECT_HOME')
+      expect(home_va[:location][:name]).to eq('Cheyenne VA Medical Center')
+      expect(home_va[:location][:url]).to eq('http://www.meeting.com')
+
+      expect(home_va.as_json).to eq({ 'id' => '50094',
+                                      'appointment_type' => 'VA_VIDEO_CONNECT_HOME',
+                                      'cancel_id' => '50094',
+                                      'comment' => nil,
+                                      'facility_id' => '442',
+                                      'sta6aid' => '442',
+                                      'healthcare_provider' => nil,
+                                      'healthcare_service' => nil,
+                                      'location' =>
+                                       { 'id' => nil,
+                                         'name' => 'Cheyenne VA Medical Center',
+                                         'address' =>
+                                          { 'street' => nil, 'city' => nil, 'state' => nil, 'zip_code' => nil },
+                                         'lat' => nil,
+                                         'long' => nil,
+                                         'phone' => { 'area_code' => nil, 'number' => nil, 'extension' => nil },
+                                         'url' => 'http://www.meeting.com',
+                                         'code' => nil },
+                                      'minutes_duration' => nil,
+                                      'phone_only' => false,
+                                      'start_date_local' => '2021-09-08T06:00:00.000-06:00',
+                                      'start_date_utc' => '2021-09-08T12:00:00.000+00:00',
+                                      'status' => 'SUBMITTED',
+                                      'status_detail' => nil,
+                                      'time_zone' => 'America/Denver',
+                                      'vetext_id' => nil,
+                                      'reason' => nil,
+                                      'is_covid_vaccine' => false,
+                                      'is_pending' => true,
+                                      'proposed_times' => [{ 'date' => '09/08/2021', 'time' => 'PM' }],
+                                      'type_of_care' => 'Primary Care ',
+                                      'patient_phone_number' => '999-999-9992',
+                                      'patient_email' => nil,
+                                      'best_time_to_call' => nil,
+                                      'friendly_location_name' => nil })
+    end
+  end
+
+  context 'with a telehealth Atlas appointment' do
+    let(:atlas_va) { adapted_appointments[7] }
+
+    it 'has expected fields' do
+      expect(atlas_va[:appointment_type]).to eq('VA_VIDEO_CONNECT_ATLAS')
+      expect(atlas_va[:location][:name]).to eq('Cheyenne VA Medical Center')
+      expect(atlas_va[:location][:address].to_h).to eq({ street: '114 Dewey Ave',
+                                                         city: 'Eureka',
+                                                         state: 'MT',
+                                                         zip_code: '59917' })
+      expect(atlas_va[:location][:url]).to eq('http://www.meeting.com')
+      expect(atlas_va[:location][:code]).to eq('420835')
+
+      expect(atlas_va.as_json).to eq({ 'id' => '50094',
+                                       'appointment_type' => 'VA_VIDEO_CONNECT_ATLAS',
+                                       'cancel_id' => '50094',
+                                       'comment' => nil,
+                                       'facility_id' => '442',
+                                       'sta6aid' => '442',
+                                       'healthcare_provider' => nil,
+                                       'healthcare_service' => nil,
+                                       'location' =>
+                                        { 'id' => nil,
+                                          'name' => 'Cheyenne VA Medical Center',
+                                          'address' =>
+                                           { 'street' => '114 Dewey Ave',
+                                             'city' => 'Eureka',
+                                             'state' => 'MT',
+                                             'zip_code' => '59917' },
+                                          'lat' => nil,
+                                          'long' => nil,
+                                          'phone' => { 'area_code' => nil, 'number' => nil, 'extension' => nil },
+                                          'url' => 'http://www.meeting.com',
+                                          'code' => '420835' },
+                                       'minutes_duration' => nil,
+                                       'phone_only' => false,
+                                       'start_date_local' => '2021-09-08T06:00:00.000-06:00',
+                                       'start_date_utc' => '2021-09-08T12:00:00.000+00:00',
+                                       'status' => 'SUBMITTED',
+                                       'status_detail' => nil,
+                                       'time_zone' => 'America/Denver',
+                                       'vetext_id' => nil,
+                                       'reason' => nil,
+                                       'is_covid_vaccine' => false,
+                                       'is_pending' => true,
+                                       'proposed_times' => [{ 'date' => '09/08/2021', 'time' => 'PM' }],
+                                       'type_of_care' => 'Primary Care ',
+                                       'patient_phone_number' => '999-999-9992',
+                                       'patient_email' => nil,
+                                       'best_time_to_call' => nil,
+                                       'friendly_location_name' => nil })
+    end
+  end
+
+  context 'with a GFE appointment' do
+    let(:gfe_va) { adapted_appointments[8] }
+
+    it 'has expected fields' do
+      expect(gfe_va[:appointment_type]).to eq('VA_VIDEO_CONNECT_GFE')
+      expect(gfe_va[:location][:name]).to eq('Cheyenne VA Medical Center')
+      expect(gfe_va[:location][:url]).to eq('http://www.meeting.com')
+
+      expect(gfe_va.as_json).to eq({ 'id' => '50094',
+                                     'appointment_type' => 'VA_VIDEO_CONNECT_GFE',
+                                     'cancel_id' => '50094',
+                                     'comment' => nil,
+                                     'facility_id' => '442',
+                                     'sta6aid' => '442',
+                                     'healthcare_provider' => nil,
+                                     'healthcare_service' => nil,
+                                     'location' =>
+                                      { 'id' => nil,
+                                        'name' => 'Cheyenne VA Medical Center',
+                                        'address' =>
+                                         { 'street' => nil, 'city' => nil, 'state' => nil, 'zip_code' => nil },
+                                        'lat' => nil,
+                                        'long' => nil,
+                                        'phone' => { 'area_code' => nil, 'number' => nil, 'extension' => nil },
+                                        'url' => 'http://www.meeting.com',
+                                        'code' => nil },
+                                     'minutes_duration' => nil,
+                                     'phone_only' => false,
+                                     'start_date_local' => '2021-09-08T06:00:00.000-06:00',
+                                     'start_date_utc' => '2021-09-08T12:00:00.000+00:00',
+                                     'status' => 'SUBMITTED',
+                                     'status_detail' => nil,
+                                     'time_zone' => 'America/Denver',
+                                     'vetext_id' => nil,
+                                     'reason' => nil,
+                                     'is_covid_vaccine' => false,
+                                     'is_pending' => true,
+                                     'proposed_times' => [{ 'date' => '09/08/2021', 'time' => 'PM' }],
+                                     'type_of_care' => 'Primary Care ',
+                                     'patient_phone_number' => '999-999-9992',
+                                     'patient_email' => nil,
+                                     'best_time_to_call' => nil,
+                                     'friendly_location_name' => nil })
+    end
+  end
+
+  context 'request periods that are in the future' do
+    let(:future_request_date_appt) { adapted_appointments[9] }
+
+    it 'sets start date to earliest date in the future' do
+      expect(future_request_date_appt[:start_date_local]).to eq('2022-08-27T12:00:00Z')
+      expect(future_request_date_appt[:proposed_times]).to eq([{ date: '08/20/2022', time: 'PM' },
+                                                               { date: '08/27/2022', time: 'PM' },
+                                                               { date: '10/03/2022', time: 'PM' }])
+    end
+  end
+
+  context 'request periods that are in the past' do
+    let(:past_request_date_appt) { adapted_appointments[10] }
+
+    it 'sets start date to earliest date' do
+      expect(past_request_date_appt[:start_date_local]).to eq('2021-08-20T12:00:00Z')
+      expect(past_request_date_appt[:proposed_times]).to eq([{ date: '08/20/2021', time: 'PM' },
+                                                             { date: '08/27/2021', time: 'PM' },
+                                                             { date: '10/03/2021', time: 'PM' }])
+    end
+  end
+
+  context 'with no timezone' do
+    let(:no_timezone_appt) do
+      vaos_data = JSON.parse(appointment_fixtures, symbolize_names: true)
+      vaos_data.dig(0, :location).delete(:timezone)
+      appointments = subject.parse(vaos_data)
+      appointments[0]
+    end
+
+    it 'falls back to hardcoded timezone lookup' do
+      expect(no_timezone_appt[:start_date_local]).to eq('2022-08-27 09:45:00 -0600"')
+      expect(no_timezone_appt[:start_date_utc]).to eq('2022-08-27T15:45:00Z')
+      expect(no_timezone_appt[:time_zone]).to eq('America/Denver')
+    end
+  end
+
+  context 'with non-human readable service type' do
+    let(:no_readable_service_appt) do
+      vaos_data = JSON.parse(appointment_fixtures, symbolize_names: true)[2]
+      vaos_data[:service_type] = 'outpatientMentalHealth'
+      subject.parse([vaos_data])
+    end
+
+    it 'converts to human readable service type' do
+      expect(no_readable_service_appt.first[:type_of_care]).to eq('Mental Health')
+    end
+  end
+
+  context 'with arrived status' do
+    let(:arrived_appt) do
+      vaos_data = JSON.parse(appointment_fixtures, symbolize_names: true)[1]
+      vaos_data[:status] = 'arrived'
+      subject.parse([vaos_data])
+    end
+
+    it 'converts status to BOOKED' do
+      expect(arrived_appt.first[:status]).to eq('BOOKED')
+    end
+  end
+
+  context 'with different patient phone numbers formats' do
+    let(:vaos_data) { JSON.parse(appointment_fixtures, symbolize_names: true)[7] }
+
+    let(:parentheses_phone_num_appt) do
+      vaos_data[:contact][:telecom][0][:value] = '(480)-293-1922'
+      subject.parse([vaos_data])
+    end
+
+    let(:parentheses_no_dash_phone_num_appt) do
+      vaos_data[:contact][:telecom][0][:value] = '(480) 293-1922'
+      subject.parse([vaos_data])
+    end
+
+    let(:no_dashes_phone_num_appt) do
+      vaos_data[:contact][:telecom][0][:value] = '4802931922'
+      subject.parse([vaos_data])
+    end
+
+    let(:no_parentheses_phone_num_appt) do
+      vaos_data[:contact][:telecom][0][:value] = '480-293-1922'
+      subject.parse([vaos_data])
+    end
+
+    it 'formats phone number with parentheses' do
+      expect(parentheses_phone_num_appt.first[:patient_phone_number]).to eq('480-293-1922')
+    end
+
+    it 'formats phone number with parentheses and no first dash' do
+      expect(parentheses_no_dash_phone_num_appt.first[:patient_phone_number]).to eq('480-293-1922')
+    end
+
+    it 'formats phone number with no dashes' do
+      expect(no_dashes_phone_num_appt.first[:patient_phone_number]).to eq('480-293-1922')
+    end
+
+    it 'does not change phone number with correct format' do
+      expect(no_parentheses_phone_num_appt.first[:patient_phone_number]).to eq('480-293-1922')
     end
   end
 end

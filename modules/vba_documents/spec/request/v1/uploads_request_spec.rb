@@ -5,6 +5,7 @@ require_relative '../../support/vba_document_fixtures'
 require_dependency 'vba_documents/payload_manager'
 require_dependency 'vba_documents/object_store'
 require_dependency 'vba_documents/multipart_parser'
+require_dependency 'vba_documents/document_request_validator'
 
 RSpec.describe 'VBA Document Uploads Endpoint', type: :request, retry: 3 do
   include VBADocuments::Fixtures
@@ -90,7 +91,6 @@ RSpec.describe 'VBA Document Uploads Endpoint', type: :request, retry: 3 do
         @md = JSON.parse(valid_metadata)
         @upload_submission = VBADocuments::UploadSubmission.new
         @upload_submission.update(status: 'uploaded')
-        allow_any_instance_of(VBADocuments::UploadProcessor).to receive(:cancelled?).and_return(false)
         allow(VBADocuments::MultipartParser).to receive(:parse) {
           { 'metadata' => @md.to_json, 'content' => valid_doc }
         }
@@ -183,7 +183,7 @@ RSpec.describe 'VBA Document Uploads Endpoint', type: :request, retry: 3 do
         'content' => valid_doc }
     end
 
-    it "raises if settings aren't set" do
+    it "returns a 404 if feature (via setting) isn't enabled" do
       with_settings(Settings.vba_documents, enable_download_endpoint: false) do
         get "/services/vba_documents/v1/uploads/#{upload.guid}/download"
         expect(response.status).to eq(404)
@@ -232,6 +232,57 @@ RSpec.describe 'VBA Document Uploads Endpoint', type: :request, retry: 3 do
 
       get "/services/vba_documents/v1/uploads/#{upload.guid}/download"
       expect(response.status).to eq(404)
+    end
+  end
+
+  describe '#validate_document /v1/uploads/validate_document' do
+    let(:request_path) { '/services/vba_documents/v1/uploads/validate_document' }
+    let(:request_validator) { instance_double(VBADocuments::DocumentRequestValidator) }
+    let(:successful_validation_result) do
+      {
+        data: {
+          type: 'documentValidation',
+          attributes: {
+            status: 'valid'
+          }
+        }
+      }
+    end
+    let(:failed_validation_result) do
+      {
+        errors: [
+          {
+            title: 'error',
+            detail: 'error detail',
+            status: '422'
+          }
+        ]
+      }
+    end
+
+    it 'returns a 200 if no validation errors are present' do
+      allow(VBADocuments::DocumentRequestValidator).to receive(:new).and_return(request_validator)
+      allow(request_validator).to receive(:validate).and_return(successful_validation_result)
+
+      post request_path
+      expect(response.status).to eq(200)
+      expect(response.body).to eq(successful_validation_result.to_json)
+    end
+
+    it 'returns a 422 if validation errors are present' do
+      allow(VBADocuments::DocumentRequestValidator).to receive(:new).and_return(request_validator)
+      allow(request_validator).to receive(:validate).and_return(failed_validation_result)
+
+      post request_path
+      expect(response.status).to eq(422)
+      expect(response.body).to eq(failed_validation_result.to_json)
+    end
+
+    it "returns a 404 if feature (via setting) isn't enabled" do
+      with_settings(Settings.vba_documents, enable_validate_document_endpoint: false) do
+        post request_path
+        expect(response.status).to eq(404)
+      end
     end
   end
 end

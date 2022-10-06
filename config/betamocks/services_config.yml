@@ -736,6 +736,10 @@
       :path: <%= "/#{Settings.check_in.chip_api_v2.base_path}/actions/refresh-precheckin/*" %>
       :file_path: "/chip/refresh-precheckin/default"
       :response_delay: 4
+    - :method: :delete
+      :path: <%= "/#{Settings.check_in.chip_api_v2.base_path}/actions/deleteFromLorota/*" %>
+      :file_path: "/chip/deleteFromLorota/default"
+      :response_delay: 4
 
 # LGY: Certificate of Eligibility
 - :name: "LGY"
@@ -765,12 +769,18 @@
       :cache_multiple_responses:
         :uid_location: 'query'
         :uid_locator: 'edipi'
-    - :method: :get
-      :path: "/eligibility-manager/api/eligibility/document/23215740/file"
-      :file_path: "/lgy/get_document_download"
+    - :method: :post
+      :path: "/eligibility-manager/api/eligibility/document"
+      :file_path: "/lgy/post_document"
       :cache_multiple_responses:
         :uid_location: 'query'
         :uid_locator: 'edipi'
+    - :method: :get
+      :path: "/eligibility-manager/api/eligibility/document/*/file"
+      :file_path: "/lgy/get_document_download"
+      :cache_multiple_responses:
+        :uid_location: 'url'
+        :uid_locator: '\/eligibility-manager/api/eligibility/document\/(.+)\/file'
     - :method: :get
       :path: "/eligibility-manager/api/eligibility/documents/coe/file"
       :file_path: "/lgy/get_coe_file"

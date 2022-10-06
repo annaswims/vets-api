@@ -24,7 +24,7 @@ module AppealsApi
     }.freeze
 
     # Retry for ~7 days
-    sidekiq_options retry: 20
+    sidekiq_options retry: 20, unique_for: 7.days
 
     def perform(appeal_id, appeal_class_str, pdf_version = 'v1')
       appeal_class = Object.const_get(appeal_class_str)
@@ -93,7 +93,7 @@ module AppealsApi
         notify(
           {
             'class' => self.class.name,
-            'args' => [appeal.id, appeal.created_at.iso8601],
+            'args' => [appeal.id, appeal.class.to_s, appeal.created_at.iso8601],
             'error_class' => e.code,
             'error_message' => e.detail,
             'failed_at' => Time.zone.now

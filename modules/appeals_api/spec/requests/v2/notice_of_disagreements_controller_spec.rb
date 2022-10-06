@@ -24,6 +24,49 @@ describe AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController, type:
 
   let(:parsed) { JSON.parse(response.body) }
 
+  describe '#index' do
+    let(:path) { base_path 'notice_of_disagreements' }
+
+    context 'with minimum required headers' do
+      it 'returns all NODs for the given Veteran' do
+        uuid_1 = create(:notice_of_disagreement_v2, veteran_icn: '1013062086V794840', form_data: nil).id
+        uuid_2 = create(:notice_of_disagreement_v2, veteran_icn: '1013062086V794840').id
+        create(:notice_of_disagreement_v2, veteran_icn: 'something_else')
+
+        get(path, headers: @max_headers)
+
+        expect(parsed['data'].length).to eq(2)
+        # Returns NODs in desc creation date, so expect 2 before 1
+        expect(parsed['data'][0]['id']).to eq(uuid_2)
+        expect(parsed['data'][1]['id']).to eq(uuid_1)
+        # Strips out form_data
+        expect(parsed['data'][1]['attributes']['form_data']).to be_nil
+      end
+    end
+
+    context 'when no NODs for the requesting Veteran exist' do
+      it 'returns an empty array' do
+        create(:notice_of_disagreement_v2, veteran_icn: 'someone_else')
+        create(:notice_of_disagreement_v2, veteran_icn: 'also_someone_else')
+
+        get(path, headers: @max_headers)
+        expect(parsed['data'].length).to eq(0)
+      end
+    end
+
+    context 'when no ICN is provided' do
+      it 'returns a 422 error' do
+        @max_headers.delete('X-VA-ICN')
+
+        get(path, headers: @max_headers)
+
+        expect(response.status).to eq(422)
+        expect(parsed['errors']).to be_an Array
+        expect(parsed['errors'][0]['detail']).to include('X-VA-ICN is required')
+      end
+    end
+  end
+
   describe '#create' do
     let(:path) { base_path 'notice_of_disagreements' }
 
@@ -156,14 +199,14 @@ describe AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController, type:
       uuid = create(:notice_of_disagreement_v2).id
       get("#{path}#{uuid}")
       expect(response.status).to eq(200)
-      expect(parsed.dig('data', 'attributes', 'formData')).to be_a Hash
+      expect(parsed['data']['attributes'].key?('form_data')).to be false
     end
 
     it 'behaves the same on new path' do
       uuid = create(:notice_of_disagreement_v2).id
       get("#{new_base_path 'forms/10182'}/#{uuid}")
       expect(response.status).to eq(200)
-      expect(parsed.dig('data', 'attributes', 'formData')).to be_a Hash
+      expect(parsed['data']['attributes'].key?('form_data')).to be false
     end
 
     it 'allow for status simulation' do
@@ -301,7 +344,7 @@ describe AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController, type:
       expect(missing_claimant_error['title']).to eq 'Missing required fields'
       expect(missing_claimant_error['source']['pointer']).to eq '/data/attributes'
       expect(missing_claimant_error['detail']).to eq(
-        "Claimant headers were provided but missing '/data/attributes/claimant' field"
+        "Non-veteran claimant headers were provided but missing '/data/attributes/claimant' field"
       )
       expect(missing_claimant_error['meta']['missing_fields']).to eq ['claimant']
     end

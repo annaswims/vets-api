@@ -32,7 +32,7 @@ RSpec.describe 'appointments', type: :request do
 
     describe 'start and end date' do
       let(:beginning_of_last_year) { (DateTime.now.utc.beginning_of_year - 1.year) }
-      let(:one_year_from_now) { (DateTime.now.utc.beginning_of_day + 1.year) }
+      let(:one_year_from_now) { (DateTime.now.utc.end_of_day + 1.year) }
 
       context 'when omitted from query params' do
         let(:params) { { page: { number: 1, size: 10 }, useCache: false } }
@@ -447,7 +447,7 @@ RSpec.describe 'appointments', type: :request do
               'type' => 'appointment',
               'attributes' => {
                 'appointmentType' => 'VA',
-                'cancelId' => 'MzA4OzIwMjAxMTAzLjA5MDAwMDs0NDI7R3JlZW4gVGVhbSBDbGluaWMx',
+                'cancelId' => 'MzA4OzIwMjAxMTAzLjA5MDAwMDs5ODM7R3JlZW4gVGVhbSBDbGluaWMx',
                 'comment' => nil,
                 'healthcareProvider' => nil,
                 'healthcareService' => 'Green Team Clinic1',
@@ -589,7 +589,7 @@ RSpec.describe 'appointments', type: :request do
               'type' => 'appointment',
               'attributes' => {
                 'appointmentType' => 'VA',
-                'cancelId' => 'MzA4OzIwMjAxMTAzLjA5MDAwMDs0NDI7R3JlZW4gVGVhbSBDbGluaWMx',
+                'cancelId' => 'MzA4OzIwMjAxMTAzLjA5MDAwMDs5ODM7R3JlZW4gVGVhbSBDbGluaWMx',
                 'comment' => nil,
                 'healthcareProvider' => nil,
                 'healthcareService' => 'Green Team Clinic1',

@@ -45,7 +45,7 @@ AppealsApi::Engine.routes.draw do
         resources :evidence_submissions, only: %i[create show]
       end
 
-      resources :notice_of_disagreements, only: %i[create show] do
+      resources :notice_of_disagreements, only: %i[index create show] do
         collection do
           get 'schema'
           post 'validate'
@@ -79,6 +79,11 @@ AppealsApi::Engine.routes.draw do
 
     namespace :v2, defaults: { format: 'json' } do
       get 'decision_reviews', to: 'docs#decision_reviews'
+      get 'hlr', to: 'docs#hlr'
+      get 'nod', to: 'docs#nod'
+      get 'sc', to: 'docs#sc'
+      get 'ci', to: 'docs#ci'
+      get 'la', to: 'docs#la'
     end
   end
 
@@ -87,6 +92,9 @@ AppealsApi::Engine.routes.draw do
     namespace :v2 do
       cpath = '/appeals_api/v2/decision_reviews/notice_of_disagreements'
       nod_schema_cpath = '/appeals_api/notice_of_disagreements/v2/notice_of_disagreements'
+
+      get 'healthcheck', to: '/appeals_api/metadata#healthcheck'
+      get 'upstream_healthcheck', to: '/appeals_api/metadata#mail_status_upstream_healthcheck'
 
       namespace :forms do
         resources '10182', only: %i[create show], controller: cpath do
@@ -111,6 +119,9 @@ AppealsApi::Engine.routes.draw do
       cpath = '/appeals_api/v2/decision_reviews/higher_level_reviews'
       hlr_schema_cpath = '/appeals_api/higher_level_reviews/v2/higher_level_reviews'
 
+      get 'healthcheck', to: '/appeals_api/metadata#healthcheck'
+      get 'upstream_healthcheck', to: '/appeals_api/metadata#mail_status_upstream_healthcheck'
+
       namespace :forms do
         resources '200996', only: %i[create show], controller: cpath do
           collection do
@@ -132,6 +143,9 @@ AppealsApi::Engine.routes.draw do
       cpath = '/appeals_api/v2/decision_reviews/supplemental_claims'
       sc_schema_cpath = '/appeals_api/supplemental_claims/v2/supplemental_claims'
 
+      get 'healthcheck', to: '/appeals_api/metadata#healthcheck'
+      get 'upstream_healthcheck', to: '/appeals_api/metadata#mail_status_upstream_healthcheck'
+
       namespace :forms do
         resources '200995', only: %i[create show], controller: cpath do
           collection do
@@ -144,6 +158,40 @@ AppealsApi::Engine.routes.draw do
 
       namespace :schemas, controller: sc_schema_cpath do
         get '200995', action: :schema
+      end
+
+      resources :schemas, only: :show, param: :schema_type, controller: '/appeals_api/schemas/shared_schemas'
+    end
+  end
+
+  namespace :contestable_issues, defaults: { format: 'json' } do
+    namespace :v2 do
+      cpath = '/appeals_api/v2/decision_reviews/contestable_issues'
+      ci_schema_cpath = '/appeals_api/contestable_issues/v2/contestable_issues'
+
+      get 'contestable_issues/:decision_review_type', to: "#{cpath}#index"
+      get 'healthcheck', to: '/appeals_api/metadata#healthcheck'
+      get 'upstream_healthcheck', to: '/appeals_api/metadata#appeals_status_upstream_healthcheck'
+
+      namespace :schemas, controller: ci_schema_cpath do
+        get 'headers', action: :schema
+      end
+
+      resources :schemas, only: :show, param: :schema_type, controller: '/appeals_api/schemas/shared_schemas'
+    end
+  end
+
+  namespace :legacy_appeals, defaults: { format: 'json' } do
+    namespace :v2 do
+      cpath = '/appeals_api/v2/decision_reviews/legacy_appeals'
+      la_schema_cpath = '/appeals_api/legacy_appeals/v2/legacy_appeals'
+
+      get 'legacy_appeals', to: "#{cpath}#index"
+      get 'healthcheck', to: '/appeals_api/metadata#healthcheck'
+      get 'upstream_healthcheck', to: '/appeals_api/metadata#appeals_status_upstream_healthcheck'
+
+      namespace :schemas, controller: la_schema_cpath do
+        get 'headers', action: :schema
       end
 
       resources :schemas, only: :show, param: :schema_type, controller: '/appeals_api/schemas/shared_schemas'

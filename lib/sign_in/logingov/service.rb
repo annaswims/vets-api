@@ -12,6 +12,7 @@ module SignIn
       def render_auth(state: SecureRandom.hex, acr: IAL::LOGIN_GOV_IAL1)
         renderer = ActionController::Base.renderer
         renderer.controller.prepend_view_path(Rails.root.join('lib', 'sign_in', 'templates'))
+        Rails.logger.info("[SignIn][Logingov][Service] Rendering auth, state: #{state}, acr: #{acr}")
         renderer.render(template: 'oauth_get_form',
                         locals: {
                           url: auth_url,
@@ -38,30 +39,31 @@ module SignIn
         response = perform(
           :post, config.token_path, token_params(code), { 'Content-Type' => 'application/json' }
         )
+        Rails.logger.info("[SignIn][Logingov][Service] Token Success, code: #{code}")
         response.body
       rescue Common::Client::Errors::ClientError => e
-        raise e
+        raise_client_error(e, 'Token')
       end
 
       def user_info(token)
         response = perform(:get, config.userinfo_path, nil, { 'Authorization' => "Bearer #{token}" })
-        response.body
+        OpenStruct.new(response.body)
       rescue Common::Client::Errors::ClientError => e
-        raise e
+        raise_client_error(e, 'UserInfo')
       end
 
       def normalized_attributes(user_info, credential_level, client_id)
         loa_current = ial_to_loa(credential_level.current_ial)
         loa_highest = ial_to_loa(credential_level.max_ial)
         {
-          uuid: user_info[:sub],
-          logingov_uuid: user_info[:sub],
+          uuid: user_info.sub,
+          logingov_uuid: user_info.sub,
           loa: { current: loa_current, highest: loa_highest },
-          ssn: user_info[:social_security_number]&.tr('-', ''),
-          birth_date: user_info[:birthdate],
-          first_name: user_info[:given_name],
-          last_name: user_info[:family_name],
-          csp_email: user_info[:email],
+          ssn: user_info.social_security_number&.tr('-', ''),
+          birth_date: user_info.birthdate,
+          first_name: user_info.given_name,
+          last_name: user_info.family_name,
+          csp_email: user_info.email,
           multifactor: true,
           sign_in: { service_name: config.service_name, auth_broker: Constants::Auth::BROKER_CODE,
                      client_id: client_id },
@@ -70,6 +72,13 @@ module SignIn
       end
 
       private
+
+      def raise_client_error(client_error, function_name)
+        status = client_error.status
+        description = client_error.body && client_error.body[:error]
+        raise client_error, "[SignIn][Logingov][Service] Cannot perform #{function_name} request, " \
+                            "status: #{status}, description: #{description}"
+      end
 
       def get_authn_context(current_ial)
         current_ial == IAL::TWO ? IAL::LOGIN_GOV_IAL2 : IAL::LOGIN_GOV_IAL1

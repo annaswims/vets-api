@@ -6,17 +6,23 @@ module Mobile
   module V2
     module Appointments
       class Proxy
+        VAOS_STATUSES = %w[proposed cancelled booked fulfilled arrived].freeze
+
         def initialize(user)
           @user = user
         end
 
-        def get_appointments(start_date:, end_date:, pagination_params:)
-          response = vaos_v2_appointments_service.get_appointments(start_date, end_date, nil, pagination_params)
-          response[:data].each do |appt|
-            appt[:location_id] = Mobile::V0::Appointment.convert_non_prod_id!(appt[:location_id])
-          end
-          appointments = merge_clinics(response[:data])
-          appointments = merge_facilities(appointments)
+        def get_appointments(start_date:, end_date:, include_pending:, pagination_params: {})
+          statuses = include_pending ? VAOS_STATUSES : VAOS_STATUSES.excluding('proposed')
+
+          # VAOS V2 appointments service accepts pagination params but either it formats them incorrectly
+          # or the upstream serice does not use them.
+          response = vaos_v2_appointments_service.get_appointments(start_date, end_date, statuses.join(','),
+                                                                   pagination_params)
+
+          appointments = merge_clinic_facility_address(response[:data])
+          appointments = merge_auxiliary_clinic_info(appointments)
+          appointments = merge_provider_names(appointments)
 
           appointments = vaos_v2_to_v0_appointment_adapter.parse(appointments)
 
@@ -25,7 +31,31 @@ module Mobile
 
         private
 
-        def merge_clinics(appointments)
+        def merge_clinic_facility_address(appointments)
+          cached_facilities = {}
+          appointments.each do |appt|
+            facility_id = appt[:location_id]
+            next unless facility_id
+
+            cached = cached_facilities[facility_id]
+            cached_facilities[facility_id] = get_facility(facility_id) unless cached
+
+            appt[:location] = cached_facilities[facility_id]
+          end
+        end
+
+        def get_facility(location_id)
+          vaos_mobile_facility_service.get_facility(location_id)
+        rescue Common::Exceptions::BackendServiceException => e
+          Rails.logger.error(
+            "Error fetching facility details for location_id #{location_id}",
+            location_id: location_id,
+            vamf_msg: e.original_body
+          )
+          nil
+        end
+
+        def merge_auxiliary_clinic_info(appointments)
           cached_clinics = {}
           appointments.each do |appt|
             clinic_id = appt[:clinic]
@@ -42,38 +72,25 @@ module Mobile
           end
         end
 
-        def merge_facilities(appointments)
-          cached_facilities = {}
-          appointments.each do |appt|
-            facility_id = appt[:location_id]
-            next unless facility_id
-
-            cached = cached_facilities[facility_id]
-            cached_facilities[facility_id] = get_facility(facility_id) unless cached
-            appt[:location] = cached_facilities[facility_id]
-          end
-        end
-
         def get_clinic(location_id, clinic_id)
-          clinics = v2_systems_service.get_facility_clinics(location_id: location_id, clinic_ids: clinic_id)
-          clinics.first unless clinics.empty?
-        rescue Common::Exceptions::BackendServiceException
+          vaos_mobile_facility_service.get_clinic(station_id: location_id, clinic_id: clinic_id)
+        rescue Common::Exceptions::BackendServiceException => e
           Rails.logger.error(
             "Error fetching clinic #{clinic_id} for location #{location_id}",
             clinic_id: clinic_id,
-            location_id: location_id
+            location_id: location_id,
+            vamf_msg: e.original_body
           )
           nil
         end
 
-        def get_facility(location_id)
-          vaos_mobile_facility_service.get_facility(location_id)
-        rescue Common::Exceptions::BackendServiceException
-          Rails.logger.error(
-            "Error fetching facility details for location_id #{location_id}",
-            location_id: location_id
-          )
-          nil
+        def merge_provider_names(appointments)
+          provider_names_proxy = ProviderNames.new(@user)
+          appointments.each do |appt|
+            practitioners_list = appt[:practitioners]
+            names = provider_names_proxy.form_names_from_appointment_practitioners_list(practitioners_list)
+            appt[:healthcare_provider] = names
+          end
         end
 
         def vaos_mobile_facility_service
@@ -86,10 +103,6 @@ module Mobile
 
         def vaos_v2_to_v0_appointment_adapter
           Mobile::V0::Adapters::VAOSV2Appointments.new
-        end
-
-        def v2_systems_service
-          VAOS::V2::SystemsService.new(@user)
         end
       end
     end

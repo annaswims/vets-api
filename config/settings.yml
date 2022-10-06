@@ -54,6 +54,7 @@ sign_in:
   jwt_encode_key: 'spec/fixtures/sign_in/privatekey.pem'
   cookies_secure: false
   info_cookie_domain: localhost
+  auto_uplevel: true
   client_redirect_uris:
     mobile: 'vamobile://login-success'
     web: 'http://localhost:3001/auth/login/callback'
@@ -135,6 +136,7 @@ form_10_10cg:
       client_id: ~
       client_secret: ~
       timeout: 30
+      async_timeout: 600
   poa:
     s3:
       aws_access_key_id: my-aws-key-id
@@ -269,15 +271,13 @@ modules_appeals_api:
   documentation:
     path_enabled_flag: false
     wip_docs:
+      - segmented_apis
       # List of flags to indicate parts of documentation that are still WIP and not ready for production.
       # See the rswag:appeals_api:dev rake task, spec_helper, and DocHelpers#wip_doc_enabled? for usage info to opt-in.
       # NOTE: Do not remove this key even if it's empty.
-  higher_level_review_pii_expunge_enabled: true
   higher_level_review_updater_enabled: true
   legacy_appeals_enabled: false
   supplemental_claims_enabled: true
-  supplemental_claim_pii_expunge_enabled: true
-  notice_of_disagreement_pii_expunge_enabled: true
   notice_of_disagreement_updater_enabled: true
   supplemental_claim_updater_enabled: true
   job_schedules:
@@ -494,7 +494,6 @@ mvi:
   client_cert_path: /fake/client/cert/path
   client_key_path: /fake/client/key/path
   pii_logging: false
-  vba_orchestration: false
 
 # Settings for eMIS
 # The certs used here can be obtained from the DevOps team. A different set is required for
@@ -620,7 +619,6 @@ redis:
   port: 6379
   app_data:
     url: redis://localhost:6379
-    # secondary_url: redis://localhost:6378
   sidekiq:
     url: redis://localhost:6379
   rails_cache:
@@ -851,7 +849,8 @@ flipper:
   admin_user_emails:
     - aditya.sharma@thoughtworks.com # Virtual Agent
     - adrian.rollett@agile6.com # Adrian Rollett (Agile6), Engineer/Product Manager Health Care Experience/Check-In
-    - agarcia@clarityinnovates.com
+    - alexander.schmidt.garcia@gmail.com # Alexander Garcia (Clarity), Identity, Frontend Engineer
+    - afia.caruso@oddball.io # Afia Caruso (Oddball), Identity, Frontend Engineer
     - alastair@adhocteam.us
     - andrew.herzberg@adhocteam.us
     - bill.ryan@adhocteam.us
@@ -872,6 +871,7 @@ flipper:
     - drew.fisher@adhocteam.us # Drew Fisher (Ad Hoc), Team Lead Decision Reviews
     - dror@matal.com
     - eric.boehs@oddball.io
+    - eric.voshall@adhocteam.us
     - erik@adhocteam.us
     - ethan.teague@civicactions.com
     - filip.fafara@gmail.com # Thoughtworks, ex VANotify, supports DHP, CDSP, Virtual Agent
@@ -879,6 +879,7 @@ flipper:
     - ggupta@kindsys.us # Gaurav Gupta (Kindsys), BE Engineer Health Care Experience/Check-In
     - gescobar@governmentcio.com
     - grodriguez@governmentcio.com
+    - ian.hundere@oddball.io # Ian Hundere (Oddball), Identity, DevOps Engineer
     - jacob.gacek@thoughtworks.com # Virtual Agent
     - james.childers@gcio.com
     - james.adams2@va.gov # Jim Adams designer on GCIO
@@ -889,9 +890,8 @@ flipper:
     - jesse.cohn@adhocteam.us
     - jlinn@governmentcio.com
     - joe.hall@thoughtworks.com # Virtual Agent
-    - joeyn414@gmail.com # Joe Niquette Oddball VSP Identity Team Sr Security Engineer
-    - john.bramley@adhocteam.us
-    - Josh.Scanish@oddball.io # vsp identity engineer
+    - joeyn414@gmail.com # Joe Niquette (Oddball), Identity, Sr Security Engineer
+    - john.bramley@adhocteam.us # John Bramley (AdHoc), Identity, Backend Engineer
     - julie.adair@agile6.com # Julie Adair (Agile6), Product Manager Health Care Experience/Check-In
     - jwolf@governmentcio.com # Jason Wolf Product Manager for GCIO
     - justin.trieu@thoughtworks.com # Virtual Agent
@@ -904,7 +904,6 @@ flipper:
     - kmircovich@governmentcio.com
     - kris.pethtel@adhocteam.us
     - kris.pethtel@gmail.com # email tied to production id.me account
-    - kyle.woolley@oddball.io # VSP Identity Engineer
     - ksuriyamoorthy@kindsys.us # Kanchana Suriyamoorthy (Kindsys), BE Engineer Health Care Experience/Check-In
     - lauren.alexanderson@va.gov
     - leah.delacosta@adhocteam.us
@@ -918,7 +917,6 @@ flipper:
     - micah@adhocteam.us
     - michel.mcdonald@adhocteam.us
     - michael.chelen@va.gov
-    - michael.fleet@oddball.io
     - michael.pelz-sherman@gcio.com
     - michelle.middaugh@adhocteam.us
     - n.ratana@gmail.com
@@ -940,10 +938,9 @@ flipper:
     - ssuddath@governmentcio.com
     - stephen.barrs@gmail.com
     - teagan.stephenson@bracari.com
-    - tim.wright@adhocteam.us
     - tony.williams@va.gov
     - travis.hilton@oddball.io
-    - trevor.bosaw@oddball.io
+    - trevor.bosaw@oddball.io # Trevor Bosaw (Oddball), Identity, Backend Engineer
     - tze@adhocteam.us
     - yangyang@navapbc.com
     - yoom@navapbc.com
@@ -988,6 +985,10 @@ flipper:
     - erica.sauve@adhocteam.us # Erica Suave - APM Adhoc Auth Exp
     - ajakabcin@gmail.com # Ana Jakabcin - PM Adhoc Auth Exp
     - cesar.santiago@accenturefederal.com # My Education Benefits Team Lead
+    - jacob.k.worrell@gmail.com # Jacob Worrell - Benefits Team #1
+    - jerek.shoemaker@adhocteam.us # Jerek Shoemaker - Benefits Team #1
+    - sam.cormier@coforma.io # Sam Cormier - Benefits Team #1
+    - scott.meyers@coforma.io # Scott Meyers - Benefits Team #1
 
 bgs:
   application: ~
@@ -1005,9 +1006,10 @@ directory:
 
 va_mobile:
   url: "https://veteran.apps.va.gov"
+  ppms_base_url: "https://staff.apps.va.gov"
   mock: false
   key_path: /fake/client/key/path
-  timeout: 15
+  timeout: 55
 
 vetext:
   url: "https://something.fake.va.gov"
@@ -1065,6 +1067,10 @@ hqva_mobile:
 # settings va.gov uses related to lighthouse api's
 lighthouse:
   api_key: fake_key
+  benefits_reference_data:
+    url: https://sandbox-api.va.gov
+    path: services/benefits-reference-data
+    version: v1
   veterans_health:
     url: https://sandbox-api.va.gov
     fast_tracker:
@@ -1143,6 +1149,7 @@ vanotify:
         burial_claim_confirmation_email_template_id: burial_claim_confirmation_email_template_id
         ch31_vbms_form_confirmation_email: ch31_vbms_fake_template_id
         ch31_central_mail_form_confirmation_email: ch31_central_mail_fake_template_id
+        career_counseling_confirmation_email: career_counseling_confirmation_email_template_id
         contact_info_change: fake_template_id
         form526_confirmation_email: fake_template_id
         form526_submission_failed_email: fake_template_id
@@ -1192,7 +1199,7 @@ dgi:
     public_key_path: modules/meb_api/spec/fixtures/dgi_public_test.pem
     private_key_path: modules/meb_api/spec/fixtures/dgi_private_test.pem
   vets:
-    url: "http://localhost:8070/vets-service/v1/" # Docker setup for microservice
+    url: "https://jenkins.ld.afsp.io:32512/vets-service/v1/" # Docker setup for microservice
     mock: false
 
 # Settings for the VEText integration (mobile push notifications)
@@ -1349,6 +1356,15 @@ rrd:
   mas_tracking:
     recipients:
       - fake_email
+  pact_tracking:
+    recipients:
+      - fake_email
+
+virtual_regional_office:
+  url: https://sandbox.lighthouse.va.gov/abd-vro
+  api_key: 9d3868d1-ec15-4889-8002-2bff1b50ba62
+  health_assessment_path: health-data-assessment
+  evidence_pdf_path: evidence-pdf
 
 # Settings for Test User Dashboard modules
 test_user_dashboard:
@@ -1382,10 +1398,10 @@ sidekiq:
   github_api_key: ~
 
 lgy:
-  base_url: 'http://www.example.com'
+  base_url: http://www.example.com
   app_id: ~
   api_key: ~
-  mock_coe: true 
+  mock_coe: true
 
 form1095_b:
   s3:

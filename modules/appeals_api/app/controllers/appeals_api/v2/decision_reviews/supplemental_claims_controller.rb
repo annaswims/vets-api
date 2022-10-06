@@ -20,9 +20,11 @@ class AppealsApi::V2::DecisionReviews::SupplementalClaimsController < AppealsApi
     )
   )['definitions']['scCreateParameters']['properties'].keys
   SCHEMA_ERROR_TYPE = Common::Exceptions::DetailedSchemaErrors
+  ALLOWED_COLUMNS = %i[id status code detail created_at updated_at].freeze
 
   def index
-    veteran_scs = AppealsApi::SupplementalClaim.where(veteran_icn: target_veteran.mpi_icn)
+    veteran_scs = AppealsApi::SupplementalClaim.select(ALLOWED_COLUMNS)
+                                               .where(veteran_icn: target_veteran.mpi_icn)
                                                .order(created_at: :desc)
     render json: AppealsApi::SupplementalClaimSerializer.new(veteran_scs).serializable_hash
   end
@@ -44,8 +46,7 @@ class AppealsApi::V2::DecisionReviews::SupplementalClaimsController < AppealsApi
     AppealsApi::PdfSubmitJob.perform_async(sc.id, 'AppealsApi::SupplementalClaim', pdf_version)
     AppealsApi::AddIcnUpdater.perform_async(sc.id, 'AppealsApi::SupplementalClaim')
 
-    options = { params: { is_collection: true } }
-    render json: AppealsApi::SupplementalClaimSerializer.new(sc, options).serializable_hash
+    render json: AppealsApi::SupplementalClaimSerializer.new(sc).serializable_hash
   end
 
   def validate
@@ -65,7 +66,7 @@ class AppealsApi::V2::DecisionReviews::SupplementalClaimsController < AppealsApi
 
   def show
     id = params[:id]
-    sc = AppealsApi::SupplementalClaim.find(id)
+    sc = AppealsApi::SupplementalClaim.select(ALLOWED_COLUMNS).find(id)
     sc = with_status_simulation(sc) if status_requested_and_allowed?
 
     render json: AppealsApi::SupplementalClaimSerializer.new(sc).serializable_hash

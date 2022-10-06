@@ -178,6 +178,18 @@
                 },
                 "inheritedProofVerified": {
                   "type": "boolean"
+                },
+                "claims": {
+                  "type": "object",
+                  "properties": {
+                    "ch33BankAccounts": { "type": "boolean" },
+                    "communicationPreferences": { "type": "boolean" },
+                    "connectedApps": { "type": "boolean" },
+                    "militaryHistory": { "type": "boolean" },
+                    "paymentHistory": { "type": "boolean" },
+                    "personalInformation": { "type": "boolean" },
+                    "ratingInfo": { "type": "boolean" }
+                  }
                 }
               }
             },

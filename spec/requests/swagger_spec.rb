@@ -196,7 +196,7 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
     describe 'using salesforce' do
       before do
         allow(Flipper).to receive(:enabled?).with(:caregiver_mulesoft).and_return(false)
-        allow(Flipper).to receive(:enabled?).with(:caregiver_async).and_return(false)
+        allow(Flipper).to receive(:enabled?).with(:caregiver_async, nil).and_return(false)
       end
 
       it 'supports adding an caregiver\'s assistance claim' do
@@ -627,6 +627,8 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
 
       context 'financial status report create' do
         it 'validates the route' do
+          pdf_stub = class_double('PdfFill::Filler').as_stubbed_const
+          allow(pdf_stub).to receive(:fill_ancillary_form).and_return("#{::Rails.root}/spec/fixtures/dmc/5655.pdf")
           VCR.use_cassette('dmc/submit_fsr') do
             VCR.use_cassette('bgs/people_service/person_data') do
               expect(subject).to validate(
@@ -1908,6 +1910,19 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
             '/v0/terms_and_conditions/{name}/versions/latest/user_data',
             404,
             headers.merge('name' => 'blat')
+          )
+        end
+      end
+    end
+
+    describe 'Lighthouse Benefits Reference Data' do
+      it 'gets data from endpoint' do
+        VCR.use_cassette('lighthouse/benefits_reference_data/200_response') do
+          expect(subject).to validate(
+            :get,
+            '/v0/benefits_reference_data/{path}',
+            200,
+            headers.merge('path' => 'disabilities')
           )
         end
       end

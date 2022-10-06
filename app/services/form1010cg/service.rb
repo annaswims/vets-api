@@ -11,6 +11,7 @@ require 'emis/service'
 module Form1010cg
   class Service
     extend Forwardable
+    include SentryLogging
 
     class InvalidVeteranStatus < StandardError
     end
@@ -77,8 +78,6 @@ module Form1010cg
     end
 
     def process_claim_v2!
-      assert_veteran_status
-
       payload = CARMA::Models::Submission.from_claim(claim, build_metadata).to_request_payload
 
       claim_pdf_path, poa_attachment_path = self.class.collect_attachments(claim)
@@ -122,7 +121,11 @@ module Form1010cg
     #
     # @return [nil]
     def assert_veteran_status
-      raise InvalidVeteranStatus if icn_for('veteran') == NOT_FOUND
+      if icn_for('veteran') == NOT_FOUND
+        error = InvalidVeteranStatus.new
+        log_exception_to_sentry(error)
+        raise error
+      end
     end
 
     # Returns a metadata hash:

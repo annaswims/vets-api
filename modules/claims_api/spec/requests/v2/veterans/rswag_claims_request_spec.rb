@@ -50,12 +50,14 @@ describe 'Claims', swagger_doc: 'modules/claims_api/app/swagger/claims_api/v2/sw
 
           before do |example|
             with_okta_user(scopes) do
-              expect_any_instance_of(BGS::EbenefitsBenefitClaimsStatus)
-                .to receive(:find_benefit_claims_status_by_ptcpnt_id).and_return(bgs_response)
-              expect(ClaimsApi::AutoEstablishedClaim)
-                .to receive(:where).and_return([])
+              VCR.use_cassette('bgs/tracked_items/find_tracked_items') do
+                expect_any_instance_of(BGS::EbenefitsBenefitClaimsStatus)
+                  .to receive(:find_benefit_claims_status_by_ptcpnt_id).and_return(bgs_response)
+                expect(ClaimsApi::AutoEstablishedClaim)
+                  .to receive(:where).and_return([])
 
-              submit_request(example.metadata)
+                submit_request(example.metadata)
+              end
             end
           end
 
@@ -184,11 +186,15 @@ describe 'Claims', swagger_doc: 'modules/claims_api/app/swagger/claims_api/v2/sw
 
           before do |example|
             with_okta_user(scopes) do
-              expect(ClaimsApi::AutoEstablishedClaim).to receive(:get_by_id_or_evss_id).and_return(nil)
-              expect_any_instance_of(BGS::EbenefitsBenefitClaimsStatus)
-                .to receive(:find_benefit_claim_details_by_benefit_claim_id).and_return(bgs_response)
+              VCR.use_cassette('bgs/tracked_items/find_tracked_items') do
+                VCR.use_cassette('evss/documents/get_claim_documents') do
+                  expect(ClaimsApi::AutoEstablishedClaim).to receive(:get_by_id_and_icn).and_return(nil)
+                  expect_any_instance_of(BGS::EbenefitsBenefitClaimsStatus)
+                    .to receive(:find_benefit_claim_details_by_benefit_claim_id).and_return(bgs_response)
 
-              submit_request(example.metadata)
+                  submit_request(example.metadata)
+                end
+              end
             end
           end
 
@@ -276,7 +282,7 @@ describe 'Claims', swagger_doc: 'modules/claims_api/app/swagger/claims_api/v2/sw
 
           before do |example|
             with_okta_user(scopes) do
-              expect(ClaimsApi::AutoEstablishedClaim).to receive(:get_by_id_or_evss_id).and_return(nil)
+              expect(ClaimsApi::AutoEstablishedClaim).to receive(:get_by_id_and_icn).and_return(nil)
               expect_any_instance_of(BGS::EbenefitsBenefitClaimsStatus)
                 .to receive(:find_benefit_claim_details_by_benefit_claim_id).and_return(nil)
 
