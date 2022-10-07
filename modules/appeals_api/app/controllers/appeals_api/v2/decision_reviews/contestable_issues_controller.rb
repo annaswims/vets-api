@@ -17,7 +17,7 @@ module AppealsApi::V2
       before_action :validate_json_schema, only: %i[index]
       before_action :validate_params, only: %i[index]
 
-      EXPECTED_HEADERS = %w[X-VA-SSN X-VA-Receipt-Date X-VA-File-Number].freeze
+      HEADERS = %w[X-VA-SSN X-VA-Receipt-Date X-VA-File-Number].freeze
 
       VALID_DECISION_REVIEW_TYPES = %w[higher_level_reviews notice_of_disagreements supplemental_claims].freeze
 
@@ -153,10 +153,6 @@ module AppealsApi::V2
             }
           ]
         }, status: '422'
-      end
-
-      def request_headers
-        EXPECTED_HEADERS.index_with { |key| request.headers[key] }.compact
       end
 
       def validate_json_schema

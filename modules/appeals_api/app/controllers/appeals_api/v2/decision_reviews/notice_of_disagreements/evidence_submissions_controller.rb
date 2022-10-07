@@ -72,10 +72,6 @@ module AppealsApi::V2
           }
         end
 
-        def request_headers
-          HEADERS.index_with { |key| request.headers[key] }.compact
-        end
-
         def log_error(error_detail)
           log_exception_to_sentry(EvidenceSubmissionRequestValidatorError.new(error_detail), {}, {}, :warn)
           error_detail

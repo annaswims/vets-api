@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'rails_helper'
+require 'token_validation/v2/client'
 require AppealsApi::Engine.root.join('spec', 'spec_helper.rb')
 
 describe AppealsApi::V2::DecisionReviews::SupplementalClaimsController, type: :request do
@@ -18,6 +19,7 @@ describe AppealsApi::V2::DecisionReviews::SupplementalClaimsController, type: :r
   let(:data) { fixture_to_s 'valid_200995.json', version: 'v2' }
   let(:extra_data) { fixture_to_s 'valid_200995_extra.json', version: 'v2' }
   let(:headers) { fixture_as_json 'valid_200995_headers.json', version: 'v2' }
+  let(:veteran_icn) { '1013062086V794840' }
   let(:max_headers) { fixture_as_json 'valid_200995_headers_extra.json', version: 'v2' }
 
   let(:parsed) { JSON.parse(response.body) }
@@ -27,8 +29,8 @@ describe AppealsApi::V2::DecisionReviews::SupplementalClaimsController, type: :r
 
     context 'with minimum required headers' do
       it 'returns all SCs for the given Veteran' do
-        uuid_1 = create(:supplemental_claim, veteran_icn: '1013062086V794840', form_data: nil).id
-        uuid_2 = create(:supplemental_claim, veteran_icn: '1013062086V794840').id
+        uuid_1 = create(:supplemental_claim, veteran_icn: veteran_icn, form_data: nil).id
+        uuid_2 = create(:supplemental_claim, veteran_icn: veteran_icn).id
         create(:supplemental_claim, veteran_icn: 'something_else')
 
         get(path, headers: headers)
@@ -69,20 +71,6 @@ describe AppealsApi::V2::DecisionReviews::SupplementalClaimsController, type: :r
         expect(parsed['data']['type']).to eq('supplementalClaim')
         expect(parsed['data']['attributes']['status']).to eq('pending')
         expect(parsed.dig('data', 'attributes', 'formData')).to be_a Hash
-      end
-
-      it 'behaves the same on new path' do
-        Timecop.freeze(Time.current) do
-          post(path, params: data, headers: headers)
-          orig_path_response = JSON.parse(response.body)
-          orig_path_response['data']['id'] = 'ignored'
-
-          post(new_base_path('forms/200995'), params: data, headers: headers)
-          new_path_response = JSON.parse(response.body)
-          new_path_response['data']['id'] = 'ignored'
-
-          expect(new_path_response).to match_array orig_path_response
-        end
       end
     end
 
@@ -444,6 +432,93 @@ describe AppealsApi::V2::DecisionReviews::SupplementalClaimsController, type: :r
       expect(response.status).to eq(404)
       expect(parsed['errors']).to be_an Array
       expect(parsed['errors']).not_to be_empty
+    end
+  end
+
+  context 'using the dedicated SC API path' do
+    describe '#index' do
+      let(:path) { new_base_path 'supplemental_claims' }
+      let(:scopes) { %w[claim.read] }
+
+      context 'when not authenticated' do
+        it 'returns 401: Unauthorized' do
+          get(path, headers: headers)
+
+          expect(response.status).to eq(401)
+          expect(parsed['errors']).to be_an(Array)
+        end
+      end
+
+      context 'when using Okta auth' do
+        context 'when valid' do
+          it 'returns all SCs for an authenticated Veteran' do
+            create(:supplemental_claim, veteran_icn: veteran_icn, form_data: nil).id
+            create(:supplemental_claim, veteran_icn: veteran_icn).id
+            create(:supplemental_claim, veteran_icn: 'something_else')
+
+            with_okta_user(scopes) do |auth_header|
+              get(path, headers: headers.merge(auth_header))
+
+              expect(response.status).to eq(200)
+              expect(parsed['data'].length).to eq(2)
+            end
+          end
+        end
+
+        context 'when invalid' do
+          context 'because of the wrong scope' do
+            let(:scopes) { %w[claim.something_else] }
+
+            it 'returns a 403' do
+              with_okta_user(scopes) do |auth_header|
+                get(path, headers: headers.merge(auth_header))
+
+                expect(response.status).to eq(403)
+                expect(parsed['errors']).to be_an(Array)
+              end
+            end
+          end
+        end
+
+        context 'when using CCG auth' do
+          let(:ccg_token) { OpenStruct.new(client_credentials_token?: true, payload: { 'scp' => scopes }) }
+          let(:auth_header) { { 'Authorization' => 'Bearer TEST_TOKEN' } }
+
+          context 'when valid' do
+            it 'returns all SCs for the Veteran' do
+              create(:supplemental_claim, veteran_icn: veteran_icn, form_data: nil).id
+              create(:supplemental_claim, veteran_icn: veteran_icn).id
+              create(:supplemental_claim, veteran_icn: 'something_else')
+
+              allow(JWT).to receive(:decode).and_return nil
+              allow(Token).to receive(:new).and_return ccg_token
+              allow_any_instance_of(TokenValidation::V2::Client).to receive(:token_valid?).and_return(true)
+
+              get(path, headers: headers.merge(auth_header))
+
+              expect(response.status).to eq(200)
+              expect(parsed['data'].length).to eq(2)
+            end
+          end
+
+          context 'when invalid' do
+            context 'because of the wrong scope' do
+              let(:scopes) { %w[claim.something_else] }
+
+              it 'returns a 403' do
+                allow(JWT).to receive(:decode).and_return nil
+                allow(Token).to receive(:new).and_return ccg_token
+                allow_any_instance_of(TokenValidation::V2::Client).to receive(:token_valid?).and_return(true)
+
+                get(path, headers: headers.merge(auth_header))
+
+                expect(response.status).to eq(403)
+                expect(parsed['errors']).to be_an(Array)
+              end
+            end
+          end
+        end
+      end
     end
   end
 end

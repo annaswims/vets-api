@@ -46,5 +46,15 @@ module AppealsApi
       end
       { errors: errors }
     end
+
+    # HEADERS should be a list of header names of interest, defined in the parent
+    # controller based on the form schema.
+    #
+    # @return [Hash<String,String>] request headers of interest as a hash
+    def request_headers
+      return {} unless defined? self.class::HEADERS
+
+      self.class::HEADERS.index_with { |key| request.headers[key] }.compact
+    end
   end
 end

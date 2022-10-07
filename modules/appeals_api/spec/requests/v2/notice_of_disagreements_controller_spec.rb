@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'rails_helper'
+require 'token_validation/v2/client'
 require AppealsApi::Engine.root.join('spec', 'spec_helper.rb')
 
 describe AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController, type: :request do
@@ -22,6 +23,7 @@ describe AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController, type:
     @max_headers = fixture_as_json 'valid_10182_headers_extra.json', version: 'v2'
   end
 
+  let(:veteran_icn) { '1013062086V794840' }
   let(:parsed) { JSON.parse(response.body) }
 
   describe '#index' do
@@ -29,8 +31,8 @@ describe AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController, type:
 
     context 'with minimum required headers' do
       it 'returns all NODs for the given Veteran' do
-        uuid_1 = create(:notice_of_disagreement_v2, veteran_icn: '1013062086V794840', form_data: nil).id
-        uuid_2 = create(:notice_of_disagreement_v2, veteran_icn: '1013062086V794840').id
+        uuid_1 = create(:notice_of_disagreement_v2, veteran_icn: veteran_icn, form_data: nil).id
+        uuid_2 = create(:notice_of_disagreement_v2, veteran_icn: veteran_icn).id
         create(:notice_of_disagreement_v2, veteran_icn: 'something_else')
 
         get(path, headers: @max_headers)
@@ -76,7 +78,7 @@ describe AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController, type:
         nod = AppealsApi::NoticeOfDisagreement.find_by(id: parsed['data']['id'])
 
         expect(nod.source).to eq('va.gov')
-        expect(nod.veteran_icn).to eq('1013062086V794840')
+        expect(nod.veteran_icn).to eq(veteran_icn)
         expect(parsed['data']['type']).to eq('noticeOfDisagreement')
         expect(parsed['data']['attributes']['status']).to eq('pending')
       end
@@ -351,6 +353,92 @@ describe AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController, type:
         "Non-veteran claimant headers were provided but missing '/data/attributes/claimant' field"
       )
       expect(missing_claimant_error['meta']['missing_fields']).to eq ['claimant']
+    end
+  end
+
+  context 'using the dedicated NOD API path' do
+    describe '#index' do
+      let(:path) { new_base_path 'notice_of_disagreements' }
+      let(:scopes) { %w[claim.read] }
+
+      context 'when not authenticated' do
+        it 'returns 401: Unauthorized' do
+          get(path, headers: @max_headers)
+
+          expect(response.status).to eq(401)
+          expect(parsed['errors']).to be_an(Array)
+        end
+      end
+
+      context 'when using Okta auth' do
+        context 'when valid' do
+          it 'returns all NODs for an authenticated veteran' do
+            create(:notice_of_disagreement_v2, veteran_icn: veteran_icn, form_data: nil).id
+            create(:notice_of_disagreement_v2, veteran_icn: veteran_icn).id
+            create(:notice_of_disagreement_v2, veteran_icn: 'something_else')
+
+            with_okta_user(scopes) do |auth_header|
+              get(path, headers: @max_headers.merge(auth_header))
+
+              expect(response.status).to eq(200)
+              expect(parsed['data'].length).to eq(2)
+            end
+          end
+        end
+
+        context 'when invalid' do
+          context 'because of the wrong scope' do
+            let(:scopes) { %w[claim.something_else] }
+
+            it 'returns a 403' do
+              with_okta_user(scopes) do |auth_header|
+                get(path, headers: @max_headers.merge(auth_header))
+
+                expect(response.status).to eq(403)
+                expect(parsed['errors']).to be_an(Array)
+              end
+            end
+          end
+        end
+      end
+
+      context 'when using CCG auth' do
+        let(:ccg_token) { OpenStruct.new(client_credentials_token?: true, payload: { 'scp' => scopes }) }
+        let(:auth_header) { { 'Authorization' => 'Bearer TEST_TOKEN' } }
+
+        context 'when valid' do
+          it 'returns all NODs for the Veteran' do
+            create(:notice_of_disagreement_v2, veteran_icn: veteran_icn, form_data: nil).id
+            create(:notice_of_disagreement_v2, veteran_icn: veteran_icn).id
+            create(:notice_of_disagreement_v2, veteran_icn: 'something_else')
+            allow(JWT).to receive(:decode).and_return nil
+            allow(Token).to receive(:new).and_return ccg_token
+            allow_any_instance_of(TokenValidation::V2::Client).to receive(:token_valid?).and_return(true)
+
+            get(path, headers: @max_headers.merge(auth_header))
+
+            expect(response.status).to eq(200)
+            expect(parsed['data'].length).to eq(2)
+          end
+        end
+
+        context 'when invalid' do
+          context 'because of the wrong scope' do
+            let(:scopes) { %w[claim.something_else] }
+
+            it 'returns a 403' do
+              allow(JWT).to receive(:decode).and_return nil
+              allow(Token).to receive(:new).and_return ccg_token
+              allow_any_instance_of(TokenValidation::V2::Client).to receive(:token_valid?).and_return(true)
+
+              get(path, headers: @max_headers.merge(auth_header))
+
+              expect(response.status).to eq(403)
+              expect(parsed['errors']).to be_an(Array)
+            end
+          end
+        end
+      end
     end
   end
 end

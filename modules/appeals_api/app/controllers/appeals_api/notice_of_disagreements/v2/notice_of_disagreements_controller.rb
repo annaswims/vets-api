@@ -2,11 +2,18 @@
 
 require 'appeals_api/form_schemas'
 
-class AppealsApi::NoticeOfDisagreements::V2::NoticeOfDisagreementsController < AppealsApi::ApplicationController
-  skip_before_action :authenticate
+class AppealsApi::NoticeOfDisagreements::V2::NoticeOfDisagreementsController < AppealsApi::OAuthApplicationController
+  skip_before_action :authenticate, only: %i[schema]
+  skip_before_action :verify_oauth_token!, only: %i[schema]
+  skip_before_action :verify_oauth_scopes!, only: %i[schema]
 
+  HEADERS = AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController::HEADERS
   FORM_NUMBER = '10182_WITH_SHARED_REFS'
   SCHEMA_ERROR_TYPE = Common::Exceptions::DetailedSchemaErrors
+
+  def index
+    render json: AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController.veteran_nods(target_veteran_icn)
+  end
 
   def schema
     # TODO: Return full schema after we've validated all Non-Veteran Claimant functionality

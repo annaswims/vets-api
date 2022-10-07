@@ -26,11 +26,15 @@ class AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController < Appeals
   SCHEMA_ERROR_TYPE = Common::Exceptions::DetailedSchemaErrors
   ALLOWED_COLUMNS = %i[id status code detail created_at updated_at].freeze
 
+  def self.veteran_nods(veteran_icn)
+    nods = AppealsApi::NoticeOfDisagreement.select(ALLOWED_COLUMNS)
+                                           .where(veteran_icn: veteran_icn)
+                                           .order(created_at: :desc)
+    AppealsApi::NoticeOfDisagreementSerializer.new(nods).serializable_hash
+  end
+
   def index
-    veteran_nods = AppealsApi::NoticeOfDisagreement.select(ALLOWED_COLUMNS)
-                                                   .where(veteran_icn: request_headers['X-VA-ICN'].presence&.strip)
-                                                   .order(created_at: :desc)
-    render json: AppealsApi::NoticeOfDisagreementSerializer.new(veteran_nods).serializable_hash
+    render json: self.class.veteran_nods(request_headers['X-VA-ICN'].presence&.strip)
   end
 
   def create
@@ -102,10 +106,6 @@ class AppealsApi::V2::DecisionReviews::NoticeOfDisagreementsController < Appeals
         }
       }
     }
-  end
-
-  def request_headers
-    HEADERS.index_with { |key| request.headers[key] }.compact
   end
 
   def new_notice_of_disagreement

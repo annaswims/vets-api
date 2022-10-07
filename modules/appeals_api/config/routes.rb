@@ -111,6 +111,8 @@ AppealsApi::Engine.routes.draw do
       end
 
       resources :schemas, only: :show, param: :schema_type, controller: '/appeals_api/schemas/shared_schemas'
+
+      resources :notice_of_disagreements, only: %i[index], controller: nod_schema_cpath
     end
   end
 
@@ -135,6 +137,8 @@ AppealsApi::Engine.routes.draw do
       end
 
       resources :schemas, only: :show, param: :schema_type, controller: '/appeals_api/schemas/shared_schemas'
+
+      resources :higher_level_reviews, only: %i[index], controller: hlr_schema_cpath
     end
   end
 
@@ -161,6 +165,8 @@ AppealsApi::Engine.routes.draw do
       end
 
       resources :schemas, only: :show, param: :schema_type, controller: '/appeals_api/schemas/shared_schemas'
+
+      resources :supplemental_claims, only: %i[index], controller: sc_schema_cpath
     end
   end
 

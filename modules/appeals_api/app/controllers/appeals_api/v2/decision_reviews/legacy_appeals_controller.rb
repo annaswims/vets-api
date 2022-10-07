@@ -40,10 +40,6 @@ class AppealsApi::V2::DecisionReviews::LegacyAppealsController < AppealsApi::App
 
   attr_reader :caseflow_response, :caseflow_exception_response
 
-  def request_headers
-    HEADERS.index_with { |key| request.headers[key] }.compact
-  end
-
   def validate_json_schema
     validate_json_schema_for_headers
   end

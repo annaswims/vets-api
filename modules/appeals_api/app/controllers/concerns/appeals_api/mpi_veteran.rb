@@ -9,7 +9,7 @@ module AppealsApi
       # Calls to target_veteran expect typical request_headers and
       # a request body with identifying veteran attributes.
       #
-      # Returns the veteran with MPI attributes, including (of concern to us) their ICN.
+      # Returns the veteran with MPI attributes, including (of concern to us) their ICN, or nil.
       def target_veteran
         veteran ||= Appellant.new(
           type: :veteran,
@@ -25,6 +25,15 @@ module AppealsApi
         )
 
         mpi_veteran
+      rescue
+        nil
+      end
+
+      def target_veteran_icn
+        veteran_icn = request.headers['X-VA-ICN'].presence&.strip
+        return veteran_icn if veteran_icn.present?
+
+        target_veteran&.mpi_icn
       end
     end
   end
