@@ -4,24 +4,22 @@ module Mobile
   module V0
     module Concerns
       class Filter
-        PERMITTED_OPERATIONS = %w[andEqual orEqual notEqual andInclude orInclude notInclude].freeze
+        PERMITTED_OPERATIONS = %w[equal oneOf notEqual].freeze # also consider array inclusion
         attr_reader :records
 
         def initialize(records)
           @records = records
           @processed_filters = {
-            andEqual: [],
-            orEqual: [],
+            equal: [],
+            oneOf: [],
             notEqual: [],
-            andInclude: [],
-            orInclude: [],
-            notInclude: []
           }
         end
 
         def call(filter_params)
           filters = filter_params.map(&:to_unsafe_hash)
           filters = gather_filters(filters)
+          # move all validations to separate class
           filters = validate_request(filters)
           filter_records
         end
@@ -82,7 +80,7 @@ module Mobile
         end
 
         def and_group_ids
-          @processed_filters[:andEqual].each do |filter|
+          @processed_filters[:equal].each do |filter|
           end
         end
       end

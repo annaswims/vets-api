@@ -77,7 +77,7 @@ describe Mobile::V0::Concerns::Filter, type: :request do
       expect(parsed_body['data'].collect { |d| d['id'] }).to eq(['8a488e986bb064d7016bb429f6260012'])
     end
 
-    it 'handles andEquals' do
+    it 'handles equals' do
     end
   end
 end
