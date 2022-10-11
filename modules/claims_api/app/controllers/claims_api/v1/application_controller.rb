@@ -51,7 +51,7 @@ module ClaimsApi
 
         if target_veteran.mpi.mpi_response_is_cached?
           target_veteran.mpi.destroy
-          target_veteran.mpi = nil
+          target_veteran.mpi = nil unless target_veteran.mpi.nil?
         end
 
         unless target_veteran.mpi
