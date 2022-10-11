@@ -7,6 +7,7 @@ require 'common/exceptions/forbidden'
 require 'common/exceptions/schema_validation_errors'
 require 'decision_review_v1/configuration'
 require 'decision_review_v1/service_exception'
+require 'decision_review_v1/form_4142_processor'
 
 module DecisionReviewV1
   ##
@@ -250,11 +251,17 @@ module DecisionReviewV1
     #
     def create_supplemental_claim(request_body:, user:)
       with_monitoring_and_error_handling do
+        request_body_obj = JSON.parse(request_body)
+        form4142 = request_body_obj.delete("form4142")    
         headers = create_supplemental_claims_headers(user)
-        response = perform :post, 'supplemental_claims', request_body, headers
+        response = perform :post, 'supplemental_claims', request_body_obj.to_json, headers
         raise_schema_error_unless_200_status response.status
         validate_against_schema json: response.body, schema: SC_CREATE_RESPONSE_SCHEMA,
                                 append_to_error_class: ' (SC_V1)'
+        
+        # If we get here without erroring, then submission was successful
+        submit_form4142(form_data: form4142, user: user, response: response) unless form4142.nil?
+
         response
       end
     end
@@ -370,6 +377,13 @@ module DecisionReviewV1
     end
 
     private
+
+    def submit_form4142(form_data:, user:, response:)
+      processor = DecisionReviewV1::Processor::Form4142Processor.new(form_data: form_data, user: user, response: response)
+      @pdf_path = processor.pdf_path
+      response = CentralMail::Service.new.upload(processor.request_body)
+      handle_http_error(response) if response.present? && response.status.between?(201, 600)
+    end
 
     def create_higher_level_review_headers(user)
       headers = {
