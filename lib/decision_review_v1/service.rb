@@ -260,9 +260,19 @@ module DecisionReviewV1
                                 append_to_error_class: ' (SC_V1)'
         
         # If we get here without erroring, then submission was successful
-        submit_form4142(form_data: form4142, user: user, response: response) unless form4142.nil?
+        form4142_response = submit_form4142(form_data: form4142, user: user, response: response) unless form4142.nil?
+        ret_data = {
+          :data => {
+            body: response.body, 
+            status: response.status
+          },
+          :form4142 => {
+            body: form4142_response.body, 
+            status: form4142_response.status
+          }
+        }
 
-        response
+        ret_data
       end
     end
 
@@ -382,7 +392,6 @@ module DecisionReviewV1
       processor = DecisionReviewV1::Processor::Form4142Processor.new(form_data: form_data, user: user, response: response)
       @pdf_path = processor.pdf_path
       response = CentralMail::Service.new.upload(processor.request_body)
-      handle_http_error(response) if response.present? && response.status.between?(201, 600)
     end
 
     def create_higher_level_review_headers(user)
