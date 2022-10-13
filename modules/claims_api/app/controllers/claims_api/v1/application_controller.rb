@@ -13,6 +13,8 @@ module ClaimsApi
       include ClaimsApi::JsonFormatValidation
       include ClaimsApi::CcgTokenValidation
 
+      attr_writer :mpi
+
       before_action :validate_json_format, if: -> { request.post? }
       before_action :validate_veteran_identifiers
 
@@ -62,8 +64,8 @@ module ClaimsApi
           )
         end
 
-        mpi_search_token = target_veteran.mpi.search_token
-        target_veteran.search_token = mpi_search_token
+        # mpi_search_token = target_veteran.mpi.search_token
+        target_veteran.search_token = user_identity.search_token
         mpi_add_response = target_veteran.mpi.add_person_proxy
 
         raise mpi_add_response.error unless mpi_add_response.ok?
