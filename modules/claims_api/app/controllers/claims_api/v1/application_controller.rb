@@ -64,8 +64,7 @@ module ClaimsApi
           )
         end
 
-        # mpi_search_token = target_veteran.mpi.search_token
-        target_veteran.search_token = user_identity.search_token
+        target_veteran.search_token = target_veteran.mpi.search_token
         mpi_add_response = target_veteran.mpi.add_person_proxy
 
         raise mpi_add_response.error unless mpi_add_response.ok?
