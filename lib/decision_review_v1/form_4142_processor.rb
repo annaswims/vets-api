@@ -15,7 +15,6 @@ module DecisionReviewV1
         @user = user
         @response = response
         @pdf_path = generate_stamp_pdf
-        ap @pdf_path
         @request_body = {
           'document' => to_faraday_upload,
           'metadata' => generate_metadata
