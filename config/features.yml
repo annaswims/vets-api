@@ -138,6 +138,10 @@ features:
     actor_type: user
     description: Enables Ch31 form email submission confirmation after vbms
     enable_in_development: true
+  claim_letters_access:
+    actor_type: user
+    description: Enables users to access the claim letters page
+    enable_in_development: true
   coe_access:
     actor_type: user
     description: Feature gates the certificate of eligibility application
@@ -273,10 +277,6 @@ features:
   enrollment_verification:
     actor_type: user
     description: Enables access to the Enrollment Verification app
-    enable_in_development: true
-  evss_upload_limit_150mb:
-    actor_type: user
-    description: Allow user to upload files up to 150 MB in size (EVSS endpoint for 526 & CST)
     enable_in_development: true
   ezcg_use_facility_api:
     actor_type: user
@@ -521,10 +521,6 @@ features:
   pw_ehr_cta_use_slo:
     actor_type: user
     description: Use single-logout (SLO) paths for Public Websites-managed EHR CTAs
-  request_locked_pdf_password:
-    actor_type: user
-    description: Ask for a password when an encrypted PDF is detected before uploading
-    enable_in_development: true
   rrd_asthma_compensation:
     actor_type: user
     description: Fast tracks 526 disability compensation asthma claims by submitting additional health data
@@ -552,6 +548,10 @@ features:
   rrd_mas_notification:
     actor_type: user
     description: Notifies MAS service that a MAS-relevant claim has come through
+    enable_in_development: true
+  rrd_hypertension_mas_notification:
+    actor_type: user
+    description: Notifies MAS service of single-issue hypertension claims
     enable_in_development: true
   rrd_call_vro_service:
     actor_type: user
@@ -798,6 +798,9 @@ features:
   show_dashboard_notifications:
     actor_type: user
     description: Enables on-site notifications
+  show_myva_dashboard_2_0:
+    actor_type: user
+    description: Enables myva 2.0
   check_va_inbox_enabled:
     actor_type: user
     description: Enables check inbox link

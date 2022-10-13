@@ -63,7 +63,7 @@ module V0
                                                             id_token: service_token_response[:id_token],
                                                             user_info: user_info).perform
       if credential_level.can_uplevel_credential?
-        render_uplevel_credential(state_payload, state)
+        render_uplevel_credential(state_payload)
       else
         create_login_code(state_payload, user_info, credential_level, service_token_response)
       end
@@ -262,8 +262,13 @@ module V0
       uri.to_s
     end
 
-    def render_uplevel_credential(state_payload, state)
+    def render_uplevel_credential(state_payload)
       acr_for_type = SignIn::AcrTranslator.new(acr: state_payload.acr, type: state_payload.type, uplevel: true).perform
+      state = SignIn::StatePayloadJwtEncoder.new(code_challenge: state_payload.code_challenge,
+                                                 code_challenge_method: SignIn::Constants::Auth::CODE_CHALLENGE_METHOD,
+                                                 acr: state_payload.acr, client_id: state_payload.client_id,
+                                                 type: state_payload.type,
+                                                 client_state: state_payload.client_state).perform
       render body: auth_service(state_payload.type).render_auth(state: state, acr: acr_for_type),
              content_type: 'text/html'
     end
@@ -274,10 +279,18 @@ module V0
       SignIn::CredentialInfoCreator.new(csp_user_attributes: user_attributes,
                                         csp_token_response: service_token_response).perform
       user_code_map = SignIn::UserCreator.new(user_attributes: user_attributes, state_payload: state_payload).perform
-      context = { type: state_payload.type, client_id: state_payload.client_id, ial: credential_level.current_ial }
+      context = {
+        type: state_payload.type,
+        client_id: state_payload.client_id,
+        ial: credential_level.current_ial,
+        acr: state_payload.acr
+      }
       sign_in_logger.info('callback', context)
       StatsD.increment(SignIn::Constants::Statsd::STATSD_SIS_CALLBACK_SUCCESS,
-                       tags: ["type:#{context[:type]}", "client_id:#{context[:client_id]}", "ial:#{context[:ial]}"])
+                       tags: ["type:#{context[:type]}",
+                              "client_id:#{context[:client_id]}",
+                              "ial:#{context[:ial]}",
+                              "acr:#{context[:acr]}"])
 
       redirect_to SignIn::LoginRedirectUrlGenerator.new(user_code_map: user_code_map).perform
     end

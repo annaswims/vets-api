@@ -7,6 +7,7 @@ module SignIn
                 :idme_uuid,
                 :logingov_uuid,
                 :authn_context,
+                :auto_uplevel,
                 :loa,
                 :credential_uuid,
                 :sign_in,
@@ -25,6 +26,7 @@ module SignIn
       @idme_uuid = user_attributes[:idme_uuid]
       @logingov_uuid = user_attributes[:logingov_uuid]
       @authn_context = user_attributes[:authn_context]
+      @auto_uplevel = user_attributes[:auto_uplevel]
       @loa = user_attributes[:loa]
       @credential_uuid = user_attributes[:uuid]
       @sign_in = user_attributes[:sign_in]
@@ -78,26 +80,44 @@ module SignIn
       if add_person_response.ok?
         user_identity_from_attributes.icn = add_person_response.mvi_codes[:icn]
       else
-        handle_error(Errors::MPIUserCreationFailedError,
-                     'User MPI record cannot be created',
-                     Constants::ErrorCode::GENERIC_EXTERNAL_ISSUE)
+        handle_error('User MPI record cannot be created',
+                     Constants::ErrorCode::GENERIC_EXTERNAL_ISSUE,
+                     error: Errors::MPIUserCreationFailedError)
       end
     end
 
     def update_mpi_correlation_record
+      return if auto_uplevel
+
       user_identity_from_attributes.icn ||= mpi_response_profile.icn
+      attribute_mismatch_check(:first_name,
+                               user_identity_from_attributes.first_name,
+                               mpi_response_profile.given_names.first)
+      attribute_mismatch_check(:last_name, user_identity_from_attributes.last_name, mpi_response_profile.family_name)
+      attribute_mismatch_check(:birth_date, user_identity_from_attributes.birth_date, mpi_response_profile.birth_date)
+      attribute_mismatch_check(:ssn, user_identity_from_attributes.ssn, mpi_response_profile.ssn, prevent_auth: true)
       update_profile_response = mpi_service.update_profile(user_identity_from_attributes)
       unless update_profile_response&.ok?
-        handle_error(Errors::MPIUserUpdateFailedError,
-                     'User MPI record cannot be updated',
-                     Constants::ErrorCode::GENERIC_EXTERNAL_ISSUE,
-                     raise_error: false)
+        handle_error('User MPI record cannot be updated', Constants::ErrorCode::GENERIC_EXTERNAL_ISSUE)
       end
     end
 
+    def attribute_mismatch_check(type, credential_attribute, mpi_attribute, prevent_auth: false)
+      return unless mpi_attribute
+
+      if scrub_attribute(credential_attribute) != scrub_attribute(mpi_attribute)
+        error = prevent_auth ? Errors::AttributeMismatchError : nil
+        handle_error("Attribute mismatch, #{type} in credential does not match MPI attribute",
+                     Constants::ErrorCode::GENERIC_EXTERNAL_ISSUE,
+                     error: error)
+      end
+    end
+
+    def scrub_attribute(attribute)
+      attribute.tr('-', '').downcase
+    end
+
     def log_first_time_user
-      user_verification_type = logingov_auth? ? :logingov_uuid : :backing_idme_uuid
-      user_verification_identifier = logingov_auth? ? logingov_uuid : idme_uuid
       unless UserVerification.find_by(user_verification_type => user_verification_identifier)
         sign_in_logger.info("New VA.gov user, type=#{sign_in[:service_name]}")
       end
@@ -105,9 +125,9 @@ module SignIn
 
     def create_authenticated_user
       unless user_verification
-        handle_error(Errors::UserAttributesMalformedError,
-                     'User Attributes are Malformed',
-                     Constants::ErrorCode::INVALID_REQUEST)
+        handle_error('User Attributes are Malformed',
+                     Constants::ErrorCode::INVALID_REQUEST,
+                     error: Errors::UserAttributesMalformedError)
       end
 
       user = User.new
@@ -128,9 +148,9 @@ module SignIn
 
     def set_user_attributes_from_mpi
       unless mpi_response_profile
-        handle_error(Errors::MHVMissingMPIRecordError,
-                     'No MPI Record for MHV Account',
-                     Constants::ErrorCode::GENERIC_EXTERNAL_ISSUE)
+        handle_error('No MPI Record for MHV Account',
+                     Constants::ErrorCode::GENERIC_EXTERNAL_ISSUE,
+                     error: Errors::MHVMissingMPIRecordError)
       end
       user_identity_from_attributes.first_name = mpi_response_profile.given_names.first
       user_identity_from_attributes.last_name = mpi_response_profile.family_name
@@ -174,20 +194,20 @@ module SignIn
     end
 
     def check_lock_flag(attribute, attribute_description, code)
-      handle_error(Errors::MPILockedAccountError, "#{attribute_description} Detected", code) if attribute
+      handle_error("#{attribute_description} Detected", code, error: Errors::MPILockedAccountError) if attribute
     end
 
     def check_id_mismatch(id_array, id_description, code)
       if id_array && id_array.compact.uniq.size > 1
-        handle_error(Errors::MPIMalformedAccountError,
-                     "User attributes contain multiple distinct #{id_description} values",
-                     code)
+        handle_error("User attributes contain multiple distinct #{id_description} values",
+                     code,
+                     error: Errors::MPIMalformedAccountError)
       end
     end
 
-    def handle_error(error, error_message, error_code, raise_error: true)
-      log_message_to_sentry(error_message, 'warn')
-      raise error, message: error_message, code: error_code if raise_error
+    def handle_error(error_message, error_code, error: nil)
+      sign_in_logger.info('user creator error', { errors: error_message })
+      raise error, message: error_message, code: error_code if error
     end
 
     def mpi_response_profile
@@ -208,8 +228,30 @@ module SignIn
       @user_verification ||= Login::UserVerifier.new(user_identity_from_attributes).perform
     end
 
-    def logingov_auth?
-      sign_in[:service_name] == SAML::User::LOGINGOV_CSID
+    def user_verification_type
+      case sign_in[:service_name]
+      when SAML::User::LOGINGOV_CSID
+        :logingov_uuid
+      when SAML::User::MHV_ORIGINAL_CSID
+        :mhv_uuid
+      when SAML::User::DSLOGON_CSID
+        :dslogon_uuid
+      when SAML::User::IDME_CSID
+        :idme_uuid
+      end
+    end
+
+    def user_verification_identifier
+      case sign_in[:service_name]
+      when SAML::User::LOGINGOV_CSID
+        logingov_uuid
+      when SAML::User::MHV_ORIGINAL_CSID
+        mhv_correlation_id
+      when SAML::User::DSLOGON_CSID
+        edipi
+      when SAML::User::IDME_CSID
+        idme_uuid
+      end
     end
 
     def mhv_auth?
@@ -225,7 +267,7 @@ module SignIn
     end
 
     def sign_in_logger
-      @sign_in_logger = SignIn::Logger.new(prefix: self.class)
+      @sign_in_logger = Logger.new(prefix: self.class)
     end
   end
 end

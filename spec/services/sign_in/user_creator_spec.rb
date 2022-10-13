@@ -32,12 +32,12 @@ RSpec.describe SignIn::UserCreator do
           csp_email: csp_email,
           sign_in: sign_in,
           multifactor: multifactor,
-          authn_context: authn_context
+          authn_context: authn_context,
+          auto_uplevel: auto_uplevel
         }
       end
       let(:loa) { { current: LOA::THREE, highest: LOA::THREE } }
       let(:state) { 'some-state' }
-      let(:verified_at) { Time.zone.now }
       let(:csp_id) { SecureRandom.hex }
       let(:ssn) { '123456780' }
       let(:birth_date) { '2022-01-01' }
@@ -49,11 +49,11 @@ RSpec.describe SignIn::UserCreator do
       let!(:user_verification) { create(:logingov_user_verification, logingov_uuid: csp_id) }
       let(:user_uuid) { user_verification.credential_identifier }
       let(:login_code) { 'some-login-code' }
-      let(:expected_return_object) { [login_code, client_state] }
       let(:id_theft_flag) { false }
       let(:deceased_date) { nil }
       let(:sign_in) { { service_name: service_name } }
       let(:authn_context) { service_name }
+      let(:auto_uplevel) { false }
       let(:multifactor) { true }
       let(:edipis) { ['some-edipi'] }
       let(:mhv_iens) { ['some-mhv-ien'] }
@@ -96,8 +96,8 @@ RSpec.describe SignIn::UserCreator do
 
       shared_context 'user creation blocked' do
         it 'raises the expected error' do
-          expect_any_instance_of(described_class).to receive(:log_message_to_sentry).with(expected_error_message,
-                                                                                          'warn')
+          expect_any_instance_of(SignIn::Logger).to receive(:info).with('user creator error',
+                                                                        { errors: expected_error_message })
 
           expect { subject }.to raise_error(expected_error, expected_error_message)
         end
@@ -204,17 +204,29 @@ RSpec.describe SignIn::UserCreator do
           let(:expected_error_message) { 'User MPI record cannot be updated' }
           let(:expected_error_code) { SignIn::Constants::ErrorCode::GENERIC_EXTERNAL_ISSUE }
 
-          it 'makes a log to sentry' do
-            expect_any_instance_of(described_class).to receive(:log_message_to_sentry).with(expected_error_message,
-                                                                                            'warn')
-
+          it 'makes a log to rails logger' do
+            expect_any_instance_of(SignIn::Logger).to receive(:info).with('user creator error',
+                                                                          { errors: expected_error_message })
             subject
           end
         end
 
-        it 'makes an mpi call to update correlation record' do
-          expect_any_instance_of(MPI::Service).to receive(:update_profile)
-          subject
+        context 'and credential has been auto upleveled' do
+          let(:auto_uplevel) { true }
+
+          it 'does not make an mpi call to update correlation record' do
+            expect_any_instance_of(MPI::Service).not_to receive(:update_profile)
+            subject
+          end
+        end
+
+        context 'and credential has not been auto upleveled' do
+          let(:auto_uplevel) { false }
+
+          it 'makes an mpi call to update correlation record' do
+            expect_any_instance_of(MPI::Service).to receive(:update_profile)
+            subject
+          end
         end
 
         it 'creates a user with expected attributes' do
@@ -266,10 +278,28 @@ RSpec.describe SignIn::UserCreator do
         end
 
         context 'when there is a mismatch with credential and mpi attributes' do
-          let(:mpi_birth_date) { '1970-01-01' }
-          let(:mpi_first_name) { 'some-mpi-first-name' }
-          let(:mpi_last_name) { 'some-mpi-last-name' }
-          let(:mpi_ssn) { '098765432' }
+          let(:mpi_birth_date) { birth_date }
+          let(:mpi_first_name) { first_name }
+          let(:mpi_last_name) { last_name }
+          let(:mpi_ssn) { ssn }
+          let(:mpi_profile) do
+            build(:mvi_profile,
+                  id_theft_flag: id_theft_flag,
+                  deceased_date: deceased_date,
+                  ssn: mpi_ssn,
+                  icn: icn,
+                  edipis: edipis,
+                  edipi: edipis.first,
+                  mhv_ien: mhv_iens.first,
+                  mhv_iens: mhv_iens,
+                  birls_id: birls_ids.first,
+                  birls_ids: birls_ids,
+                  participant_id: participant_ids.first,
+                  participant_ids: participant_ids,
+                  birth_date: mpi_birth_date,
+                  given_names: [mpi_first_name],
+                  family_name: mpi_last_name)
+          end
 
           before do
             stub_mpi(build(:mvi_profile,
@@ -281,13 +311,67 @@ RSpec.describe SignIn::UserCreator do
                            family_name: mpi_last_name))
           end
 
-          it 'prefers mpi attributes on the created user' do
-            subject
-            user = User.find(user_uuid)
-            expect(user.ssn).to eq(mpi_ssn)
-            expect(user.birth_date).to eq(mpi_birth_date)
-            expect(user.first_name).to eq(mpi_first_name)
-            expect(user.last_name).to eq(mpi_last_name)
+          context 'and attribute mismatch is first_name' do
+            let(:mpi_first_name) { 'some-mpi-first-name' }
+            let(:expected_error) { SignIn::Errors::AttributeMismatchError }
+            let(:expected_error_message) { 'Attribute mismatch, first_name in credential does not match MPI attribute' }
+
+            it 'makes a log to rails logger' do
+              expect_any_instance_of(SignIn::Logger).to receive(:info).with('user creator error',
+                                                                            { errors: expected_error_message })
+              subject
+            end
+
+            it 'prefers mpi first name attribute' do
+              subject
+              user = User.find(user_uuid)
+              expect(user.first_name).to eq(mpi_first_name)
+            end
+          end
+
+          context 'and attribute mismatch is last name' do
+            let(:mpi_last_name) { 'some-mpi-last-name' }
+            let(:expected_error) { SignIn::Errors::AttributeMismatchError }
+            let(:expected_error_message) { 'Attribute mismatch, last_name in credential does not match MPI attribute' }
+
+            it 'makes a log to rails logger' do
+              expect_any_instance_of(SignIn::Logger).to receive(:info).with('user creator error',
+                                                                            { errors: expected_error_message })
+              subject
+            end
+
+            it 'prefers mpi last name attribute' do
+              subject
+              user = User.find(user_uuid)
+              expect(user.last_name).to eq(mpi_last_name)
+            end
+          end
+
+          context 'and attribute mismatch is birth date' do
+            let(:mpi_birth_date) { '1970-01-01' }
+            let(:expected_error) { SignIn::Errors::AttributeMismatchError }
+            let(:expected_error_message) { 'Attribute mismatch, birth_date in credential does not match MPI attribute' }
+
+            it 'makes a log to rails logger' do
+              expect_any_instance_of(SignIn::Logger).to receive(:info).with('user creator error',
+                                                                            { errors: expected_error_message })
+              subject
+            end
+
+            it 'prefers mpi birth date attribute' do
+              subject
+              user = User.find(user_uuid)
+              expect(user.birth_date).to eq(mpi_birth_date)
+            end
+          end
+
+          context 'and attribute mismatch is ssn' do
+            let(:mpi_ssn) { '098765432' }
+            let(:expected_error) { SignIn::Errors::AttributeMismatchError }
+            let(:expected_error_message) { 'Attribute mismatch, ssn in credential does not match MPI attribute' }
+            let(:expected_error_code) { SignIn::Constants::ErrorCode::GENERIC_EXTERNAL_ISSUE }
+
+            it_behaves_like 'user creation blocked'
           end
         end
       end
