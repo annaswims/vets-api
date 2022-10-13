@@ -258,6 +258,7 @@ module DecisionReviewV1
         raise_schema_error_unless_200_status response.status
         validate_against_schema json: response.body, schema: SC_CREATE_RESPONSE_SCHEMA,
                                 append_to_error_class: ' (SC_V1)'
+<<<<<<< HEAD
 
         # If we get here without erroring, then submission was successful
         form4142_response = submit_form4142(form_data: form4142, user: user, response: response) unless form4142.nil?
@@ -272,6 +273,22 @@ module DecisionReviewV1
           }
         }
 
+=======
+        
+        # If we get here without erroring, then submission was successful
+        form4142_response = submit_form4142(form_data: form4142, user: user, response: response) unless form4142.nil?
+        ret_data = {
+          :data => {
+            body: response.body, 
+            status: response.status
+          },
+          :form4142 => {
+            body: form4142_response.body, 
+            status: form4142_response.status
+          }
+        }
+
+>>>>>>> 44c54d176 (Adding multiple responses)
         ret_data
       end
     end
