@@ -252,22 +252,22 @@ module DecisionReviewV1
     def create_supplemental_claim(request_body:, user:)
       with_monitoring_and_error_handling do
         request_body_obj = JSON.parse(request_body)
-        form4142 = request_body_obj.delete("form4142")    
+        form4142 = request_body_obj.delete('form4142')
         headers = create_supplemental_claims_headers(user)
         response = perform :post, 'supplemental_claims', request_body_obj.to_json, headers
         raise_schema_error_unless_200_status response.status
         validate_against_schema json: response.body, schema: SC_CREATE_RESPONSE_SCHEMA,
                                 append_to_error_class: ' (SC_V1)'
-        
+
         # If we get here without erroring, then submission was successful
         form4142_response = submit_form4142(form_data: form4142, user: user, response: response) unless form4142.nil?
         ret_data = {
-          :data => {
-            body: response.body, 
+          data: {
+            body: response.body,
             status: response.status
           },
-          :form4142 => {
-            body: form4142_response.body, 
+          form4142: {
+            body: form4142_response.body,
             status: form4142_response.status
           }
         }
@@ -389,7 +389,8 @@ module DecisionReviewV1
     private
 
     def submit_form4142(form_data:, user:, response:)
-      processor = DecisionReviewV1::Processor::Form4142Processor.new(form_data: form_data, user: user, response: response)
+      processor = DecisionReviewV1::Processor::Form4142Processor.new(form_data: form_data, user: user,
+                                                                     response: response)
       @pdf_path = processor.pdf_path
       response = CentralMail::Service.new.upload(processor.request_body)
     end
