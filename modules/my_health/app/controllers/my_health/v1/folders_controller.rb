@@ -40,6 +40,10 @@ module MyHealth
         head :no_content
       end
 
+      def search
+        resource = client.search_folder(params[:id], params[:page], params[:page_size], args = {})
+      end
+
       private
 
       def create_folder_params

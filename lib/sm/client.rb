@@ -122,6 +122,12 @@ module SM
       response.nil? ? nil : response.status
     end
 
+    def search_folder(folder_id, page_num, page_size, args = {})
+      json_data = perform(:post, "folder/#{folder_id}/searchMessage/page/#{page_num}/pageSize/#{page_size}", args.to_h, token_headers).body
+      messages = Common::Collection.new(Message, json_data)
+      messages
+    end
+
     ##
     # Get a collection of Messages
     #
