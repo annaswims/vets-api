@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module KMSKeyRotation
+module KmsKeyRotation
   class Batcher
     include Sidekiq::Worker
 
@@ -11,7 +11,7 @@ module KMSKeyRotation
     def initialize
       @batch = Sidekiq::Batch.new
       @batch.description = "KMS Key Rotation #{batch.bid}"
-      @batch.on(:complete, KMSKeyRotation::Batcher)
+      @batch.on(:complete, KmsKeyRotation::Batcher)
     end
 
     def batch_records
@@ -19,7 +19,7 @@ module KMSKeyRotation
       return nil if records.empty?
 
       batch.jobs do
-        records.each { |record| KMSKeyRotation::UpdateRecordJob.new.perform_async(record) }
+        records.each { |record| KmsKeyRotation::UpdateRecordJob.new.perform_async(record) }
       end
     end
 
@@ -28,7 +28,7 @@ module KMSKeyRotation
       # log total jobs in batch - status.total
       # log total failures - status.failures
       # do we need to retry failed jobs? - status.failure_info # an array of failed jobs
-      KMSKeyRotation::Batcher.new
+      KmsKeyRotation::Batcher.new
     end
 
     private
@@ -43,9 +43,7 @@ module KMSKeyRotation
     end
 
     def models
-      ApplicationRecord.descendants_using_encryption.map(&:name).map(&:constantize).each do |model|
-        model.descendants.empty? && model.try(:lockbox_attributes) && !model.lockbox_attributes.empty?
-      end
+      ApplicationRecord.descendants_using_encryption.map(&:name).map(&:constantize)
     end
   end
 end

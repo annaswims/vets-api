@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module KMSKeyRotation
+module KmsKeyRotation
   class UpdateRecordJob
     include Sidekiq::Worker
 
