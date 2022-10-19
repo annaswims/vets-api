@@ -41,13 +41,23 @@ module MyHealth
       end
 
       def search
-        resource = client.search_folder(params[:id], params[:page], params[:page_size], args = {})
+        messageSearch = MessageSearch.new(search_params)
+        resource = client.search_folder(params[:id], 1, 15, messageSearch)
+
+        render json: resource.data,
+               serializer: CollectionSerializer,
+               each_serializer: MessagesSerializer,
+               meta: resource.metadata
       end
 
       private
 
       def create_folder_params
         params.require(:folder).permit(:name)
+      end
+
+      def search_params
+        params.require(:message_search).permit(:subject)
       end
     end
   end
