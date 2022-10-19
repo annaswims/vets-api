@@ -1,0 +1,182 @@
+appName:
+target_env:
+image:
+  value:
+  tag:
+  pullPolicy:
+vsp_environment:
+affitnityWeight:
+mockData:
+  enabled:
+
+
+matchExpressions:
+  key:
+  operator:
+topologyKey:
+annotations:
+  ad.datadoghq.com/.checks: {}
+
+# configuration
+:
+  fullName:
+  strategyType:
+  maxSurge:
+  maxUnavailable:
+  securityContext:
+  images:
+  autoscaling:
+    enabled:
+    minReplicas:
+    maxReplicas:
+    targetAverageUtilization:
+  affinity:
+    weight:
+  containers:
+    ports:
+      - containerPort:
+        name:
+      - containerPort:
+        name:
+  healthCheck:
+    requestPath:
+    port:
+    initialDelaySeconds:
+    periodSeconds:
+    readinessPath:
+    readinessPort:
+  socatProxyEnabled:
+
+
+  resources:
+    requests:
+      cpu:
+      memory:
+    limits:
+      cpu:
+      memory:
+  serviceAccount:
+    enabled:
+    role_arn:
+    name:
+
+  ingress:
+    enabled:
+    entryPoints:
+    routes:
+      - kind:
+        match:
+        priority:
+        services:
+          - name:
+            port:
+        middlewares:
+          - name:
+    # Keep until api.va.gov is directed to Lighthouse
+      - kind:
+        match:
+        priority:
+        services:
+          - name:
+            port:
+        middlewares:
+          - name:
+    # va.gov
+      - kind:
+        match:
+        priority:
+        services:
+          - name:
+            port:
+        middlewares:
+          - name:
+    # vfs.va.gov
+      - kind:
+        match:
+        priority:
+        services:
+          - name:
+            port:
+        middlewares:
+          - name:
+
+  service:
+    enabled:
+    annotations:
+      traefik.backend.loadbalancer.sticky:
+    ports:
+    # port is what this service should serve on, and targetPort is the port in the container.
+    - port:
+      name:
+      targetPort:
+      protocol:
+    - port:
+      name:
+      targetPort:
+      protocol:
+    type:
+
+  hpa:
+    apiVersion:
+    kind:
+
+  externalDns:
+    dnsName:
+    recordTTL:
+    targets:
+
+
+#Worker Configuration
+worker:
+  fullName:
+  strategyType:
+  maxSurge:
+  maxUnavailable:
+  securityContext:
+  metadata:
+    name:
+
+  serviceAccount:
+    enabled:
+    role_arn:
+    name:
+
+  autoscaling:
+    enabled:
+    minReplicas:
+    maxReplicas:
+    targetAverageUtilization:
+
+  healthCheck:
+    requestPath:
+    port:
+    initialDelaySeconds:
+    periodSeconds:
+    readinessPath:
+    readinessPort:
+
+  socatProxyEnabled:
+
+  resources: {}
+  service:
+    enabled: false
+
+dbMigrate:
+  fullName:
+  annotations: {}
+  command: {}
+  args:
+  backoffLimit:
+  restartPolicy:
+
+# Common configuration
+common:
+  socatProxy: {}
+  volumeMounts: {}
+
+  volumes: {}
+  initContainers: {}
+  envSecrets: {}
+
+  secrets:
+    settingsLocal: {}
