@@ -122,7 +122,10 @@ module SM
       response.nil? ? nil : response.status
     end
 
-    def search_folder(folder_id, page_num = 1, page_size = MHV_MAXIMUM_PER_PAGE, args = {})
+    def search_folder(folder_id, page_num, page_size, args = {})
+      page_num = page_num || 1
+      page_size = page_size || MHV_MAXIMUM_PER_PAGE
+
       json_data = perform(:post, "folder/#{folder_id}/searchMessage/page/#{page_num}/pageSize/#{page_size}", args.to_h, token_headers).body
       messages = Common::Collection.new(Message, json_data)
       messages
