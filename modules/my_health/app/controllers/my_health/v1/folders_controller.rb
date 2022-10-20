@@ -42,7 +42,7 @@ module MyHealth
 
       def search
         messageSearch = MessageSearch.new(search_params)
-        resource = client.search_folder(params[:id], 1, 15, messageSearch)
+        resource = client.search_folder(params[:id], params[:page], params[:per_page], messageSearch)
 
         render json: resource.data,
                serializer: CollectionSerializer,
@@ -57,7 +57,7 @@ module MyHealth
       end
 
       def search_params
-        params.require(:message_search).permit(:subject)
+        params.permit(:exact_match, :sender, :subject, :category, :recipient, :from_date,:to_date, :message_id)
       end
     end
   end
