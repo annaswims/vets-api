@@ -77,6 +77,7 @@ module SignIn
         parent_refresh_token_hash: refresh_token_hash,
         anti_csrf_token: updated_anti_csrf_token,
         last_regeneration_time: last_regeneration_time
+        # request.ip
       )
     end
 

@@ -46,8 +46,11 @@ module SignIn
     end
 
     def authenticate_access_token(with_validation: true)
+      binding.pry
       access_token_jwt = bearer_token || cookie_access_token
-      AccessTokenJwtDecoder.new(access_token_jwt: access_token_jwt).perform(with_validation: with_validation)
+      decoded_access_token = AccessTokenJwtDecoder.new(access_token_jwt: access_token_jwt).perform(with_validation: with_validation)
+      validate_request_ip(decoded_access_token)
+      decoded_access_token
     end
 
     def load_user_object
@@ -62,6 +65,15 @@ module SignIn
 
       log_message_to_sentry(error.message, :error, context)
       render json: { errors: error }, status: :unauthorized
+    end
+
+    def validate_request_ip(access_token)
+      binding.pry
+      if (access_token.session_ip != request.ip)
+        log_message_to_sentry('Request IP / SiS access token IP mismatch',
+                              :warn,
+                              { request_ip: request.ip, sis_access_token_ip: access_token.session_ip })
+      end
     end
   end
 end

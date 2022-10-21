@@ -15,7 +15,8 @@ module SignIn
       :parent_refresh_token_hash,
       :version,
       :expiration_time,
-      :created_time
+      :created_time,
+      :session_ip
     )
 
     validates(
@@ -29,6 +30,7 @@ module SignIn
       :version,
       :expiration_time,
       :created_time,
+      :session_ip,
       presence: true
     )
 
@@ -46,9 +48,11 @@ module SignIn
                    parent_refresh_token_hash: nil,
                    version: nil,
                    expiration_time: nil,
-                   created_time: nil)
+                   created_time: nil,
+                   session_ip: nil)
       @uuid = uuid || create_uuid
       @session_handle = session_handle
+      @session_ip = session_ip
       @client_id = client_id
       @user_uuid = user_uuid
       @refresh_token_hash = refresh_token_hash

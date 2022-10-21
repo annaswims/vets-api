@@ -4,8 +4,9 @@ module SignIn
   class SessionCreator
     attr_reader :validated_credential
 
-    def initialize(validated_credential:)
+    def initialize(validated_credential:, request_ip:)
       @validated_credential = validated_credential
+      @request_ip = request_ip
     end
 
     def perform
@@ -54,7 +55,8 @@ module SignIn
         refresh_token_hash: refresh_token_hash,
         parent_refresh_token_hash: parent_refresh_token_hash,
         anti_csrf_token: anti_csrf_token,
-        last_regeneration_time: refresh_created_time
+        last_regeneration_time: refresh_created_time,
+        session_ip: request_ip
       )
     end
 

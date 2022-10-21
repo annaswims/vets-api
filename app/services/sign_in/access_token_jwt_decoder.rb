@@ -21,7 +21,8 @@ module SignIn
         parent_refresh_token_hash: decoded_token.parent_refresh_token_hash,
         version: decoded_token.version,
         expiration_time: Time.zone.at(decoded_token.exp),
-        created_time: Time.zone.at(decoded_token.iat)
+        created_time: Time.zone.at(decoded_token.iat),
+        session_ip: decoded_token.session_ip
       )
     end
 
