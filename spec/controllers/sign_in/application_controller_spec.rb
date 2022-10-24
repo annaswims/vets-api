@@ -120,8 +120,8 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
           context 'session IP validation' do            
             context 'accesss_token.session_ip matches request IP' do  
               it 'passes session IP validation and does not create a log' do
+                expect_any_instance_of(SentryLogging).not_to receive(:log_message_to_sentry).with(:warn)
                 expect(subject.request.ip).to eq(access_token_object.session_ip)
-                expect(subject).to have_http_status(:ok)
               end
             end
   
@@ -138,6 +138,10 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
                                                                                               sentry_log_level,
                                                                                               sentry_context)
                 expect(subject.request.ip).not_to eq(access_token_object.session_ip)
+              end
+
+              it 'does not prevent authentication' do
+                expect(subject).to have_http_status(:ok)
               end
             end
           end
@@ -195,8 +199,8 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
         context 'session IP validation' do          
           context 'accesss_token.session_ip matches request IP' do
             it 'passes session IP validation and does not create a log' do
+              expect_any_instance_of(SentryLogging).not_to receive(:log_message_to_sentry).with(:warn)
               expect(subject.request.ip).to eq(access_token_object.session_ip)
-              expect(subject).to have_http_status(:ok)
             end
           end
 
@@ -213,6 +217,10 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
                                                                                             sentry_log_level,
                                                                                             sentry_context)
               expect(subject.request.ip).not_to eq(access_token_object.session_ip)
+            end
+
+            it 'does not prevent authentication' do
+              expect(subject).to have_http_status(:ok)
             end
           end
         end
