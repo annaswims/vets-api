@@ -869,6 +869,10 @@ RSpec.describe Form1010cg::Service do
 
   describe '#process_claim_v2!' do
     it 'submits to mulesoft', run_at: 'Thu, 04 Aug 2022 20:44:29 GMT' do
+      VCR.configure do |c|
+        c.allow_http_connections_when_no_cassette = true
+      end
+      binding.pry; fail
       allow(SecureRandom).to receive(:uuid).and_return('884f6e51-027f-4cf1-a164-b95efbfb59f2')
       claim_with_mpi_veteran.save!
       allow(claim_with_mpi_veteran).to receive(:id).and_return(2)
