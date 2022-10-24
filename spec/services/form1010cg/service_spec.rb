@@ -868,7 +868,7 @@ RSpec.describe Form1010cg::Service do
   end
 
   describe '#process_claim_v2!' do
-    it 'submits to mulesoft', run_at: 'Thu, 04 Aug 2022 20:44:29 GMT' do
+    it 'submits to mulesoft' do
       VCR.configure do |c|
         c.allow_http_connections_when_no_cassette = true
       end
