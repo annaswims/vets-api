@@ -63,6 +63,35 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
       end
     end
 
+    shared_context 'access_token session IP validation' do
+      context 'accesss_token.session_ip matches request IP' do  
+        it 'passes session IP validation and does not create a log' do
+          expect_any_instance_of(SentryLogging).not_to receive(:log_message_to_sentry).with(:warn)
+          expect(subject.request.ip).to eq(access_token_object.session_ip)
+        end
+      end
+
+      context 'access_token.session_ip does not match request IP' do
+        let(:access_token_object) { create(:access_token, session_ip: '123.456.78.90') }
+        let(:expected_error) { 'Request IP - SiS session IP mismatch' }
+        let(:sentry_log_level) { :warn }
+        let(:sentry_context) do
+          { request_ip: request.env['REMOTE_ADDR'], session_ip: access_token_object.session_ip }
+        end
+
+        it 'fails session IP validation and creates a log' do
+          expect_any_instance_of(SentryLogging).to receive(:log_message_to_sentry).with(expected_error,
+                                                                                        sentry_log_level,
+                                                                                        sentry_context)
+          expect(subject.request.ip).not_to eq(access_token_object.session_ip)
+        end
+
+        it 'does not prevent authentication' do
+          expect(subject).to have_http_status(:ok)
+        end
+      end
+    end
+
     context 'when authorization header does not exist' do
       let(:access_token) { nil }
 
@@ -113,37 +142,10 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
           let(:user_serializer) { SignIn::IntrospectSerializer.new(user) }
           let(:expected_introspect_response) { JSON.parse(user_serializer.to_json) }
 
+          it_behaves_like 'access_token session IP validation'
+
           it 'returns ok status' do
             expect(subject).to have_http_status(:ok)
-          end
-
-          context 'session IP validation' do            
-            context 'accesss_token.session_ip matches request IP' do  
-              it 'passes session IP validation and does not create a log' do
-                expect_any_instance_of(SentryLogging).not_to receive(:log_message_to_sentry).with(:warn)
-                expect(subject.request.ip).to eq(access_token_object.session_ip)
-              end
-            end
-  
-            context 'access_token.session_ip does not match request IP' do
-              let(:access_token_object) { create(:access_token, session_ip: '123.456.78.90') }
-              let(:expected_error) { 'Request IP - SiS session IP mismatch' }
-              let(:sentry_log_level) { :warn }
-              let(:sentry_context) do
-                { request_ip: request.env['REMOTE_ADDR'], session_ip: access_token_object.session_ip }
-              end
-  
-              it 'fails session IP validation and creates a log' do
-                expect_any_instance_of(SentryLogging).to receive(:log_message_to_sentry).with(expected_error,
-                                                                                              sentry_log_level,
-                                                                                              sentry_context)
-                expect(subject.request.ip).not_to eq(access_token_object.session_ip)
-              end
-
-              it 'does not prevent authentication' do
-                expect(subject).to have_http_status(:ok)
-              end
-            end
           end
         end
       end
@@ -192,37 +194,10 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
         let(:user_serializer) { SignIn::IntrospectSerializer.new(user) }
         let(:expected_introspect_response) { JSON.parse(user_serializer.to_json) }
 
+        it_behaves_like 'access_token session IP validation'
+
         it 'returns ok status' do
           expect(subject).to have_http_status(:ok)
-        end
-
-        context 'session IP validation' do          
-          context 'accesss_token.session_ip matches request IP' do
-            it 'passes session IP validation and does not create a log' do
-              expect_any_instance_of(SentryLogging).not_to receive(:log_message_to_sentry).with(:warn)
-              expect(subject.request.ip).to eq(access_token_object.session_ip)
-            end
-          end
-
-          context 'access_token.session_ip does not match request IP' do
-            let(:access_token_object) { create(:access_token, session_ip: '123.456.78.90') }
-            let(:expected_error) { 'Request IP - SiS session IP mismatch' }
-            let(:sentry_log_level) { :warn }
-            let(:sentry_context) do
-              { request_ip: request.env['REMOTE_ADDR'], session_ip: access_token_object.session_ip }
-            end
-
-            it 'fails session IP validation and creates a log' do
-              expect_any_instance_of(SentryLogging).to receive(:log_message_to_sentry).with(expected_error,
-                                                                                            sentry_log_level,
-                                                                                            sentry_context)
-              expect(subject.request.ip).not_to eq(access_token_object.session_ip)
-            end
-
-            it 'does not prevent authentication' do
-              expect(subject).to have_http_status(:ok)
-            end
-          end
         end
       end
     end
@@ -234,6 +209,35 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
     shared_context 'error response' do
       it 'returns ok status' do
         expect(subject).to have_http_status(:ok)
+      end
+    end
+
+    shared_context 'access_token session IP validation' do
+      context 'accesss_token.session_ip matches request IP' do  
+        it 'passes session IP validation and does not create a log' do
+          expect_any_instance_of(SentryLogging).not_to receive(:log_message_to_sentry).with(:warn)
+          expect(subject.request.ip).to eq(access_token_object.session_ip)
+        end
+      end
+
+      context 'access_token.session_ip does not match request IP' do
+        let(:access_token_object) { create(:access_token, session_ip: '123.456.78.90') }
+        let(:expected_error) { 'Request IP - SiS session IP mismatch' }
+        let(:sentry_log_level) { :warn }
+        let(:sentry_context) do
+          { request_ip: request.env['REMOTE_ADDR'], session_ip: access_token_object.session_ip }
+        end
+
+        it 'fails session IP validation and creates a log' do
+          expect_any_instance_of(SentryLogging).to receive(:log_message_to_sentry).with(expected_error,
+                                                                                        sentry_log_level,
+                                                                                        sentry_context)
+          expect(subject.request.ip).not_to eq(access_token_object.session_ip)
+        end
+
+        it 'does not prevent authentication' do
+          expect(subject).to have_http_status(:ok)
+        end
       end
     end
 
@@ -285,6 +289,8 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
           let!(:user) { create(:user, :loa3, uuid: access_token_object.user_uuid) }
           let(:user_serializer) { SignIn::IntrospectSerializer.new(user) }
           let(:expected_introspect_response) { JSON.parse(user_serializer.to_json) }
+
+          it_behaves_like 'access_token session IP validation'
 
           it 'returns ok status' do
             expect(subject).to have_http_status(:ok)
@@ -339,6 +345,8 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
         let!(:user) { create(:user, :loa3, uuid: access_token_object.user_uuid) }
         let(:user_serializer) { SignIn::IntrospectSerializer.new(user) }
         let(:expected_introspect_response) { JSON.parse(user_serializer.to_json) }
+
+        it_behaves_like 'access_token session IP validation'
 
         it 'returns ok status' do
           expect(subject).to have_http_status(:ok)
