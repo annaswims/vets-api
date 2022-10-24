@@ -1,0 +1,1091 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for Vets API deployment, setup, and history.">
+      
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.1.11">
+    
+    
+      
+        <title>Native Developer Setup - Vets API</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.50e68009.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.e6a45f82.min.css">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="none" data-md-color-accent="none">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#developer-setup" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Vets API" class="md-header__button md-logo" aria-label="Vets API" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Vets API
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Native Developer Setup
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/department-of-veterans-affairs/vets-api" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Vets API" class="md-nav__button md-logo" aria-label="Vets API" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    Vets API
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/department-of-veterans-affairs/vets-api" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_1" type="checkbox" id="__nav_1" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_1">
+          Deployment
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Deployment" data-md-level="1">
+        <label class="md-nav__title" for="__nav_1">
+          <span class="md-nav__icon md-icon"></span>
+          Deployment
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployment/information/" class="md-nav__link">
+        Information
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Setup
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Setup" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Setup
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../betamocks/" class="md-nav__link">
+        Betamocks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../debugging_with_docker_rubymine_windows/" class="md-nav__link">
+        Debugging with Docker RubyMine Windows
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2_3" type="checkbox" id="__nav_2_3" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2_3">
+          Developer Setup
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Developer Setup" data-md-level="2">
+        <label class="md-nav__title" for="__nav_2_3">
+          <span class="md-nav__icon md-icon"></span>
+          Developer Setup
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hybrid/" class="md-nav__link">
+        Hybrid Developer Setup
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Native Developer Setup
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Native Developer Setup
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#base-setup" class="md-nav__link">
+    Base Setup
+  </a>
+  
+    <nav class="md-nav" aria-label="Base Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pg_stat_statements" class="md-nav__link">
+    pg_stat_statements
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#settings-and-configuration" class="md-nav__link">
+    Settings and configuration
+  </a>
+  
+    <nav class="md-nav" aria-label="Settings and configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuring-clamav-antivirus" class="md-nav__link">
+    Configuring ClamAV antivirus
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#platform-specific-notes" class="md-nav__link">
+    Platform Specific Notes
+  </a>
+  
+    <nav class="md-nav" aria-label="Platform Specific Notes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#osx" class="md-nav__link">
+    OSX
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#alternative-ubuntu-2004-lts" class="md-nav__link">
+    Alternative (Ubuntu 20.04 LTS)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker/" class="md-nav__link">
+        Docker
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edu_benefits/" class="md-nav__link">
+        Education Benefits Year to Date Report
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../evss/" class="md-nav__link">
+        EVSS S3 Uploads
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../facilities_locator/" class="md-nav__link">
+        Facilities Locator Setup
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../local_network_access/" class="md-nav__link">
+        Local Network Access
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mailer/" class="md-nav__link">
+        Mailers Info
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mhv/" class="md-nav__link">
+        MHV Prescriptions and MHV Secure Messaging Setup
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mpi/" class="md-nav__link">
+        MPI Service
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rswag_setup/" class="md-nav__link">
+        Rswag setup for Rails engine
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2_13" type="checkbox" id="__nav_2_13" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2_13">
+          Running the App
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Running the App" data-md-level="2">
+        <label class="md-nav__title" for="__nav_2_13">
+          <span class="md-nav__icon md-icon"></span>
+          Running the App
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../running_docker/" class="md-nav__link">
+        Running the app with Docker
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../running_natively/" class="md-nav__link">
+        Running the app Natively
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../virtual_machine_access/" class="md-nav__link">
+        Virtual Machine Access
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../HISTORY/" class="md-nav__link">
+        History
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#base-setup" class="md-nav__link">
+    Base Setup
+  </a>
+  
+    <nav class="md-nav" aria-label="Base Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pg_stat_statements" class="md-nav__link">
+    pg_stat_statements
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#settings-and-configuration" class="md-nav__link">
+    Settings and configuration
+  </a>
+  
+    <nav class="md-nav" aria-label="Settings and configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuring-clamav-antivirus" class="md-nav__link">
+    Configuring ClamAV antivirus
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#platform-specific-notes" class="md-nav__link">
+    Platform Specific Notes
+  </a>
+  
+    <nav class="md-nav" aria-label="Platform Specific Notes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#osx" class="md-nav__link">
+    OSX
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#alternative-ubuntu-2004-lts" class="md-nav__link">
+    Alternative (Ubuntu 20.04 LTS)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+<a href="https://github.com/department-of-veterans-affairs/vets-api/edit/main/docs/setup/native.md" title="Edit this page" class="md-content__button md-icon">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+</a>
+
+
+<h1 id="developer-setup">Developer Setup<a class="headerlink" href="#developer-setup" title="Permanent link">&para;</a></h1>
+<p>Vets API requires:</p>
+<ul>
+<li>Ruby 2.7.6</li>
+<li>PostgreSQL 11.x (including PostGIS 2.5)</li>
+<li>
+<p>Redis 5.0.x</p>
+<p>The most up-to-date versions of each key dependency will be specified in the <code>docker-compose.yml</code> <a href="https://github.com/department-of-veterans-affairs/vets-api/blob/master/docker-compose.yml">file</a> and the <code>Dockerfile</code>.</p>
+<p>We suggest using a Ruby version manager such as <a href="https://github.com/rbenv/rbenv#installation"><code>rbenv</code></a>, <code>asdf</code>, <code>rvm</code>, or <code>chruby</code> to install and maintain your version of Ruby. </p>
+</li>
+</ul>
+<h2 id="base-setup">Base Setup<a class="headerlink" href="#base-setup" title="Permanent link">&para;</a></h2>
+<ol>
+<li>
+<p>Follow the common <a href="../../README.md#Base%20setup">base setup</a>.</p>
+</li>
+<li>
+<p>Install Bundler to manage Ruby dependencies</p>
+<div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code>gem install bundler
+</code></pre></div></td></tr></table></div>
+</li>
+<li>
+<p>Follow the platform specific notes below for <a href="#osx">OSX</a> or <a href="#alternative-ubuntu-2004-lts">Ubuntu</a> to get dependencies installed.</p>
+</li>
+<li>
+<p>Install gem dependencies:</p>
+<div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nb">cd</span> vets-api<span class="p">;</span> bundle install
+</code></pre></div></td></tr></table></div>
+<p>More information about installing <em>with</em> Sidekiq Enterprise as well as our credentials are on the internal system <a href="https://github.com/department-of-veterans-affairs/vets.gov-team/blob/master/Products/Platform/Vets-API/Sidekiq%20Enterprise%20Setup.md">here</a></p>
+</li>
+<li>
+<p>Make sure you have the <a href="https://github.com/department-of-veterans-affairs/vets-api-mockdata">vets-api-mockdata</a> repo locally installed, preferably in a sibling directory to <code>vets-api</code>.</p>
+</li>
+<li>
+<p>Go to the file <code>config/settings/development.yml</code> and make sure the <code>cache-dir</code> points to the local installation of <code>vets-api-mockdata</code> from the previous step.</p>
+<div class="language-yaml highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nt">cache_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">../vets-api-mockdata</span><span class="w"> </span><span class="c1"># via rails; e.g. bundle exec rails s or bundle exec rails c</span><span class="w"></span>
+<span class="c1"># cache_dir: /cache # via docker; e.g. make up or make console</span><span class="w"></span>
+</code></pre></div></td></tr></table></div>
+</li>
+<li>
+<p>Add this key in <code>config/settings.local.yml</code> pointing to your <code>vets-api-mockdata</code> directory.</p>
+<div class="language-yaml highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="c1"># settings.local.yml</span><span class="w"></span>
+<span class="nt">betamocks</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="nt">cache_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">../vets-api-mockdata</span><span class="w"></span>
+</code></pre></div></td></tr></table></div>
+</li>
+<li>
+<p>Run <code>bin/setup</code> to setup the database and start the server.</p>
+</li>
+</ol>
+<h3 id="pg_stat_statements">pg_stat_statements<a class="headerlink" href="#pg_stat_statements" title="Permanent link">&para;</a></h3>
+<p>If you have trouble enabling query stats from the PgHero dashboard, try enabling it manually</p>
+<p>Add the lines below to your main postgresql.conf file</p>
+<p>On Mac it should be located somewhere similiar to the following:</p>
+<p><code>~/Library/Application Support/Postgres/var-12/postgresql.conf</code>
+<div class="language-text highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span></pre></div></td><td class="code"><div><pre><span></span><code>shared_preload_libraries = &#39;pg_stat_statements&#39;
+pg_stat_statements.track = all
+pg_stat_statements.max = 10000
+track_activity_query_size = 2048
+</code></pre></div></td></tr></table></div></p>
+<p><strong>Make sure to migrate your database to enable the <a href="https://github.com/department-of-veterans-affairs/vets-api/blob/master/db/migrate/20210507122840_add_stats_extension.rb">pg_stat_statements extension</a></strong></p>
+<h2 id="settings-and-configuration">Settings and configuration<a class="headerlink" href="#settings-and-configuration" title="Permanent link">&para;</a></h2>
+<p>We use the <code>config</code> gem to manage settings in the application. Local settings for each developer should be managed in your own local <code>config/settings.local.yml</code> file, which by default can override the standard configuration <em>and</em> is excluded from source control so the settings can persist.</p>
+<p>This file has the necessary configuration settings for local development as well as comments outlining some additional configuration that some developers may wish to use.</p>
+<h3 id="configuring-clamav-antivirus">Configuring ClamAV antivirus<a class="headerlink" href="#configuring-clamav-antivirus" title="Permanent link">&para;</a></h3>
+<p>In many cases, there in no need to run ClamAV for local development, even if you are working with uploaded files since the scanning functionality is already built into our CarrierWave and Shrine file upload base classes.</p>
+<p>If you would like to run a fake ClamAV "scanner" that will quickly produce a virus-free scan, you can configure the application to use the executable bash script <code>bin/fake_clamd</code>. This configuration is commented out in <code>config/settings.local.yml</code></p>
+<div class="language-yaml highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nt">binaries</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="c1"># For NATIVE and DOCKER installation</span><span class="w"></span>
+<span class="w">  </span><span class="c1"># A &quot;virus scanner&quot; that always returns success for development purposes</span><span class="w"></span>
+<span class="w">  </span><span class="c1"># NOTE: You may need to specify a full path instead of a relative path</span><span class="w"></span>
+<span class="w">  </span><span class="nt">clamdscan</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./bin/fake_clamdscan</span><span class="w"></span>
+</code></pre></div></td></tr></table></div>
+<p>If you wish to run ClamAV, you'll need to check the platform specific notes.</p>
+<h2 id="platform-specific-notes">Platform Specific Notes<a class="headerlink" href="#platform-specific-notes" title="Permanent link">&para;</a></h2>
+<p>Specific notes for our most common native installation platforms are in this section. Note that most Windows users tend to use Docker instead of a native installation.</p>
+<h3 id="osx">OSX<a class="headerlink" href="#osx" title="Permanent link">&para;</a></h3>
+<p>All of the OSX instructions assume <code>homebrew</code> is your <a href="https://brew.sh/">package manager</a></p>
+<ol>
+<li>
+<p>Install Postgresql &amp; PostGIS</p>
+<ol>
+<li>It is MUCH easier to use the <a href="https://postgresapp.com/downloads.html">Postgres.app</a> which installs the correct combination of Postgresql and PostGIS versions.</li>
+</ol>
+<ul>
+<li>Download the Postgres.app with PostgreSQL 10, 11 and 12</li>
+<li>Install Instructions here: <a href="https://postgresapp.com/">https://postgresapp.com/</a></li>
+<li><code>sudo mkdir -p /etc/paths.d &amp;&amp; echo /Applications/Postgres.app/Contents/Versions/latest/bin | sudo tee /etc/paths.d/postgresapp</code></li>
+<li><code>ARCHFLAGS="-arch x86_64" gem install pg -v 1.2.3</code>
+ 1. Alternatively Postgresql 11 &amp; PostGIS 2.5 can be installed with homebrew
+    - <code>brew install postgresql@11</code>
+    - <code>brew services start postgresql@11</code>
+    - Install the <code>pex</code> manager to add your Postgresql 11 extensions from <a href="https://github.com/petere/pex#installation">here</a>
+    - Install the <code>postgis</code> extension along with a number of patches using the instructions summarized <a href="https://gist.github.com/skissane/0487c097872a7f6d0dcc9bcd120c2ccd">here</a>:
+    - <code>bash
+       PG_CPPFLAGS='-DACCEPT_USE_OF_DEPRECATED_PROJ_API_H -I/usr/local/include' CFLAGS='-DACCEPT_USE_OF_DEPRECATED_PROJ_API_H -I/usr/local/include' pex install postgis</code></li>
+</ul>
+</li>
+<li>
+<p>Install binary dependencies:
+    <div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><code>brew bundle
+</code></pre></div></td></tr></table></div></p>
+</li>
+<li>
+<p>Among other things, the above <code>brew bundle</code> command installs ClamAV, but does not enable it. To enable ClamAV:</p>
+<div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span>
+<span class="normal">6</span>
+<span class="normal">7</span>
+<span class="normal">8</span></pre></div></td><td class="code"><div><pre><span></span><code>brew info clamav
+<span class="c1"># See the &quot;Caveats&quot; section: &quot;To finish installation &amp; run clamav you will need to edit the example conf files at `${conf_files_dir}`&quot;</span>
+<span class="nb">cd</span> <span class="k">$(</span>brew --prefix clamav<span class="k">)</span>
+touch clamd.sock
+<span class="nb">echo</span> <span class="s2">&quot;LocalSocket </span><span class="k">$(</span>brew --prefix clamav<span class="k">)</span><span class="s2">&quot;</span> &gt; clamd.conf
+<span class="nb">echo</span> <span class="s2">&quot;DatabaseMirror database.clamav.net&quot;</span> &gt; freshclam.conf
+<span class="c1"># Update the local ClamAV database</span>
+freshclam -v
+</code></pre></div></td></tr></table></div>
+<p>NOTE: Run with <code>/usr/local/sbin/clamd -c /usr/local/etc/clamav/clamd.conf</code> and you will also have to override (temporarily) the <code>config/clamd.conf</code> file with <code>-LocalSocket /usr/local/etc/clamav/clamd.sock</code></p>
+</li>
+<li>
+<p>Install <a href="https://www.pdflabs.com/tools/pdftk-the-pdf-toolkit/pdftk_server-2.02-mac_osx-10.11-setup.pkg">pdftk</a></p>
+<ul>
+<li><code>curl -o ~/Downloads/pdftk_download.pkg https://www.pdflabs.com/tools/pdftk-the-pdf-toolkit/pdftk_server-2.02-mac_osx-10.11-setup.pkg</code></li>
+<li><code>sudo installer -pkg ~/Downloads/pdftk_download.pkg -target /</code></li>
+</ul>
+</li>
+<li>
+<p>continue with <a href="./#base-setup">Base setup</a></p>
+</li>
+</ol>
+<h3 id="alternative-ubuntu-2004-lts">Alternative (Ubuntu 20.04 LTS)<a class="headerlink" href="#alternative-ubuntu-2004-lts" title="Permanent link">&para;</a></h3>
+<ol>
+<li>
+<p>Install Postgres and enable on startup</p>
+<div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span>
+<span class="normal">5</span>
+<span class="normal">6</span>
+<span class="normal">7</span>
+<span class="normal">8</span>
+<span class="normal">9</span></pre></div></td><td class="code"><div><pre><span></span><code>wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc <span class="p">|</span> sudo apt-key add -
+<span class="nb">echo</span> <span class="s2">&quot;deb http://apt.postgresql.org/pub/repos/apt/ focal&quot;</span>-pgdg main <span class="p">|</span> sudo tee  /etc/apt/sources.list.d/pgdg.list
+sudo apt update
+sudo apt install postgresql-11
+sudo systemctl start postgresql
+
+sudo -i -u postgres
+createuser --superuser YOURNAME
+<span class="nb">exit</span>
+</code></pre></div></td></tr></table></div>
+</li>
+<li>
+<p>Install PostGIS</p>
+<div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span></pre></div></td><td class="code"><div><pre><span></span><code>sudo apt install -y postgresql-11-postgis-2.5
+sudo -i -u postgres
+
+createuser postgis_test
+createdb postgis_db -O postgis_test
+psql -d postgis_db
+
+CREATE EXTENSION postgis<span class="p">;</span>
+SELECT PostGIS_version<span class="o">()</span><span class="p">;</span>
+<span class="se">\q</span>
+</code></pre></div></td></tr></table></div>
+</li>
+<li>
+<p>Install Redis
+   <div class="language-bash highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span>
+<span class="normal">3</span>
+<span class="normal">4</span></pre></div></td><td class="code"><div><pre><span></span><code>sudo apt install -y redis-server
+sudo sed -i <span class="s1">&#39;s/^supervised no/supervised systemd/&#39;</span> /etc/redis/redis.conf
+sudo systemctl restart redis.service
+sudo systemctl status redis <span class="c1"># ctrl+c to exit</span>
+</code></pre></div></td></tr></table></div></p>
+</li>
+<li>Install ImageMagick<ul>
+<li><code>sudo apt install -y imagemagick</code></li>
+</ul>
+</li>
+<li>Install Poppler<ul>
+<li><code>sudo apt install -y poppler-utils</code></li>
+</ul>
+</li>
+<li>Install ClamAV<ul>
+<li><code>sudo apt install -y clamav</code></li>
+</ul>
+</li>
+<li>Install pdftk<ul>
+<li><code>sudo apt install -y pdftk</code></li>
+</ul>
+</li>
+<li>continue with <a href="./#base-setup">Base setup</a></li>
+</ol>
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="../hybrid/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Hybrid Developer Setup" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Hybrid Developer Setup
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../docker/" class="md-footer__link md-footer__link--next" aria-label="Next: Docker" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Docker
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.092fa1f6.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.5a9542cf.min.js"></script>
+      
+    
+  </body>
+</html>
