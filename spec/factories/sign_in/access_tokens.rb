@@ -14,6 +14,7 @@ FactoryBot.define do
     version { SignIn::Constants::AccessToken::CURRENT_VERSION }
     expiration_time { Time.zone.now + SignIn::Constants::AccessToken::VALIDITY_LENGTH_SHORT_MINUTES.minutes }
     created_time { Time.zone.now }
+    session_ip { '111.111.1.1' }
 
     initialize_with do
       new(session_handle: session_handle,
@@ -25,7 +26,8 @@ FactoryBot.define do
           last_regeneration_time: last_regeneration_time,
           version: version,
           expiration_time: expiration_time,
-          created_time: created_time)
+          created_time: created_time,
+          session_ip: session_ip)
     end
   end
 end

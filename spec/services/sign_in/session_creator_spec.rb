@@ -3,7 +3,9 @@
 require 'rails_helper'
 
 RSpec.describe SignIn::SessionCreator do
-  let(:session_creator) { SignIn::SessionCreator.new(validated_credential: validated_credential) }
+  let(:request_ip) { '111.111.1.1' }
+  let(:session_creator) { SignIn::SessionCreator.new(validated_credential: validated_credential,
+                                                     request_ip: request_ip) }
 
   describe '#perform' do
     subject { session_creator.perform }
@@ -159,6 +161,7 @@ RSpec.describe SignIn::SessionCreator do
         end
         let(:expected_parent_refresh_token_hash) { Digest::SHA256.hexdigest(parent_refresh_token.to_json) }
         let(:expected_last_regeneration_time) { Time.zone.now }
+        let(:expected_session_ip) { request_ip }
 
         before do
           allow(SecureRandom).to receive(:hex).and_return(stubbed_random_number)
@@ -174,6 +177,7 @@ RSpec.describe SignIn::SessionCreator do
           expect(access_token.refresh_token_hash).to eq(expected_refresh_token_hash)
           expect(access_token.parent_refresh_token_hash).to eq(expected_parent_refresh_token_hash)
           expect(access_token.last_regeneration_time).to eq(expected_last_regeneration_time)
+          expect(access_token.session_ip).to eq(expected_session_ip)
         end
       end
     end

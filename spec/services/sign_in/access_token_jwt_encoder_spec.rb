@@ -22,6 +22,7 @@ RSpec.describe SignIn::AccessTokenJwtEncoder do
       let(:expected_last_regeneration_time) { access_token.last_regeneration_time.to_i }
       let(:expected_version) { access_token.version }
       let(:expected_jti) { access_token.uuid }
+      let(:expected_session_ip) { access_token.session_ip }
 
       before do
         allow(SecureRandom).to receive(:hex).and_return(expected_jti)
@@ -41,6 +42,7 @@ RSpec.describe SignIn::AccessTokenJwtEncoder do
         expect(decoded_jwt.last_regeneration_time).to eq expected_last_regeneration_time
         expect(decoded_jwt.version).to eq expected_version
         expect(decoded_jwt.jti).to eq expected_jti
+        expect(decoded_jwt.session_ip). to eq expected_session_ip
       end
 
       context 'and client id is MOBILE_CLIENT' do

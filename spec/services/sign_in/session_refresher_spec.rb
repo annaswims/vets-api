@@ -3,8 +3,11 @@
 require 'rails_helper'
 
 RSpec.describe SignIn::SessionRefresher do
+  let(:request_ip) { '111.111.1.1' }
   let(:session_refresher) do
-    SignIn::SessionRefresher.new(refresh_token: refresh_token, anti_csrf_token: input_anti_csrf_token)
+    SignIn::SessionRefresher.new(refresh_token: refresh_token, 
+                                 anti_csrf_token: input_anti_csrf_token,
+                                 request_ip: request_ip)
   end
 
   describe '#perform' do

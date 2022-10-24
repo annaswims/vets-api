@@ -47,7 +47,8 @@ module SignIn
 
     def authenticate_access_token(with_validation: true)
       access_token_jwt = bearer_token || cookie_access_token
-      decoded_access_token = AccessTokenJwtDecoder.new(access_token_jwt: access_token_jwt).perform(with_validation: with_validation)
+      decoded_access_token = AccessTokenJwtDecoder.new(access_token_jwt: access_token_jwt)
+        .perform(with_validation: with_validation)
       validate_request_ip(decoded_access_token)
       decoded_access_token
     end
@@ -67,8 +68,8 @@ module SignIn
     end
 
     def validate_request_ip(access_token)
-      if (access_token.session_ip != request.ip)
-        log_message_to_sentry('Request IP / SiS session IP mismatch',
+      if access_token.session_ip != request.ip
+        log_message_to_sentry('Request IP - SiS session IP mismatch',
                               :warn,
                               { request_ip: request.ip, session_ip: access_token.session_ip })
       end
