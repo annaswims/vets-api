@@ -242,7 +242,6 @@ module DecisionReviewV1
     def submit_form4142(form_data:, user:, response:)
       processor = DecisionReviewV1::Processor::Form4142Processor.new(form_data: form_data, user: user,
                                                                      response: response)
-      @pdf_path = processor.pdf_path
       CentralMail::Service.new.upload(processor.request_body)
     end
   end
