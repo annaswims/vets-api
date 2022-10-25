@@ -256,8 +256,13 @@ module DecisionReviewV1
       with_monitoring_and_error_handling do
         request_body_obj = JSON.parse(request_body)
         form4142 = request_body_obj.delete(cm_data_key)
-        results[lh_data_key] = process_lighthouse_supplemental_form_submission(request_body: request_body_obj, user: user)
-        results[cm_data_key] = process_form4142_submission(form4142: form4142, user: user, response: results[lh_data_key]) unless form4142.nil?
+        results[lh_data_key] =
+          process_lighthouse_supplemental_form_submission(request_body: request_body_obj, user: user)
+        unless form4142.nil?
+          results[cm_data_key] =
+            process_form4142_submission(form4142: form4142, user: user,
+                                        response: results[lh_data_key])
+        end
       end
       ret = {}
       results.map do |data_key, response|
@@ -266,7 +271,7 @@ module DecisionReviewV1
           'status': response.status
         }
       end
-      return ret
+      ret
     end
 
     ##
@@ -396,55 +401,55 @@ module DecisionReviewV1
       bm = nil
       block_result = nil
       if benchmark?
-        bm = Benchmark.measure {
+        bm = Benchmark.measure do
           block_result = block.call
-        }
+        end
       else
         block_result = block.call
       end
-      return [block_result, bm]
+      [block_result, bm]
     end
 
     def benchmark_to_log_data_hash(bm)
       {
-        benchmark: 
+        benchmark:
           {
-          user: bm.utime,
-          system: bm.stime,
-          total: bm.total,
-          real: bm.real
-        }
+            user: bm.utime,
+            system: bm.stime,
+            total: bm.total,
+            real: bm.real
+          }
       }
     end
 
-    def extract_uuid_from_central_mail_message(data) 
-      data[/(?<=\[).*?(?=\])/].split(?:).last
+    def extract_uuid_from_central_mail_message(data)
+      data[/(?<=\[).*?(?=\])/].split(':').last
     end
 
-    def parse_form412_response_to_log_msg(data, bm=nil)    
+    def parse_form412_response_to_log_msg(data, bm = nil)
       log_data = {
         message: data,
-        extracted_uuid: extract_uuid_from_central_mail_message(data)        
-      }    
-      log_data[:meta] = benchmark_to_log_data_hash(bm) unless bm.nil? 
-      return log_data
+        extracted_uuid: extract_uuid_from_central_mail_message(data)
+      }
+      log_data[:meta] = benchmark_to_log_data_hash(bm) unless bm.nil?
+      log_data
     end
 
-    def parse_lighthouse_response_to_log_msg(data, bm=nil) 
-      log_data = {    
-        message: 'Successful Lighthouse Supplemental Claim Submission',      
+    def parse_lighthouse_response_to_log_msg(data, bm = nil)
+      log_data = {
+        message: 'Successful Lighthouse Supplemental Claim Submission',
         lighthouse_submission: {
           id: data['id'],
           appeal_type: data['type'],
           attributes: {
             status: data['attributes']['status'],
-            updatedAt:data['attributes']['updatedAt'],
+            updatedAt: data['attributes']['updatedAt'],
             createdAt: data['attributes']['createdAt']
           }
         }
       }
-      log_data[:meta] = benchmark_to_log_data_hash(bm) unless bm.nil?          
-      return log_data
+      log_data[:meta] = benchmark_to_log_data_hash(bm) unless bm.nil?
+      log_data
     end
 
     def process_lighthouse_supplemental_form_submission(request_body:, user:)
@@ -456,26 +461,25 @@ module DecisionReviewV1
       validate_against_schema json: response.body, schema: SC_CREATE_RESPONSE_SCHEMA,
                               append_to_error_class: ' (SC_V1)'
 
-      submission_info_message = parse_lighthouse_response_to_log_msg(response.body["data"], bm)
-      ::Rails.logger.info(submission_info_message)  
-      return response
+      submission_info_message = parse_lighthouse_response_to_log_msg(response.body['data'], bm)
+      ::Rails.logger.info(submission_info_message)
+      response
     end
-    
+
     def process_form4142_submission(form4142:, user:, response:)
-      form4142_response = nil
       form4142_response, bm = run_and_benchmark_if_enabled do
-          submit_form4142(form_data: form4142, user: user, response: response) 
+        submit_form4142(form_data: form4142, user: user, response: response)
       end
       form4142_submission_info_message = parse_form412_response_to_log_msg(form4142_response.body, bm)
-      ::Rails.logger.info(form4142_submission_info_message)  
-      return form4142_response 
+      ::Rails.logger.info(form4142_submission_info_message)
+      form4142_response
     end
 
     def submit_form4142(form_data:, user:, response:)
       processor = DecisionReviewV1::Processor::Form4142Processor.new(form_data: form_data, user: user,
                                                                      response: response)
       @pdf_path = processor.pdf_path
-      response = CentralMail::Service.new.upload(processor.request_body)
+      CentralMail::Service.new.upload(processor.request_body)
     end
 
     def create_higher_level_review_headers(user)
