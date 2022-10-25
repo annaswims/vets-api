@@ -247,33 +247,26 @@ module DecisionReviewV1
     #
     # @param request_body [JSON] JSON serialized version of a Supplemental Claim Form (20-0995)
     # @param user [User] Veteran who the form is in regard to
-    # @return [Faraday::Response]
+    # @return Hash
     #
     def create_supplemental_claim(request_body:, user:)
+      results = {}
+      lh_data_key = 'data'
+      cm_data_key = 'form4142'
       with_monitoring_and_error_handling do
         request_body_obj = JSON.parse(request_body)
-        form4142 = request_body_obj.delete('form4142')
-        headers = create_supplemental_claims_headers(user)
-        response = perform :post, 'supplemental_claims', request_body_obj.to_json, headers
-        raise_schema_error_unless_200_status response.status
-        validate_against_schema json: response.body, schema: SC_CREATE_RESPONSE_SCHEMA,
-                                append_to_error_class: ' (SC_V1)'
-
-        # If we get here without erroring, then submission was successful
-        form4142_response = submit_form4142(form_data: form4142, user: user, response: response) unless form4142.nil?
-        ret_data = {
-          data: {
-            body: response.body,
-            status: response.status
-          },
-          form4142: {
-            body: form4142_response.body,
-            status: form4142_response.status
-          }
-        }
-
-        ret_data
+        form4142 = request_body_obj.delete(cm_data_key)
+        results[lh_data_key] = process_lighthouse_supplemental_form_submission(request_body: request_body_obj, user: user)
+        results[cm_data_key] = process_form4142_submission(form4142: form4142, user: user, response: results[lh_data_key]) unless form4142.nil?
       end
+      ret = {}
+      results.map do |data_key, response|
+        ret[data_key] = {
+          'body': response.body,
+          'status': response.status
+        }
+      end
+      return ret
     end
 
     ##
@@ -387,6 +380,96 @@ module DecisionReviewV1
     end
 
     private
+
+    def benchmark?
+      Settings.decision_review.benchmark_performance
+    end
+
+    ##
+    # Takes a block and runs it. If benchmarking is enabled it will benchmark and return the results.
+    # Returns a tuple of what the block returns, and either nil (if benchmarking disabled), or the benchmark results
+    #
+    # @param block [block] block to run
+    # @return [result, benchmark]
+    #
+    def run_and_benchmark_if_enabled(&block)
+      bm = nil
+      block_result = nil
+      if benchmark?
+        bm = Benchmark.measure {
+          block_result = block.call
+        }
+      else
+        block_result = block.call
+      end
+      return [block_result, bm]
+    end
+
+    def benchmark_to_log_data_hash(bm)
+      {
+        benchmark: 
+          {
+          user: bm.utime,
+          system: bm.stime,
+          total: bm.total,
+          real: bm.real
+        }
+      }
+    end
+
+    def extract_uuid_from_central_mail_message(data) 
+      data[/(?<=\[).*?(?=\])/].split(?:).last
+    end
+
+    def parse_form412_response_to_log_msg(data, bm=nil)    
+      log_data = {
+        message: data,
+        extracted_uuid: extract_uuid_from_central_mail_message(data)        
+      }    
+      log_data[:meta] = benchmark_to_log_data_hash(bm) unless bm.nil? 
+      return log_data
+    end
+
+    def parse_lighthouse_response_to_log_msg(data, bm=nil) 
+      log_data = {    
+        message: 'Successful Lighthouse Supplemental Claim Submission',      
+        lighthouse_submission: {
+          id: data['id'],
+          appeal_type: data['type'],
+          attributes: {
+            status: data['attributes']['status'],
+            updatedAt:data['attributes']['updatedAt'],
+            createdAt: data['attributes']['createdAt']
+          }
+        }
+      }
+      log_data[:meta] = benchmark_to_log_data_hash(bm) unless bm.nil?          
+      return log_data
+    end
+
+    def process_lighthouse_supplemental_form_submission(request_body:, user:)
+      headers = create_supplemental_claims_headers(user)
+      response, bm = run_and_benchmark_if_enabled do
+        perform :post, 'supplemental_claims', request_body, headers
+      end
+      raise_schema_error_unless_200_status response.status
+      validate_against_schema json: response.body, schema: SC_CREATE_RESPONSE_SCHEMA,
+                              append_to_error_class: ' (SC_V1)'
+
+      submission_info_message = parse_lighthouse_response_to_log_msg(response.body["data"], bm)
+      ::Rails.logger.info(submission_info_message)  
+      return response
+    end
+    
+    def process_form4142_submission(form4142:, user:, response:)
+      form4142_response = nil
+      form4142_response, bm = run_and_benchmark_if_enabled do
+          submit_form4142(form_data: form4142, user: user, response: response) 
+      end
+      form4142_submission_info_message = parse_form412_response_to_log_msg(form4142_response.body, bm)
+      ::Rails.logger.info(form4142_submission_info_message)  
+      return form4142_response 
+    end
 
     def submit_form4142(form_data:, user:, response:)
       processor = DecisionReviewV1::Processor::Form4142Processor.new(form_data: form_data, user: user,
