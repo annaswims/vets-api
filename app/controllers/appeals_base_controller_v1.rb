@@ -2,6 +2,8 @@
 
 require 'caseflow/service'
 require 'decision_review_v1/service'
+require 'decision_review_v1/supplemental_claims'
+
 
 class AppealsBaseControllerV1 < ApplicationController
   include ActionController::Serialization
