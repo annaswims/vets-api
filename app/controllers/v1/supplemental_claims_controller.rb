@@ -12,9 +12,16 @@ module V1
     end
 
     def create
+      request_body_obj = request_body_hash
+      form4142 = request_body_obj.delete('form4142')
       sc_response = decision_review_service
                          .create_supplemental_claim(request_body: request_body_hash, user: @current_user)
-      submitted_appeal_uuid = sc_response.dig('data', 'body', 'data', 'id')
+      submitted_appeal_uuid = sc_response.body.dig('data', 'id')
+      form4142_response = nil
+      unless form4142.nil?
+        form4142_response = decision_review_service.process_form4142_submission(form4142: form4142, user: @current_user, response: sc_response)
+      end
+      ap [sc_response, form4142_response]
       ActiveRecord::Base.transaction do
         AppealSubmission.create!(user_uuid: @current_user.uuid, type_of_appeal: 'SC',
                                  submitted_appeal_uuid: submitted_appeal_uuid)
@@ -22,7 +29,7 @@ module V1
         InProgressForm.form_for_user('20-0995', current_user)&.destroy!
       end
 
-      render json: sc_response, :status => sc_response.values.map{|response| response['status']}.max
+      render json: sc_response.body, :status => sc_response.status
     rescue => e
       request = begin
         { body: request_body_hash }

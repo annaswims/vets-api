@@ -1,18 +1,11 @@
 # frozen_string_literal: true
 
-require 'common/client/base'
-require 'common/client/concerns/monitoring'
-require 'common/client/errors'
-require 'common/exceptions/forbidden'
-require 'common/exceptions/schema_validation_errors'
-require 'decision_review_v1/configuration'
-require 'decision_review_v1/service_exception'
 require 'decision_review_v1/utilities/form_4142_processor'
 
 module DecisionReviewV1
   
   class Service < Common::Client::Base
-
+    
     ##
     # Returns all of the data associated with a specific Supplemental Claim.
     #
@@ -36,34 +29,36 @@ module DecisionReviewV1
     # @return [Faraday::Response]
     #
     def create_supplemental_claim(request_body:, user:)
-      results = {}
-      lh_data_key = 'data'
-      cm_data_key = 'form4142'
       with_monitoring_and_error_handling do
-        request_body_obj = JSON.parse(request_body)
-        form4142 = request_body_obj.delete(cm_data_key)
-        results[lh_data_key] =
-        begin
-          process_lighthouse_supplemental_form_submission(request_body: request_body_obj, user: user)
-        rescue => e
-          e
+        headers = create_supplemental_claims_headers(user)
+        response, bm = run_and_benchmark_if_enabled do
+          perform :post, 'supplemental_claims', request_body, headers
         end
-        unless form4142.nil?
-          results[cm_data_key] =
-          begin
-            process_form4142_submission(form4142: form4142, user: user,
-                                        response: results[lh_data_key])
-          rescue => e
-            e
-          end
-        end
+        raise_schema_error_unless_200_status response.status
+        validate_against_schema json: response.body, schema: SC_CREATE_RESPONSE_SCHEMA,
+                                append_to_error_class: ' (SC_V1)'
+
+        submission_info_message = parse_lighthouse_response_to_log_msg(response.body['data'], bm)
+        ::Rails.logger.info(submission_info_message)
+        response        
       end
-      results.each do |data_key, response|
-        results[data_key] = {
-          'body': response.body,
-          'status': response.status
-        }
-      end.deep_stringify_keys     
+    end
+
+    ##
+    # Creates a new 4142(a) PDF, and sends to central mail
+    #
+    # @param form4142 [JSON] JSON serialized version of a 4142/4142(a) form
+    # @param user [User] Veteran who the form is in regard to
+    # @param response [Faraday::Response] The response from creating the supplemental claim, that has required info for Central Mail
+    # @return [Faraday::Response]
+    #
+    def process_form4142_submission(form4142:, user:, response:)
+      form4142_response, bm = run_and_benchmark_if_enabled do
+        submit_form4142(form_data: form4142, user: user, response: response)
+      end
+      form4142_submission_info_message = parse_form412_response_to_log_msg(form4142_response.body, bm)
+      ::Rails.logger.info(form4142_submission_info_message)
+      form4142_response
     end
 
     ##
@@ -214,29 +209,6 @@ module DecisionReviewV1
       }
       log_data[:meta] = benchmark_to_log_data_hash(bm) unless bm.nil?
       log_data
-    end
-
-    def process_lighthouse_supplemental_form_submission(request_body:, user:)
-      headers = create_supplemental_claims_headers(user)
-      response, bm = run_and_benchmark_if_enabled do
-        perform :post, 'supplemental_claims', request_body, headers
-      end
-      raise_schema_error_unless_200_status response.status
-      validate_against_schema json: response.body, schema: SC_CREATE_RESPONSE_SCHEMA,
-                              append_to_error_class: ' (SC_V1)'
-
-      submission_info_message = parse_lighthouse_response_to_log_msg(response.body['data'], bm)
-      ::Rails.logger.info(submission_info_message)
-      response
-    end
-
-    def process_form4142_submission(form4142:, user:, response:)
-      form4142_response, bm = run_and_benchmark_if_enabled do
-        submit_form4142(form_data: form4142, user: user, response: response)
-      end
-      form4142_submission_info_message = parse_form412_response_to_log_msg(form4142_response.body, bm)
-      ::Rails.logger.info(form4142_submission_info_message)
-      form4142_response
     end
 
     def submit_form4142(form_data:, user:, response:)

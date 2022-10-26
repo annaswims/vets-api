@@ -524,9 +524,9 @@ describe DecisionReviewV1::Service do
         PersonalInformationLog.where error_class: 'DecisionReviewV1::Service#validate_against_schema' \
                                                   ' exception Common::Exceptions::SchemaValidationErrors (SC_V1)'
       end
-
+      
       it 'returns a schema error' do
-        VCR.use_cassette('decision_review/SC-GET-CONTESTABLE-ISSUES-RESPONSE-200-MALFORMED_V1') do
+        VCR.use_cassette('decision_review/SC-GET-CONTESTABLE-ISSUES-RESPONSE-200-MALFORMED_V1') do          
           expect(personal_information_logs.count).to be 0
           expect { subject }.to raise_error an_instance_of Common::Exceptions::SchemaValidationErrors
           expect(personal_information_logs.count).to be 1
