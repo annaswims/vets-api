@@ -15,7 +15,7 @@ module V1
       request_body_obj = request_body_hash
       form4142 = request_body_obj.delete('form4142')
       sc_response = decision_review_service
-                    .create_supplemental_claim(request_body: request_body_hash, user: @current_user)
+                    .create_supplemental_claim(request_body: request_body_obj, user: @current_user)
       submitted_appeal_uuid = sc_response.body.dig('data', 'id')
       merged_response = {
         data: sc_response.body,
