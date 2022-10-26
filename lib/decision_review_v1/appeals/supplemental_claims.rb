@@ -7,19 +7,11 @@ require 'common/exceptions/forbidden'
 require 'common/exceptions/schema_validation_errors'
 require 'decision_review_v1/configuration'
 require 'decision_review_v1/service_exception'
-require 'decision_review_v1/form_4142_processor'
+require 'decision_review_v1/utilities/form_4142_processor'
 
 module DecisionReviewV1
-  ##
-  # Proxy Service for the Lighthouse Decision Reviews API.
-  #
+  
   class Service < Common::Client::Base
-    include SentryLogging
-    include Common::Client::Concerns::Monitoring
-
-    configuration DecisionReviewV1::Configuration
-
-    STATSD_KEY_PREFIX = 'api.decision_review'
 
     ##
     # Returns all of the data associated with a specific Supplemental Claim.
@@ -41,7 +33,7 @@ module DecisionReviewV1
     #
     # @param request_body [JSON] JSON serialized version of a Supplemental Claim Form (20-0995)
     # @param user [User] Veteran who the form is in regard to
-    # @return Hash
+    # @return [Faraday::Response]
     #
     def create_supplemental_claim(request_body:, user:)
       results = {}
@@ -51,11 +43,19 @@ module DecisionReviewV1
         request_body_obj = JSON.parse(request_body)
         form4142 = request_body_obj.delete(cm_data_key)
         results[lh_data_key] =
+        begin
           process_lighthouse_supplemental_form_submission(request_body: request_body_obj, user: user)
+        rescue => e
+          e
+        end
         unless form4142.nil?
           results[cm_data_key] =
+          begin
             process_form4142_submission(form4142: form4142, user: user,
                                         response: results[lh_data_key])
+          rescue => e
+            e
+          end
         end
       end
       results.each do |data_key, response|
@@ -63,7 +63,7 @@ module DecisionReviewV1
           'body': response.body,
           'status': response.status
         }
-      end
+      end.deep_stringify_keys     
     end
 
     ##

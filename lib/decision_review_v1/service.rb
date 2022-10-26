@@ -7,7 +7,7 @@ require 'common/exceptions/forbidden'
 require 'common/exceptions/schema_validation_errors'
 require 'decision_review_v1/configuration'
 require 'decision_review_v1/service_exception'
-require 'decision_review_v1/form_4142_processor'
+require 'decision_review_v1/appeals/supplemental_claims'
 
 module DecisionReviewV1
   ##
@@ -362,7 +362,6 @@ module DecisionReviewV1
     def handle_error(error)
       save_error_details error
       source_hash = { source: "#{error.class} raised in #{self.class}" }
-
       raise case error
             when Faraday::ParsingError
               DecisionReviewV1::ServiceException.new key: 'DR_502', response_values: source_hash
