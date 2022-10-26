@@ -3,9 +3,7 @@
 require 'decision_review_v1/utilities/form_4142_processor'
 
 module DecisionReviewV1
-  
   class Service < Common::Client::Base
-    
     ##
     # Returns all of the data associated with a specific Supplemental Claim.
     #
@@ -40,7 +38,7 @@ module DecisionReviewV1
 
         submission_info_message = parse_lighthouse_response_to_log_msg(response.body['data'], bm)
         ::Rails.logger.info(submission_info_message)
-        response        
+        response
       end
     end
 
@@ -49,7 +47,7 @@ module DecisionReviewV1
     #
     # @param form4142 [JSON] JSON serialized version of a 4142/4142(a) form
     # @param user [User] Veteran who the form is in regard to
-    # @param response [Faraday::Response] The response from creating the supplemental claim, that has required info for Central Mail
+    # @param response [Faraday::Response] The response from creating the supplemental claim
     # @return [Faraday::Response]
     #
     def process_form4142_submission(form4142:, user:, response:)
