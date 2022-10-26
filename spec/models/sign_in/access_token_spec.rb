@@ -204,7 +204,6 @@ RSpec.describe SignIn::AccessToken, type: :model do
 
       context 'when fingerprint is nil' do
         let(:fingerprint) { nil }
-        let(:expected_created_time) { Time.zone.now }
 
         it 'raises a missing fingerprint validation error' do
           expect { subject }.to raise_exception(expected_error, expected_error_message)

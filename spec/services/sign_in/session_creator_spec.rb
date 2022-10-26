@@ -102,6 +102,7 @@ RSpec.describe SignIn::SessionCreator do
         let(:expected_anti_csrf_token) { stubbed_random_number }
         let(:stubbed_random_number) { 'some-stubbed-random-number' }
         let(:expected_parent_refresh_token_hash) { Digest::SHA256.hexdigest(parent_refresh_token.to_json) }
+        let(:expected_fingerprint) { request_ip }
         let(:refresh_token) do
           create(:refresh_token,
                  uuid: expected_token_uuid,
@@ -132,6 +133,7 @@ RSpec.describe SignIn::SessionCreator do
           expect(refresh_token.anti_csrf_token).to eq(expected_anti_csrf_token)
           expect(refresh_token.user_uuid).to eq(expected_user_uuid)
           expect(refresh_token.parent_refresh_token_hash).to eq(expected_parent_refresh_token_hash)
+          expect(refresh_token.fingerprint).to eq(expected_fingerprint)
         end
       end
 

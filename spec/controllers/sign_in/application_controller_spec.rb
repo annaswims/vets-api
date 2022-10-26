@@ -63,9 +63,9 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
       end
     end
 
-    shared_context 'access_token session IP validation' do
+    shared_context 'access_token fingerprint validation' do
       context 'accesss_token.fingerprint matches request IP' do
-        it 'passes session IP validation and does not create a log' do
+        it 'passes fingerprint validation and does not create a log' do
           expect_any_instance_of(SentryLogging).not_to receive(:log_message_to_sentry).with(:warn)
           expect(subject.request.ip).to eq(access_token_object.fingerprint)
         end
@@ -79,7 +79,7 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
           { request_ip: request.env['REMOTE_ADDR'], fingerprint: access_token_object.fingerprint }
         end
 
-        it 'fails session IP validation and creates a log' do
+        it 'fails fingerprint validation and creates a log' do
           expect_any_instance_of(SentryLogging).to receive(:log_message_to_sentry).with(expected_error,
                                                                                         sentry_log_level,
                                                                                         sentry_context)
@@ -142,7 +142,7 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
           let(:user_serializer) { SignIn::IntrospectSerializer.new(user) }
           let(:expected_introspect_response) { JSON.parse(user_serializer.to_json) }
 
-          it_behaves_like 'access_token session IP validation'
+          it_behaves_like 'access_token fingerprint validation'
 
           it 'returns ok status' do
             expect(subject).to have_http_status(:ok)
@@ -194,7 +194,7 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
         let(:user_serializer) { SignIn::IntrospectSerializer.new(user) }
         let(:expected_introspect_response) { JSON.parse(user_serializer.to_json) }
 
-        it_behaves_like 'access_token session IP validation'
+        it_behaves_like 'access_token fingerprint validation'
 
         it 'returns ok status' do
           expect(subject).to have_http_status(:ok)
@@ -212,9 +212,9 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
       end
     end
 
-    shared_context 'access_token session IP validation' do
+    shared_context 'access_token fingerprint validation' do
       context 'accesss_token.fingerprint matches request IP' do
-        it 'passes session IP validation and does not create a log' do
+        it 'passes fingerprint validation and does not create a log' do
           expect_any_instance_of(SentryLogging).not_to receive(:log_message_to_sentry).with(:warn)
           expect(subject.request.ip).to eq(access_token_object.fingerprint)
         end
@@ -228,7 +228,7 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
           { request_ip: request.env['REMOTE_ADDR'], fingerprint: access_token_object.fingerprint }
         end
 
-        it 'fails session IP validation and creates a log' do
+        it 'fails fingerprint validation and creates a log' do
           expect_any_instance_of(SentryLogging).to receive(:log_message_to_sentry).with(expected_error,
                                                                                         sentry_log_level,
                                                                                         sentry_context)
@@ -290,7 +290,7 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
           let(:user_serializer) { SignIn::IntrospectSerializer.new(user) }
           let(:expected_introspect_response) { JSON.parse(user_serializer.to_json) }
 
-          it_behaves_like 'access_token session IP validation'
+          it_behaves_like 'access_token fingerprint validation'
 
           it 'returns ok status' do
             expect(subject).to have_http_status(:ok)
@@ -346,7 +346,7 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
         let(:user_serializer) { SignIn::IntrospectSerializer.new(user) }
         let(:expected_introspect_response) { JSON.parse(user_serializer.to_json) }
 
-        it_behaves_like 'access_token session IP validation'
+        it_behaves_like 'access_token fingerprint validation'
 
         it 'returns ok status' do
           expect(subject).to have_http_status(:ok)
