@@ -15,22 +15,28 @@ module V1
       request_body_obj = request_body_hash
       form4142 = request_body_obj.delete('form4142')
       sc_response = decision_review_service
-                         .create_supplemental_claim(request_body: request_body_hash, user: @current_user)
+                    .create_supplemental_claim(request_body: request_body_hash, user: @current_user)
       submitted_appeal_uuid = sc_response.body.dig('data', 'id')
-      form4142_response = nil
+      merged_response = {
+        data: sc_response.body,
+        status: sc_response.status
+      }
       unless form4142.nil?
-        form4142_response = decision_review_service.process_form4142_submission(form4142: form4142, user: @current_user, response: sc_response)
-      end
-      ap [sc_response, form4142_response]
-      ActiveRecord::Base.transaction do
-        AppealSubmission.create!(user_uuid: @current_user.uuid, type_of_appeal: 'SC',
-                                 submitted_appeal_uuid: submitted_appeal_uuid)
-        # Clear in-progress form since submit was successful
-        InProgressForm.form_for_user('20-0995', current_user)&.destroy!
+        form4142_resp = decision_review_service
+                        .process_form4142_submission(form4142: form4142, user: @current_user, response: sc_response)
+        merged_response[:form4142] = { body: form4142_resp.body, status: form4142_resp.status }
       end
 
-      render json: sc_response.body, :status => sc_response.status
+      clear_in_progress_form(submitted_appeal_uuid)
+
+      render json: sc_response.body, status: sc_response.status
     rescue => e
+      handle_personal_info_error(e)
+    end
+
+    private
+
+    def handle_personal_info_error(e)
       request = begin
         { body: request_body_hash }
       rescue
@@ -42,7 +48,14 @@ module V1
       raise
     end
 
-    private
+    def clear_in_progress_form(submitted_appeal_uuid)
+      ActiveRecord::Base.transaction do
+        AppealSubmission.create!(user_uuid: @current_user.uuid, type_of_appeal: 'SC',
+                                 submitted_appeal_uuid: submitted_appeal_uuid)
+        # Clear in-progress form since submit was successful
+        InProgressForm.form_for_user('20-0995', @current_user)&.destroy!
+      end
+    end
 
     def error_class(method:, exception_class:)
       "#{self.class.name}##{method} exception #{exception_class} (SC_V1)"
