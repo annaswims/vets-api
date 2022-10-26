@@ -29,7 +29,7 @@ module SignIn
         anti_csrf_token: access_token.anti_csrf_token,
         last_regeneration_time: access_token.last_regeneration_time.to_i,
         version: access_token.version,
-        session_ip: access_token.session_ip
+        fingerprint: access_token.fingerprint
       }
     end
 

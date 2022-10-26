@@ -19,7 +19,8 @@ module SignIn
         parent_refresh_token_hash: decrypted_component.parent_refresh_token_hash,
         anti_csrf_token: decrypted_component.anti_csrf_token,
         nonce: decrypted_component.nonce,
-        version: decrypted_component.version
+        version: decrypted_component.version,
+        fingerprint: decrypted_component.fingerprint
       )
     end
 

@@ -4,10 +4,9 @@ module SignIn
   class SessionRefresher
     attr_reader :refresh_token, :anti_csrf_token, :session
 
-    def initialize(refresh_token:, anti_csrf_token:, request_ip:)
+    def initialize(refresh_token:, anti_csrf_token:)
       @refresh_token = refresh_token
       @anti_csrf_token = anti_csrf_token
-      @request_ip = request_ip
     end
 
     def perform
@@ -65,7 +64,8 @@ module SignIn
         session_handle: session.handle,
         user_uuid: refresh_token.user_uuid,
         anti_csrf_token: updated_anti_csrf_token,
-        parent_refresh_token_hash: refresh_token_hash
+        parent_refresh_token_hash: refresh_token_hash,
+        fingerprint: refresh_token.fingerprint
       )
     end
 
@@ -78,7 +78,7 @@ module SignIn
         parent_refresh_token_hash: refresh_token_hash,
         anti_csrf_token: updated_anti_csrf_token,
         last_regeneration_time: last_regeneration_time,
-        session_ip: @request_ip
+        fingerprint: refresh_token.fingerprint
       )
     end
 

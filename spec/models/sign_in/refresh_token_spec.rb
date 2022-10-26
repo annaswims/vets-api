@@ -10,7 +10,8 @@ RSpec.describe SignIn::RefreshToken, type: :model do
                       session_handle: session_handle,
                       anti_csrf_token: anti_csrf_token,
                       nonce: nonce,
-                      version: version)
+                      version: version,
+                      fingerprint: fingerprint)
   end
   let(:user_uuid) { create(:user).uuid }
   let(:uuid) { 'some-uuid' }
@@ -18,6 +19,7 @@ RSpec.describe SignIn::RefreshToken, type: :model do
   let(:anti_csrf_token) { 'some-anti-csrf-token' }
   let(:nonce) { 'some-nonce' }
   let(:version) { SignIn::Constants::RefreshToken::CURRENT_VERSION }
+  let(:fingerprint) { '111.111.1.1' }
 
   describe '#initialize' do
     subject { refresh_token }
@@ -66,7 +68,8 @@ RSpec.describe SignIn::RefreshToken, type: :model do
       let(:refresh_token) do
         SignIn::RefreshToken.new(user_uuid: user_uuid,
                                  session_handle: session_handle,
-                                 anti_csrf_token: anti_csrf_token)
+                                 anti_csrf_token: anti_csrf_token,
+                                 fingerprint: fingerprint)
       end
       let(:expected_random_number) { 'some-random-number' }
 
@@ -93,7 +96,8 @@ RSpec.describe SignIn::RefreshToken, type: :model do
       let(:refresh_token) do
         SignIn::RefreshToken.new(user_uuid: user_uuid,
                                  session_handle: session_handle,
-                                 anti_csrf_token: anti_csrf_token)
+                                 anti_csrf_token: anti_csrf_token,
+                                 fingerprint: fingerprint)
       end
       let(:expected_random_number) { 'some-random-number' }
 
@@ -130,12 +134,28 @@ RSpec.describe SignIn::RefreshToken, type: :model do
       let(:refresh_token) do
         SignIn::RefreshToken.new(user_uuid: user_uuid,
                                  session_handle: session_handle,
-                                 anti_csrf_token: anti_csrf_token)
+                                 anti_csrf_token: anti_csrf_token,
+                                 fingerprint: fingerprint)
       end
       let(:expected_version) { SignIn::Constants::RefreshToken::CURRENT_VERSION }
 
       it 'sets the version to the current version' do
         expect(subject.version).to eq(expected_version)
+      end
+    end
+
+    context 'when fingerprint is nil' do
+      let(:expected_error) { ActiveModel::ValidationError }
+      let(:expected_error_message) { 'Validation failed: Fingerprint can\'t be blank' }
+      let(:refresh_token) do
+        SignIn::RefreshToken.new(user_uuid: user_uuid,
+                                 session_handle: session_handle,
+                                 anti_csrf_token: anti_csrf_token,
+                                 fingerprint: nil)
+      end
+
+      it 'raises a missing fingerprint validation error' do
+        expect { subject }.to raise_exception(expected_error, expected_error_message)
       end
     end
 

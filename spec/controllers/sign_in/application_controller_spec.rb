@@ -64,26 +64,26 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
     end
 
     shared_context 'access_token session IP validation' do
-      context 'accesss_token.session_ip matches request IP' do  
+      context 'accesss_token.fingerprint matches request IP' do
         it 'passes session IP validation and does not create a log' do
           expect_any_instance_of(SentryLogging).not_to receive(:log_message_to_sentry).with(:warn)
-          expect(subject.request.ip).to eq(access_token_object.session_ip)
+          expect(subject.request.ip).to eq(access_token_object.fingerprint)
         end
       end
 
-      context 'access_token.session_ip does not match request IP' do
-        let(:access_token_object) { create(:access_token, session_ip: '123.456.78.90') }
-        let(:expected_error) { 'Request IP - SiS session IP mismatch' }
+      context 'access_token.fingerprint does not match request IP' do
+        let(:access_token_object) { create(:access_token, fingerprint: '123.456.78.90') }
+        let(:expected_error) { SignIn::Errors::FingerprintMismatchError }
         let(:sentry_log_level) { :warn }
         let(:sentry_context) do
-          { request_ip: request.env['REMOTE_ADDR'], session_ip: access_token_object.session_ip }
+          { request_ip: request.env['REMOTE_ADDR'], fingerprint: access_token_object.fingerprint }
         end
 
         it 'fails session IP validation and creates a log' do
           expect_any_instance_of(SentryLogging).to receive(:log_message_to_sentry).with(expected_error,
                                                                                         sentry_log_level,
                                                                                         sentry_context)
-          expect(subject.request.ip).not_to eq(access_token_object.session_ip)
+          expect(subject.request.ip).not_to eq(access_token_object.fingerprint)
         end
 
         it 'does not prevent authentication' do
@@ -118,7 +118,7 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
 
         context 'and access_token is an expired JWT' do
           let(:access_token_object) do
-            create(:access_token, expiration_time: expiration_time, session_ip: request.env['REMOTE_ADDR'])
+            create(:access_token, expiration_time: expiration_time, fingerprint: request.env['REMOTE_ADDR'])
           end
           let(:access_token_cookie) { SignIn::AccessTokenJwtEncoder.new(access_token: access_token_object).perform }
           let(:expiration_time) { Time.zone.now - 1.day }
@@ -135,7 +135,7 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
         end
 
         context 'and access_token is an active JWT' do
-          let(:access_token_object) { create(:access_token, session_ip: request.env['REMOTE_ADDR']) }
+          let(:access_token_object) { create(:access_token, fingerprint: request.env['REMOTE_ADDR']) }
           let(:access_token_cookie) { SignIn::AccessTokenJwtEncoder.new(access_token: access_token_object).perform }
           let(:expected_error) { SignIn::Errors::AccessTokenMalformedJWTError.to_s }
           let!(:user) { create(:user, :loa3, uuid: access_token_object.user_uuid) }
@@ -170,7 +170,7 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
 
       context 'and access_token is an expired JWT' do
         let(:access_token_object) do
-          create(:access_token, expiration_time: expiration_time, session_ip: request.env['REMOTE_ADDR'])
+          create(:access_token, expiration_time: expiration_time, fingerprint: request.env['REMOTE_ADDR'])
         end
         let(:access_token) { SignIn::AccessTokenJwtEncoder.new(access_token: access_token_object).perform }
         let(:expiration_time) { Time.zone.now - 1.day }
@@ -187,7 +187,7 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
       end
 
       context 'and access_token is an active JWT' do
-        let(:access_token_object) { create(:access_token, session_ip: request.env['REMOTE_ADDR']) }
+        let(:access_token_object) { create(:access_token, fingerprint: request.env['REMOTE_ADDR']) }
         let(:access_token) { SignIn::AccessTokenJwtEncoder.new(access_token: access_token_object).perform }
         let(:expected_error) { SignIn::Errors::AccessTokenMalformedJWTError.to_s }
         let!(:user) { create(:user, :loa3, uuid: access_token_object.user_uuid) }
@@ -213,26 +213,26 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
     end
 
     shared_context 'access_token session IP validation' do
-      context 'accesss_token.session_ip matches request IP' do  
+      context 'accesss_token.fingerprint matches request IP' do
         it 'passes session IP validation and does not create a log' do
           expect_any_instance_of(SentryLogging).not_to receive(:log_message_to_sentry).with(:warn)
-          expect(subject.request.ip).to eq(access_token_object.session_ip)
+          expect(subject.request.ip).to eq(access_token_object.fingerprint)
         end
       end
 
-      context 'access_token.session_ip does not match request IP' do
-        let(:access_token_object) { create(:access_token, session_ip: '123.456.78.90') }
-        let(:expected_error) { 'Request IP - SiS session IP mismatch' }
+      context 'access_token.fingerprint does not match request IP' do
+        let(:access_token_object) { create(:access_token, fingerprint: '123.456.78.90') }
+        let(:expected_error) { SignIn::Errors::FingerprintMismatchError }
         let(:sentry_log_level) { :warn }
         let(:sentry_context) do
-          { request_ip: request.env['REMOTE_ADDR'], session_ip: access_token_object.session_ip }
+          { request_ip: request.env['REMOTE_ADDR'], fingerprint: access_token_object.fingerprint }
         end
 
         it 'fails session IP validation and creates a log' do
           expect_any_instance_of(SentryLogging).to receive(:log_message_to_sentry).with(expected_error,
                                                                                         sentry_log_level,
                                                                                         sentry_context)
-          expect(subject.request.ip).not_to eq(access_token_object.session_ip)
+          expect(subject.request.ip).not_to eq(access_token_object.fingerprint)
         end
 
         it 'does not prevent authentication' do
@@ -266,7 +266,7 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
 
         context 'and access_token is an expired JWT' do
           let(:access_token_object) do
-            create(:access_token, expiration_time: expiration_time, session_ip: request.env['REMOTE_ADDR'])
+            create(:access_token, expiration_time: expiration_time, fingerprint: request.env['REMOTE_ADDR'])
           end
           let(:access_token_cookie) { SignIn::AccessTokenJwtEncoder.new(access_token: access_token_object).perform }
           let(:expiration_time) { Time.zone.now - 1.day }
@@ -283,7 +283,7 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
         end
 
         context 'and access_token is an active JWT' do
-          let(:access_token_object) { create(:access_token, session_ip: request.env['REMOTE_ADDR']) }
+          let(:access_token_object) { create(:access_token, fingerprint: request.env['REMOTE_ADDR']) }
           let(:access_token_cookie) { SignIn::AccessTokenJwtEncoder.new(access_token: access_token_object).perform }
           let(:expected_error) { SignIn::Errors::AccessTokenMalformedJWTError.to_s }
           let!(:user) { create(:user, :loa3, uuid: access_token_object.user_uuid) }
@@ -322,7 +322,7 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
 
       context 'and access_token is an expired JWT' do
         let(:access_token_object) do
-          create(:access_token, expiration_time: expiration_time, session_ip: request.env['REMOTE_ADDR'])
+          create(:access_token, expiration_time: expiration_time, fingerprint: request.env['REMOTE_ADDR'])
         end
         let(:access_token) { SignIn::AccessTokenJwtEncoder.new(access_token: access_token_object).perform }
         let(:expiration_time) { Time.zone.now - 1.day }
@@ -339,7 +339,7 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
       end
 
       context 'and access_token is an active JWT' do
-        let(:access_token_object) { create(:access_token, session_ip: request.env['REMOTE_ADDR']) }
+        let(:access_token_object) { create(:access_token, fingerprint: request.env['REMOTE_ADDR']) }
         let(:access_token) { SignIn::AccessTokenJwtEncoder.new(access_token: access_token_object).perform }
         let(:expected_error) { SignIn::Errors::AccessTokenMalformedJWTError.to_s }
         let!(:user) { create(:user, :loa3, uuid: access_token_object.user_uuid) }
@@ -365,7 +365,7 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
 
     context 'with a valid authenticated request' do
       let(:authorization) { "Bearer #{access_token}" }
-      let(:access_token_object) { create(:access_token, session_ip: request.env['REMOTE_ADDR']) }
+      let(:access_token_object) { create(:access_token, fingerprint: request.env['REMOTE_ADDR']) }
       let(:access_token) { SignIn::AccessTokenJwtEncoder.new(access_token: access_token_object).perform }
 
       before do
@@ -391,7 +391,7 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
     let(:access_token_object) do
       create(:access_token, user_uuid: user_account.id,
                             session_handle: session.handle,
-                            session_ip: request.env['REMOTE_ADDR'])
+                            fingerprint: request.env['REMOTE_ADDR'])
     end
     let(:session) { create(:oauth_session, user_account: user_account) }
     let(:access_token) { SignIn::AccessTokenJwtEncoder.new(access_token: access_token_object).perform }

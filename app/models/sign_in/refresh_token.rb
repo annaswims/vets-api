@@ -4,9 +4,18 @@ module SignIn
   class RefreshToken
     include ActiveModel::Validations
 
-    attr_reader :user_uuid, :uuid, :session_handle, :parent_refresh_token_hash, :anti_csrf_token, :nonce, :version
+    attr_reader(
+      :user_uuid,
+      :uuid,
+      :session_handle,
+      :parent_refresh_token_hash,
+      :anti_csrf_token,
+      :nonce,
+      :version,
+      :fingerprint
+    )
 
-    validates :user_uuid, :uuid, :session_handle, :anti_csrf_token, :nonce, :version, presence: true
+    validates :user_uuid, :uuid, :session_handle, :anti_csrf_token, :nonce, :version, :fingerprint, presence: true
     validates :version, inclusion: Constants::RefreshToken::VERSION_LIST
 
     # rubocop:disable Metrics/ParameterLists
@@ -16,7 +25,8 @@ module SignIn
                    uuid: create_uuid,
                    parent_refresh_token_hash: nil,
                    nonce: create_nonce,
-                   version: Constants::RefreshToken::CURRENT_VERSION)
+                   version: Constants::RefreshToken::CURRENT_VERSION,
+                   fingerprint: nil)
       @user_uuid = user_uuid
       @uuid = uuid
       @session_handle = session_handle
@@ -24,6 +34,7 @@ module SignIn
       @anti_csrf_token = anti_csrf_token
       @nonce = nonce
       @version = version
+      @fingerprint = fingerprint
 
       validate!
     end

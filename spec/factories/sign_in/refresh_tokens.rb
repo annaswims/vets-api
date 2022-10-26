@@ -11,6 +11,7 @@ FactoryBot.define do
     nonce { SecureRandom.hex }
     uuid { SecureRandom.hex }
     version { SignIn::Constants::RefreshToken::CURRENT_VERSION }
+    fingerprint { '111.111.1.1' }
 
     initialize_with do
       new(user_uuid: user_uuid,
@@ -19,7 +20,8 @@ FactoryBot.define do
           parent_refresh_token_hash: parent_refresh_token_hash,
           anti_csrf_token: anti_csrf_token,
           nonce: nonce,
-          version: version)
+          version: version,
+          fingerprint: fingerprint)
     end
   end
 end

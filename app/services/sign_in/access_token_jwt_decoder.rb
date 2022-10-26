@@ -22,7 +22,7 @@ module SignIn
         version: decoded_token.version,
         expiration_time: Time.zone.at(decoded_token.exp),
         created_time: Time.zone.at(decoded_token.iat),
-        session_ip: decoded_token.session_ip
+        fingerprint: decoded_token.fingerprint
       )
     end
 

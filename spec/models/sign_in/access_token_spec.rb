@@ -14,7 +14,8 @@ RSpec.describe SignIn::AccessToken, type: :model do
            last_regeneration_time: last_regeneration_time,
            expiration_time: expiration_time,
            version: version,
-           created_time: created_time)
+           created_time: created_time,
+           fingerprint: fingerprint)
   end
 
   let(:session_handle) { create(:oauth_session).handle }
@@ -27,6 +28,7 @@ RSpec.describe SignIn::AccessToken, type: :model do
   let(:version) { SignIn::Constants::AccessToken::CURRENT_VERSION }
   let(:expiration_time) { Time.zone.now + SignIn::Constants::AccessToken::VALIDITY_LENGTH_SHORT_MINUTES.minutes }
   let(:created_time) { Time.zone.now }
+  let(:fingerprint) { '111.111.1.1' }
 
   describe 'validations' do
     describe '#session_handle' do
@@ -190,6 +192,22 @@ RSpec.describe SignIn::AccessToken, type: :model do
 
         it 'sets expired time to now' do
           expect(subject).to eq(expected_created_time)
+        end
+      end
+    end
+
+    describe '#fingerprint' do
+      subject { access_token.fingerprint }
+
+      let(:expected_error) { ActiveModel::ValidationError }
+      let(:expected_error_message) { 'Validation failed: Fingerprint can\'t be blank' }
+
+      context 'when fingerprint is nil' do
+        let(:fingerprint) { nil }
+        let(:expected_created_time) { Time.zone.now }
+
+        it 'raises a missing fingerprint validation error' do
+          expect { subject }.to raise_exception(expected_error, expected_error_message)
         end
       end
     end

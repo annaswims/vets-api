@@ -48,5 +48,6 @@ module SignIn
     class AccessDeniedError < StandardError; end
     class CredentialProviderError < StandardError; end
     class MHVMissingMPIRecordError < StandardError; end
+    class FingerprintMismatchError < StandardError; end
   end
 end

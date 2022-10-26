@@ -3,11 +3,8 @@
 require 'rails_helper'
 
 RSpec.describe SignIn::SessionRefresher do
-  let(:request_ip) { '111.111.1.1' }
   let(:session_refresher) do
-    SignIn::SessionRefresher.new(refresh_token: refresh_token, 
-                                 anti_csrf_token: input_anti_csrf_token,
-                                 request_ip: request_ip)
+    SignIn::SessionRefresher.new(refresh_token: refresh_token, anti_csrf_token: input_anti_csrf_token)
   end
 
   describe '#perform' do
@@ -106,6 +103,8 @@ RSpec.describe SignIn::SessionRefresher do
             end
 
             context 'new token creation' do
+              let(:expected_fingerprint) { refresh_token.fingerprint }
+
               context 'expected anti_csrf_token' do
                 let(:expected_anti_csrf_token) { 'some-anti-csrf-token' }
 
@@ -138,6 +137,7 @@ RSpec.describe SignIn::SessionRefresher do
                   expect(container.refresh_token.user_uuid).to eq(user_uuid)
                   expect(container.refresh_token.anti_csrf_token).to eq(expected_anti_csrf_token)
                   expect(container.refresh_token.parent_refresh_token_hash).to eq(expected_refresh_token_hash)
+                  expect(container.refresh_token.fingerprint).to eq(expected_fingerprint)
                 end
               end
 
@@ -159,6 +159,7 @@ RSpec.describe SignIn::SessionRefresher do
                   expect(container.access_token.parent_refresh_token_hash).to eq(expected_parent_refresh_token_hash)
                   expect(container.access_token.refresh_token_hash).to eq(expected_refresh_token_hash)
                   expect(container.access_token.last_regeneration_time).to eq(expected_last_regeneration_time)
+                  expect(container.access_token.fingerprint).to eq(expected_fingerprint)
                 end
               end
             end

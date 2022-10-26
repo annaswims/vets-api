@@ -62,7 +62,7 @@ RSpec.describe SignIn::AccessTokenJwtDecoder do
           anti_csrf_token: access_token.anti_csrf_token,
           last_regeneration_time: access_token.last_regeneration_time.to_i,
           version: access_token.version,
-          session_ip: access_token.session_ip
+          fingerprint: access_token.fingerprint
         }
       end
 
@@ -112,7 +112,7 @@ RSpec.describe SignIn::AccessTokenJwtDecoder do
         expect(decoded_access_token.version).to eq(access_token.version)
         expect(decoded_access_token.expiration_time).to eq(Time.zone.at(access_token.expiration_time.to_i))
         expect(decoded_access_token.created_time).to eq(Time.zone.at(access_token.created_time.to_i))
-        expect(decoded_access_token.session_ip).to eq(access_token.session_ip)
+        expect(decoded_access_token.fingerprint).to eq(access_token.fingerprint)
       end
     end
   end

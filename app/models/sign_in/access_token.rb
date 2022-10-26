@@ -16,7 +16,7 @@ module SignIn
       :version,
       :expiration_time,
       :created_time,
-      :session_ip
+      :fingerprint
     )
 
     validates(
@@ -30,7 +30,7 @@ module SignIn
       :version,
       :expiration_time,
       :created_time,
-      :session_ip,
+      :fingerprint,
       presence: true
     )
 
@@ -49,10 +49,10 @@ module SignIn
                    version: nil,
                    expiration_time: nil,
                    created_time: nil,
-                   session_ip: nil)
+                   fingerprint: nil)
       @uuid = uuid || create_uuid
       @session_handle = session_handle
-      @session_ip = session_ip
+      @fingerprint = fingerprint
       @client_id = client_id
       @user_uuid = user_uuid
       @refresh_token_hash = refresh_token_hash
