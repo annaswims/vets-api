@@ -2,20 +2,23 @@
 
 require_dependency 'mobile/application_controller'
 require 'adapters/payment_history_adapter'
+require 'ddtrace'
 
 module Mobile
   module V0
     class PaymentHistoryController < ApplicationController
       def index
-        validated_params = validate_params(params)
+        Datadog::Tracing.trace('DisabilityRating#Index Mobile') do
+          validated_params = validate_params(params)
 
-        payments = adapter.payments
-        available_years = available_years(payments)
-        payments = filter(payments, available_years, validated_params) unless payments.empty?
-        list, meta = paginate(payments, validated_params)
-        meta[:meta][:available_years] = available_years
+          payments = adapter.payments
+          available_years = available_years(payments)
+          payments = filter(payments, available_years, validated_params) unless payments.empty?
+          list, meta = paginate(payments, validated_params)
+          meta[:meta][:available_years] = available_years
 
-        render json: Mobile::V0::PaymentHistorySerializer.new(list, meta)
+          render json: Mobile::V0::PaymentHistorySerializer.new(list, meta)
+        end
       end
 
       private

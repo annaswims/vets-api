@@ -1,15 +1,19 @@
 # frozen_string_literal: true
 
+require 'ddtrace'
+
 module V0
   module Profile
     class PaymentHistoryController < ApplicationController
       before_action { authorize :bgs, :access? }
 
       def index
-        render(
-          json: PaymentHistory.new(payments: adapter.payments, return_payments: adapter.return_payments),
-          serializer: PaymentHistorySerializer
-        )
+        Datadog::Tracing.trace('Payment History#Index Web') do
+          render(
+            json: PaymentHistory.new(payments: adapter.payments, return_payments: adapter.return_payments),
+            serializer: PaymentHistorySerializer
+          )
+        end
       end
 
       private

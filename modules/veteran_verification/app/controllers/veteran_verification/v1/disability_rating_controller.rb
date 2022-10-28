@@ -15,7 +15,7 @@ module VeteranVerification
       before_action { permit_scopes %w[disability_rating.read] }
 
       def index
-        Datadog::Tracing.trace('DisabilityRating#Index Mobile') do
+        Datadog::Tracing.trace('DisabilityRating#Index Web') do
           response = DisabilityRating.for_user(@current_user)
           serialized = ActiveModelSerializers::SerializableResource.new(
             response,
