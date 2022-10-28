@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_dependency 'mobile/application_controller'
+require 'ddtrace'
 
 module Mobile
   module V1
@@ -8,7 +9,9 @@ module Mobile
       after_action :pre_cache_resources, only: :show
 
       def show
-        render json: Mobile::V1::UserSerializer.new(@current_user, options)
+        Datadog::Tracing.trace('Users#Show Mobile') do
+          render json: Mobile::V1::UserSerializer.new(@current_user, options)
+        end
       end
 
       private
