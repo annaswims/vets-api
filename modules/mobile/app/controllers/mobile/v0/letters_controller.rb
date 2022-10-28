@@ -3,6 +3,7 @@
 require 'common/exceptions/record_not_found'
 require 'evss/letters/download_service'
 require 'evss/letters/service'
+require 'ddtrace'
 
 module Mobile
   module V0
@@ -11,7 +12,9 @@ module Mobile
 
       # returns list of letters available for a given user. List includes letter display name and letter type
       def index
-        render json: Mobile::V0::LettersSerializer.new(@current_user.uuid, service.get_letters.letters)
+        Datadog::Tracing.trace('Letters#Index Mobile') do
+          render json: Mobile::V0::LettersSerializer.new(@current_user.uuid, service.get_letters.letters)
+        end
       end
 
       # returns options and info needed to create user form required for benefit letter download
@@ -21,19 +24,21 @@ module Mobile
 
       # returns a pdf of the requested letter type given the user has that letter type available
       def download
-        unless EVSS::Letters::Letter::LETTER_TYPES.include? params[:type]
-          Raven.tags_context(team: 'va-mobile-app') # tag sentry logs with team name
-          raise Common::Exceptions::ParameterMissing, 'letter_type', "#{params[:type]} is not a valid letter type"
+        Datadog::Tracing.trace('Letters#Download Mobile') do
+          unless EVSS::Letters::Letter::LETTER_TYPES.include? params[:type]
+            Raven.tags_context(team: 'va-mobile-app') # tag sentry logs with team name
+            raise Common::Exceptions::ParameterMissing, 'letter_type', "#{params[:type]} is not a valid letter type"
+          end
+
+          response = download_service.download_letter(params[:type], request.body.string)
+
+          StatsD.increment('mobile.letters.download.type', tags: ["type:#{params[:type]}"], sample_rate: 1.0)
+
+          send_data response,
+                    filename: "#{params[:type]}.pdf",
+                    type: 'application/pdf',
+                    disposition: 'attachment'
         end
-
-        response = download_service.download_letter(params[:type], request.body.string)
-
-        StatsD.increment('mobile.letters.download.type', tags: ["type:#{params[:type]}"], sample_rate: 1.0)
-
-        send_data response,
-                  filename: "#{params[:type]}.pdf",
-                  type: 'application/pdf',
-                  disposition: 'attachment'
       end
 
       def service
