@@ -13,7 +13,7 @@ module V0
       Datadog::Tracing.trace('Letters#Index Web') do
         response = service.get_letters
         render json: response,
-                     serializer: LettersSerializer
+               serializer: LettersSerializer
       end
     end
 
