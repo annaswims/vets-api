@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'mobile/v0/vaos_appointments/appointments_helper'
+require 'ddtrace'
 
 module Mobile
   module V0
@@ -8,27 +9,29 @@ module Mobile
       after_action :clear_appointments_cache, only: %i[cancel create]
 
       def index
-        use_cache = params[:useCache] || true
-        start_date = params[:startDate] || appointments_cache_interface.latest_allowable_cache_start_date
-        end_date = params[:endDate] || appointments_cache_interface.earliest_allowable_cache_end_date
-        reverse_sort = !(params[:sort] =~ /-startDateUtc/).nil?
+        Datadog::Tracing.trace('Appointments#Index Mobile') do
+          use_cache = params[:useCache] || true
+          start_date = params[:startDate] || appointments_cache_interface.latest_allowable_cache_start_date
+          end_date = params[:endDate] || appointments_cache_interface.earliest_allowable_cache_end_date
+          reverse_sort = !(params[:sort] =~ /-startDateUtc/).nil?
 
-        validated_params = Mobile::V0::Contracts::Appointments.new.call(
-          start_date: start_date,
-          end_date: end_date,
-          page_number: params.dig(:page, :number),
-          page_size: params.dig(:page, :size),
-          use_cache: use_cache,
-          reverse_sort: reverse_sort,
-          included: params[:included],
-          include: params[:include]
-        )
+          validated_params = Mobile::V0::Contracts::Appointments.new.call(
+            start_date: start_date,
+            end_date: end_date,
+            page_number: params.dig(:page, :number),
+            page_size: params.dig(:page, :size),
+            use_cache: use_cache,
+            reverse_sort: reverse_sort,
+            included: params[:included],
+            include: params[:include]
+          )
 
-        appointments = fetch_appointments(validated_params)
-        appointments = filter_by_date_range(appointments, validated_params)
-        page_appointments, page_meta_data = paginate(appointments, validated_params)
+          appointments = fetch_appointments(validated_params)
+          appointments = filter_by_date_range(appointments, validated_params)
+          page_appointments, page_meta_data = paginate(appointments, validated_params)
 
-        render json: Mobile::V0::AppointmentSerializer.new(page_appointments, page_meta_data)
+          render json: Mobile::V0::AppointmentSerializer.new(page_appointments, page_meta_data)
+        end
       end
 
       def cancel
