@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'ddtrace'
+
 require_dependency 'veteran_verification/application_controller'
 require_dependency 'notary'
 
@@ -13,14 +15,16 @@ module VeteranVerification
       before_action { permit_scopes %w[disability_rating.read] }
 
       def index
-        response = DisabilityRating.for_user(@current_user)
-        serialized = ActiveModelSerializers::SerializableResource.new(
-          response,
-          each_serializer: VeteranVerification::DisabilityRatingSerializer
-        )
-        respond_to do |format|
-          format.json { render json: serialized.to_json }
-          format.jwt { render body: NOTARY.sign(serialized.serializable_hash) }
+        Datadog::Tracing.trace('DisabilityRating#Index Mobile') do
+          response = DisabilityRating.for_user(@current_user)
+          serialized = ActiveModelSerializers::SerializableResource.new(
+            response,
+            each_serializer: VeteranVerification::DisabilityRatingSerializer
+          )
+          respond_to do |format|
+            format.json { render json: serialized.to_json }
+            format.jwt { render body: NOTARY.sign(serialized.serializable_hash) }
+          end
         end
       end
     end
