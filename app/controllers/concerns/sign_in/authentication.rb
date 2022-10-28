@@ -17,6 +17,7 @@ module SignIn
     def authenticate
       @access_token = authenticate_access_token
       @current_user = load_user_object
+      validate_request_ip
     rescue Errors::AccessTokenExpiredError => e
       render json: { errors: e }, status: :forbidden
     rescue Errors::StandardError => e
@@ -26,6 +27,7 @@ module SignIn
     def load_user(skip_expiration_check: false)
       @access_token = authenticate_access_token
       @current_user = load_user_object
+      validate_request_ip
     rescue Errors::AccessTokenExpiredError => e
       render json: { errors: e }, status: :forbidden unless skip_expiration_check
     rescue Errors::StandardError
@@ -62,6 +64,15 @@ module SignIn
 
       log_message_to_sentry(error.message, :error, context)
       render json: { errors: error }, status: :unauthorized
+    end
+
+    def validate_request_ip
+      if @current_user&.fingerprint != request.ip
+        log_message_to_sentry(SignIn::Errors::FingerprintMismatchError,
+                              :warn,
+                              { request_ip: request.ip, fingerprint: @current_user&.fingerprint })
+        @current_user.fingerprint = request.ip
+      end
     end
   end
 end

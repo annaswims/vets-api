@@ -1118,6 +1118,10 @@ RSpec.describe User, type: :model do
     end
   end
 
+  describe '#fingerprint' do
+    #add fingerprint tests
+  end
+
   describe '#user_verification' do
     let(:user) do
       described_class.new(build(:user,

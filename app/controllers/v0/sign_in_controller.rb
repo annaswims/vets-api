@@ -90,7 +90,8 @@ module V0
       validated_credential = SignIn::CodeValidator.new(code: code,
                                                        code_verifier: code_verifier,
                                                        grant_type: grant_type).perform
-      session_container = SignIn::SessionCreator.new(validated_credential: validated_credential).perform
+      session_container = SignIn::SessionCreator.new(validated_credential: validated_credential,
+                                                     request_ip: request.ip).perform
       serializer_response = SignIn::TokenSerializer.new(session_container: session_container,
                                                         cookies: token_cookies).perform
 

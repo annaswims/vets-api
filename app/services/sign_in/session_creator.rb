@@ -4,11 +4,13 @@ module SignIn
   class SessionCreator
     attr_reader :validated_credential
 
-    def initialize(validated_credential:)
+    def initialize(validated_credential:, request_ip:)
       @validated_credential = validated_credential
+      @request_ip = request_ip
     end
 
     def perform
+      set_user_fingerprint
       SessionContainer.new(session: session,
                            refresh_token: refresh_token,
                            access_token: access_token,
@@ -17,6 +19,13 @@ module SignIn
     end
 
     private
+
+    def set_user_fingerprint
+      if (user = User.find(user_uuid))
+        user.fingerprint = @request_ip
+        user.save!
+      end
+    end
 
     def anti_csrf_token
       @anti_csrf_token ||= SecureRandom.hex
