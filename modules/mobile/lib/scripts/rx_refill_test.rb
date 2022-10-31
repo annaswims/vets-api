@@ -12,14 +12,14 @@ class RxRefillTest
 
   def run
     output_index('BASELINE')
-    # update_refill
+    update_refill
     spam_index
   end
 
   private
 
   def spam_index
-    5.times do |i|
+    10.times do |i|
       test_number = i + 1
       output_index(test_number)
     end
@@ -47,15 +47,16 @@ class RxRefillTest
     puts e
   end
 
-  # def update_refill
-  #   path = "mobile/v0/health/rx/prescriptions/#{@rx_id}/refill"
-  #   response = connection.put(path)
-  #   puts "=== UPDATED RX #{@rx_id} ==="
-  # end
+  def update_refill
+    path = "mobile/v0/health/rx/prescriptions/#{@rx_id}/refill"
+    connection.put(path)
+    puts "=== UPDATED RX #{@rx_id} ==="
+  end
 
   def get_prescriptions_index
     path = 'mobile/v0/health/rx/prescriptions'
-    connection.get(path)
+    params = { 'page[size]': 100 }
+    connection.get(path, params)
   end
 
   def connection
