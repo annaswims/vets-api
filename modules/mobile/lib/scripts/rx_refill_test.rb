@@ -3,7 +3,6 @@
 require 'faraday'
 require 'json'
 require 'pry'
-require 'async'
 
 class RxRefillTest
   def initialize(rx_id, access_token)
@@ -12,44 +11,46 @@ class RxRefillTest
   end
 
   def run
+    output_index("BASELINE")
+    # update_refill
     spam_index
   end
 
   private
 
   def spam_index
-    Async do |task|
-      40.times do |i|
-        test_number = i + 1
-        puts "Synchronously testing #{test_number}"
-          task.async do
-            output_index(test_number)
-          end
-        end
-        # sleep(0.25)
-      end
+    5.times do |i|
+      test_number = i + 1
+      output_index(test_number)
     end
   end
 
   def output_index(test_number)
-    puts "Asynchronously testing #{test_number}"
-    puts "STARTING TEST AT: "
-    pp Time.now
+    puts "=== START TESTING #{test_number} ==="
+    now =  Time.now
+    puts
 
     response = get_prescriptions_index
     parsed = JSON.parse(response.body)
     match = parsed['data'].find { |rx| rx['id'] == @rx_id }
-    puts
-    puts "=== TEST NUMBER #{test_number} ==="
-    pp Time.now
+
+    duration = Time.now - now
+    puts "REQUEST TOOK: #{duration}"
     puts '=== RESULT ==='
     puts match
     puts
+    puts "=== FINISHED TESTING #{test_number} ==="
+    puts
+    puts '---------------------------------------'
+    puts
+  rescue => e
+    puts e
   end
 
   # def update_refill
-  #   path = "/v0/health/rx/prescriptions/#{@rx_id}/refill"
-  #   connection.put(path)
+  #   path = "mobile/v0/health/rx/prescriptions/#{@rx_id}/refill"
+  #   response = connection.put(path)
+  #   puts "=== UPDATED RX #{@rx_id} ==="
   # end
 
   def get_prescriptions_index
@@ -58,7 +59,7 @@ class RxRefillTest
   end
 
   def connection
-    Faraday.new(
+    @connection ||= Faraday.new(
       url: 'https://staging-api.va.gov',
       headers: {
         'Content-Type' => 'application/json',
