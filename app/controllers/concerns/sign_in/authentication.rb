@@ -72,6 +72,7 @@ module SignIn
                               :warn,
                               { request_ip: request.ip, fingerprint: @current_user&.fingerprint })
         @current_user.fingerprint = request.ip
+        @current_user.save
       end
     end
   end
