@@ -11,7 +11,7 @@ class RxRefillTest
   end
 
   def run
-    output_index("BASELINE")
+    output_index('BASELINE')
     # update_refill
     spam_index
   end
@@ -27,15 +27,15 @@ class RxRefillTest
 
   def output_index(test_number)
     puts "=== START TESTING #{test_number} ==="
-    now =  Time.now
+    start_time = Time.now
     puts
 
     response = get_prescriptions_index
     parsed = JSON.parse(response.body)
     match = parsed['data'].find { |rx| rx['id'] == @rx_id }
 
-    duration = Time.now - now
-    puts "REQUEST TOOK: #{duration}"
+    duration = Time.now - start_time
+    puts "REQUEST TOOK: #{duration} seconds"
     puts '=== RESULT ==='
     puts match
     puts
