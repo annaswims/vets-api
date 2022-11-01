@@ -4,6 +4,14 @@ require 'decision_review_v1/utilities/form_4142_processor'
 
 module DecisionReviewV1
   class Service < Common::Client::Base
+    SC_REQUIRED_CREATE_HEADERS = %w[X-VA-First-Name X-VA-Last-Name X-VA-SSN X-VA-Birth-Date].freeze
+
+    SC_CREATE_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'SC-CREATE-RESPONSE-200_V1'
+    SC_SHOW_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'SC-SHOW-RESPONSE-200_V1'
+
+    FORM4142_ID = '4142'
+    SUPP_CLAIM_FORM_ID = '20-0995'
+
     ##
     # Returns all of the data associated with a specific Supplemental Claim.
     #
@@ -28,6 +36,7 @@ module DecisionReviewV1
     #
     def create_supplemental_claim(request_body:, user:)
       with_monitoring_and_error_handling do
+        request_body = request_body.to_json if request_body.is_a?(Hash)
         headers = create_supplemental_claims_headers(user)
         response, bm = run_and_benchmark_if_enabled do
           perform :post, 'supplemental_claims', request_body, headers
@@ -45,18 +54,21 @@ module DecisionReviewV1
     ##
     # Creates a new 4142(a) PDF, and sends to central mail
     #
-    # @param form4142 [JSON] JSON serialized version of a 4142/4142(a) form
+    # @param request_body [JSON] JSON serialized version of a 4142/4142(a) form
     # @param user [User] Veteran who the form is in regard to
     # @param response [Faraday::Response] The response from creating the supplemental claim
     # @return [Faraday::Response]
     #
-    def process_form4142_submission(form4142:, user:, response:)
-      form4142_response, bm = run_and_benchmark_if_enabled do
-        submit_form4142(form_data: form4142, user: user, response: response)
+    def process_form4142_submission(request_body:, form4142:, user:, response:)
+      with_monitoring_and_error_handling do
+        form4142_response, bm = run_and_benchmark_if_enabled do
+          new_body = get_and_rejigger_required_info(request_body: request_body, form4142: form4142, user: user)
+          submit_form4142(form_data: new_body, user: user, response: response)
+        end
+        form4142_submission_info_message = parse_form412_response_to_log_msg(form4142_response, bm)
+        ::Rails.logger.info(form4142_submission_info_message)
+        form4142_response
       end
-      form4142_submission_info_message = parse_form412_response_to_log_msg(form4142_response.body, bm)
-      ::Rails.logger.info(form4142_submission_info_message)
-      form4142_response
     end
 
     ##
@@ -143,6 +155,49 @@ module DecisionReviewV1
       end
     end
 
+    private
+
+    def get_and_rejigger_required_info(request_body:, form4142:, user:)
+      data = request_body['data']
+      attrs = data['attributes']
+      vet = attrs['veteran']
+      x = {
+        "vaFileNumber": user.ssn.to_s.strip.presence,
+        "veteranSocialSecurityNumber": user.ssn.to_s.strip.presence,
+        "veteranFullName": {
+          "first": user.first_name.to_s.strip.first(12),
+          "middle": middle_initial(user),
+          "last": user.last_name.to_s.strip.first(18).presence
+        },
+        "veteranDateOfBirth": user.birth_date.to_s.strip.presence,
+        "veteranAddress": vet['address'].merge('country' => vet['address']['countryCodeISO2']),
+        "email": vet['email'],
+        "veteranPhone": "#{vet['phone']['areaCode']}#{vet['phone']['phoneNumber']}"
+      }
+      x.merge(form4142).deep_stringify_keys
+    end
+
+    def create_supplemental_claims_headers(user)
+      headers = {
+        'X-VA-SSN' => user.ssn.to_s.strip.presence,
+        'X-VA-ICN' => user.icn.presence,
+        'X-VA-First-Name' => user.first_name.to_s.strip.first(12),
+        'X-VA-Middle-Initial' => middle_initial(user),
+        'X-VA-Last-Name' => user.last_name.to_s.strip.first(18).presence,
+        'X-VA-Birth-Date' => user.birth_date.to_s.strip.presence
+      }.compact
+
+      missing_required_fields = SC_REQUIRED_CREATE_HEADERS - headers.keys
+      if missing_required_fields.present?
+        raise Common::Exceptions::Forbidden.new(
+          source: "#{self.class}##{__method__}",
+          detail: { missing_required_fields: missing_required_fields }
+        )
+      end
+
+      headers
+    end
+
     def benchmark?
       Settings.decision_review.benchmark_performance
     end
@@ -180,20 +235,24 @@ module DecisionReviewV1
     end
 
     def extract_uuid_from_central_mail_message(data)
-      data[/(?<=\[).*?(?=\])/].split(': ').last
+      data.body[/(?<=\[).*?(?=\])/].split(': ').last
     end
 
     def parse_form412_response_to_log_msg(data, bm = nil)
       log_data = {
-        message: data,
-        extracted_uuid: extract_uuid_from_central_mail_message(data)
+        form_id: FORM4142_ID,
+        parent_form_id: SUPP_CLAIM_FORM_ID,
+        message: data.body,
+        status: data.status
       }
+      log_data[:extracted_uuid] = extract_uuid_from_central_mail_message(data) if data.success?
       log_data[:meta] = benchmark_to_log_data_hash(bm) unless bm.nil?
       log_data
     end
 
     def parse_lighthouse_response_to_log_msg(data, bm = nil)
       log_data = {
+        form_id: SUPP_CLAIM_FORM_ID,
         message: 'Successful Lighthouse Supplemental Claim Submission',
         lighthouse_submission: {
           id: data['id'],

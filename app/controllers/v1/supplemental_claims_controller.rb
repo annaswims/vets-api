@@ -12,7 +12,7 @@ module V1
     end
 
     def create
-      request_body_obj = request_body_hash
+      request_body_obj = JSON.parse(request_body_hash)
       form4142 = request_body_obj.delete('form4142')
       sc_response = decision_review_service
                     .create_supplemental_claim(request_body: request_body_obj, user: @current_user)
@@ -23,7 +23,7 @@ module V1
       }
       unless form4142.nil?
         form4142_resp = decision_review_service
-                        .process_form4142_submission(form4142: form4142, user: @current_user, response: sc_response)
+                        .process_form4142_submission(request_body: request_body_obj, form4142: form4142, user: @current_user, response: sc_response)
         merged_response[:form4142] = { body: form4142_resp.body, status: form4142_resp.status }
       end
 

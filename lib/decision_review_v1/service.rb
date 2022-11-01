@@ -23,7 +23,6 @@ module DecisionReviewV1
 
     HLR_REQUIRED_CREATE_HEADERS = %w[X-VA-First-Name X-VA-Last-Name X-VA-SSN X-VA-Birth-Date].freeze
     NOD_REQUIRED_CREATE_HEADERS = %w[X-VA-File-Number X-VA-First-Name X-VA-Last-Name X-VA-Birth-Date].freeze
-    SC_REQUIRED_CREATE_HEADERS = %w[X-VA-First-Name X-VA-Last-Name X-VA-SSN X-VA-Birth-Date].freeze
 
     HLR_CREATE_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'HLR-CREATE-RESPONSE-200_V1'
     HLR_SHOW_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'HLR-SHOW-RESPONSE-200_V1'
@@ -32,9 +31,6 @@ module DecisionReviewV1
 
     NOD_CREATE_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'NOD-CREATE-RESPONSE-200_V1'
     NOD_SHOW_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'NOD-SHOW-RESPONSE-200_V1'
-
-    SC_CREATE_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'SC-CREATE-RESPONSE-200_V1'
-    SC_SHOW_RESPONSE_SCHEMA = VetsJsonSchema::SCHEMAS.fetch 'SC-SHOW-RESPONSE-200_V1'
 
     GET_CONTESTABLE_ISSUES_RESPONSE_SCHEMA =
       VetsJsonSchema::SCHEMAS.fetch 'DECISION-REVIEW-GET-CONTESTABLE-ISSUES-RESPONSE-200_V1'
@@ -300,27 +296,6 @@ module DecisionReviewV1
       headers
     end
 
-    def create_supplemental_claims_headers(user)
-      headers = {
-        'X-VA-SSN' => user.ssn.to_s.strip.presence,
-        'X-VA-ICN' => user.icn.presence,
-        'X-VA-First-Name' => user.first_name.to_s.strip.first(12),
-        'X-VA-Middle-Initial' => middle_initial(user),
-        'X-VA-Last-Name' => user.last_name.to_s.strip.first(18).presence,
-        'X-VA-Birth-Date' => user.birth_date.to_s.strip.presence
-      }.compact
-
-      missing_required_fields = SC_REQUIRED_CREATE_HEADERS - headers.keys
-      if missing_required_fields.present?
-        raise Common::Exceptions::Forbidden.new(
-          source: "#{self.class}##{__method__}",
-          detail: { missing_required_fields: missing_required_fields }
-        )
-      end
-
-      headers
-    end
-
     def middle_initial(user)
       user.middle_name.to_s.strip.presence&.first&.upcase
     end
@@ -359,8 +334,18 @@ module DecisionReviewV1
       Raven.extra_context url: config.base_path, message: error.message
     end
 
-    def handle_error(error)
-      save_error_details error
+    def log_error_details(error, message = nil)
+      ::Rails.logger.info({
+                            message: message,
+                            body: error.body,
+                            status: error.status,
+                            error_class: error.class,
+                            error: error
+                          })
+    end
+
+    def handle_error(error, message = nil)
+      save_and_log_error(error, message)
       source_hash = { source: "#{error.class} raised in #{self.class}" }
       raise case error
             when Faraday::ParsingError
@@ -380,6 +365,11 @@ module DecisionReviewV1
             else
               error
             end
+    end
+
+    def save_and_log_error(error, message)
+      save_error_details(error)
+      log_error_details(error, message)
     end
 
     def validate_against_schema(json:, schema:, append_to_error_class: '')
