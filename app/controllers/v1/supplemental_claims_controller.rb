@@ -17,13 +17,11 @@ module V1
       sc_response = decision_review_service
                     .create_supplemental_claim(request_body: request_body_obj, user: @current_user)
       submitted_appeal_uuid = sc_response.body.dig('data', 'id')
-      merged_response = {
-        data: sc_response.body,
-        status: sc_response.status
-      }
+      merged_response[:data] = { body: sc_response.body, status: sc_response.status }
       unless form4142.nil?
-        form4142_resp = decision_review_service
-                        .process_form4142_submission(request_body: request_body_obj, form4142: form4142, user: @current_user, response: sc_response)
+        form4142_resp = decision_review_service.process_form4142_submission(
+          request_body: request_body_obj, form4142: form4142, user: @current_user, response: sc_response
+        )
         merged_response[:form4142] = { body: form4142_resp.body, status: form4142_resp.status }
       end
 
