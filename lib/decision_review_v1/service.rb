@@ -319,10 +319,10 @@ module DecisionReviewV1
       }
     end
 
-    def with_monitoring_and_error_handling(&block)
+    def with_monitoring_and_error_handling(user: nil, &block)
       with_monitoring(2, &block)
     rescue => e
-      handle_error(e)
+      handle_error(error: e, user: user)
     end
 
     def save_error_details(error)
@@ -334,18 +334,23 @@ module DecisionReviewV1
       Raven.extra_context url: config.base_path, message: error.message
     end
 
-    def log_error_details(error, message = nil)
-      ::Rails.logger.info({
-                            message: message,
-                            body: error.body,
-                            status: error.status,
-                            error_class: error.class,
-                            error: error
-                          })
+    def log_error_details(error:, user:, message: nil)
+      info = {
+        message: message,
+        error_class: error.class,
+        error: error
+      }
+      unless user.nil?
+        info[:user_info] = {
+          icn: user.icn.presence,
+          uuid: user.uuid.presence
+        }
+      end
+      ::Rails.logger.info(info)
     end
 
-    def handle_error(error, message = nil)
-      save_and_log_error(error, message)
+    def handle_error(error:, user: nil, message: nil)
+      save_and_log_error(error: error, user: user, message: message)
       source_hash = { source: "#{error.class} raised in #{self.class}" }
       raise case error
             when Faraday::ParsingError
@@ -367,9 +372,9 @@ module DecisionReviewV1
             end
     end
 
-    def save_and_log_error(error, message)
+    def save_and_log_error(error:, user:, message:)
       save_error_details(error)
-      log_error_details(error, message)
+      log_error_details(error: error, user: user, message: message)
     end
 
     def validate_against_schema(json:, schema:, append_to_error_class: '')

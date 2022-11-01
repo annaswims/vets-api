@@ -35,7 +35,7 @@ module DecisionReviewV1
     # @return [Faraday::Response]
     #
     def create_supplemental_claim(request_body:, user:)
-      with_monitoring_and_error_handling do
+      with_monitoring_and_error_handling(user: user) do
         request_body = request_body.to_json if request_body.is_a?(Hash)
         headers = create_supplemental_claims_headers(user)
         response, bm = run_and_benchmark_if_enabled do
@@ -45,7 +45,7 @@ module DecisionReviewV1
         validate_against_schema json: response.body, schema: SC_CREATE_RESPONSE_SCHEMA,
                                 append_to_error_class: ' (SC_V1)'
 
-        submission_info_message = parse_lighthouse_response_to_log_msg(response.body['data'], bm)
+        submission_info_message = parse_lighthouse_response_to_log_msg(data: response.body['data'], bm: bm, user: user)
         ::Rails.logger.info(submission_info_message)
         response
       end
@@ -60,12 +60,13 @@ module DecisionReviewV1
     # @return [Faraday::Response]
     #
     def process_form4142_submission(request_body:, form4142:, user:, response:)
-      with_monitoring_and_error_handling do
+      with_monitoring_and_error_handling(user: user) do
         form4142_response, bm = run_and_benchmark_if_enabled do
           new_body = get_and_rejigger_required_info(request_body: request_body, form4142: form4142, user: user)
           submit_form4142(form_data: new_body, user: user, response: response)
         end
-        form4142_submission_info_message = parse_form412_response_to_log_msg(form4142_response, bm)
+        form4142_submission_info_message = parse_form412_response_to_log_msg(data: form4142_response, bm: bm,
+                                                                             user: user)
         ::Rails.logger.info(form4142_submission_info_message)
         form4142_response
       end
@@ -189,10 +190,11 @@ module DecisionReviewV1
 
       missing_required_fields = SC_REQUIRED_CREATE_HEADERS - headers.keys
       if missing_required_fields.present?
-        raise Common::Exceptions::Forbidden.new(
+        e = Common::Exceptions::Forbidden.new(
           source: "#{self.class}##{__method__}",
           detail: { missing_required_fields: missing_required_fields }
         )
+        raise e
       end
 
       headers
@@ -238,19 +240,25 @@ module DecisionReviewV1
       data.body[/(?<=\[).*?(?=\])/].split(': ').last
     end
 
-    def parse_form412_response_to_log_msg(data, bm = nil)
+    def parse_form412_response_to_log_msg(data:, bm: nil, user: nil)
       log_data = {
         form_id: FORM4142_ID,
         parent_form_id: SUPP_CLAIM_FORM_ID,
         message: data.body,
         status: data.status
       }
+      unless user.nil?
+        log_data[:user_info] = {
+          icn: user.icn.presence,
+          uuid: user.uuid.presence
+        }
+      end
       log_data[:extracted_uuid] = extract_uuid_from_central_mail_message(data) if data.success?
       log_data[:meta] = benchmark_to_log_data_hash(bm) unless bm.nil?
       log_data
     end
 
-    def parse_lighthouse_response_to_log_msg(data, bm = nil)
+    def parse_lighthouse_response_to_log_msg(data:, bm: nil, user: nil)
       log_data = {
         form_id: SUPP_CLAIM_FORM_ID,
         message: 'Successful Lighthouse Supplemental Claim Submission',
@@ -264,6 +272,7 @@ module DecisionReviewV1
           }
         }
       }
+      log_data[:user_info] = { icn: user.icn.presence, uuid: user.uuid.presence } unless user.nil?
       log_data[:meta] = benchmark_to_log_data_hash(bm) unless bm.nil?
       log_data
     end

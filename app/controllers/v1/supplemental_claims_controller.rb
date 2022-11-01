@@ -12,11 +12,12 @@ module V1
     end
 
     def create
-      request_body_obj = JSON.parse(request_body_hash)
+      request_body_obj = request_body_hash.is_a?(String) ? JSON.parse(request_body_hash) : request_body_hash
       form4142 = request_body_obj.delete('form4142')
       sc_response = decision_review_service
                     .create_supplemental_claim(request_body: request_body_obj, user: @current_user)
       submitted_appeal_uuid = sc_response.body.dig('data', 'id')
+      merged_response = {}
       merged_response[:data] = { body: sc_response.body, status: sc_response.status }
       unless form4142.nil?
         form4142_resp = decision_review_service.process_form4142_submission(
@@ -25,7 +26,7 @@ module V1
         merged_response[:form4142] = { body: form4142_resp.body, status: form4142_resp.status }
       end
 
-      clear_in_progress_form(submitted_appeal_uuid)
+      clear_in_progress_form(submitted_appeal_uuid) unless submitted_appeal_uuid.nil?
 
       render json: sc_response.body, status: sc_response.status
     rescue => e
