@@ -74,15 +74,11 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
       context 'user.fingerprint does not match request IP' do
         let!(:user) { create(:user, :loa3, uuid: access_token_object.user_uuid) }
         let(:expected_error) { SignIn::Errors::FingerprintMismatchError }
-        let(:sentry_log_level) { :warn }
-        let(:sentry_context) do
-          { request_ip: request.env['REMOTE_ADDR'], fingerprint: user.fingerprint }
-        end
+        let(:log_context) { { request_ip: request.env['REMOTE_ADDR'], fingerprint: user.fingerprint } }
 
         it 'fails fingerprint validation and creates a log' do
-          expect_any_instance_of(SentryLogging).to receive(:log_message_to_sentry).with(expected_error,
-                                                                                        sentry_log_level,
-                                                                                        sentry_context)
+          expect(Rails.logger).to receive(:warn).with(expected_error, log_context)
+
           expect(subject.request.ip).not_to eq(user.fingerprint)
         end
 
@@ -223,15 +219,10 @@ RSpec.describe SignIn::ApplicationController, type: :controller do
       context 'user.fingerprint does not match request IP' do
         let!(:user) { create(:user, :loa3, uuid: access_token_object.user_uuid) }
         let(:expected_error) { SignIn::Errors::FingerprintMismatchError }
-        let(:sentry_log_level) { :warn }
-        let(:sentry_context) do
-          { request_ip: request.env['REMOTE_ADDR'], fingerprint: user.fingerprint }
-        end
+        let(:log_context) { { request_ip: request.env['REMOTE_ADDR'], fingerprint: user.fingerprint } }
 
         it 'fails fingerprint validation and creates a log' do
-          expect_any_instance_of(SentryLogging).to receive(:log_message_to_sentry).with(expected_error,
-                                                                                        sentry_log_level,
-                                                                                        sentry_context)
+          expect(Rails.logger).to receive(:warn).with(expected_error, log_context)
           expect(subject.request.ip).not_to eq(user.fingerprint)
         end
 

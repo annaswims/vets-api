@@ -67,10 +67,10 @@ module SignIn
     end
 
     def validate_request_ip
-      return if @current_user&.fingerprint == request.ip
+      return if @current_user.fingerprint == request.ip
 
-      sentry_context = { request_ip: request.ip, fingerprint: @current_user&.fingerprint }
-      log_message_to_sentry(SignIn::Errors::FingerprintMismatchError, :warn, sentry_context)
+      log_context = { request_ip: request.ip, fingerprint: @current_user.fingerprint }
+      Rails.logger.warn(SignIn::Errors::FingerprintMismatchError, log_context)
       @current_user.fingerprint = request.ip
       @current_user.save
     end
