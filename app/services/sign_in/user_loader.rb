@@ -2,8 +2,7 @@
 
 module SignIn
   class UserLoader
-    attr_reader :access_token
-    attr_reader :request_ip
+    attr_reader :access_token, :request_ip
 
     def initialize(access_token:, request_ip:)
       @access_token = access_token
