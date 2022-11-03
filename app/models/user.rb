@@ -289,13 +289,13 @@ class User < Common::RedisStore
   delegate :multifactor, to: :identity, allow_nil: true
   delegate :authn_context, to: :identity, allow_nil: true
   delegate :mhv_icn, to: :identity, allow_nil: true
-  delegate :idme_uuid, to: :identity, allow_nil: true
-  delegate :logingov_uuid, to: :identity, allow_nil: true
   delegate :verified_at, to: :identity, allow_nil: true
   delegate :person_types, to: :identity, allow_nil: true, prefix: true
   delegate :sign_in, to: :identity, allow_nil: true, prefix: true
 
   # mpi attributes
+  delegate :logingov_uuid, to: :mpi, allow_nil: true
+  delegate :idme_uuid, to: :mpi, allow_nil: true
   delegate :birls_id, to: :mpi, prefix: true
   delegate :mhv_ien, to: :mpi
   delegate :mhv_iens, to: :mpi, prefix: true

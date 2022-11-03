@@ -24,8 +24,8 @@ describe Identity::Parsers::GCIds do
           edipis: nil,
           vba_corp_id: nil,
           vba_corp_ids: nil,
-          idme_id: nil,
-          logingov_id: nil,
+          idme_uuid: nil,
+          logingov_uuid: nil,
           vha_facility_ids: nil,
           cerner_facility_ids: nil,
           cerner_id: nil,
@@ -166,7 +166,7 @@ describe Identity::Parsers::GCIds do
         let(:id_object) { "#{id}^PN^200VIDM^USDVA^A" }
 
         it 'returns a parsed idme id from the input xml object' do
-          expect(subject[:idme_id]).to eq id
+          expect(subject[:idme_uuid]).to eq id
         end
       end
 
@@ -174,7 +174,7 @@ describe Identity::Parsers::GCIds do
         let(:id_object) { "#{id}^PN^200VLGN^USDVA^A" }
 
         it 'returns a parsed idme id from the input xml object' do
-          expect(subject[:logingov_id]).to eq id
+          expect(subject[:logingov_uuid]).to eq id
         end
       end
 
@@ -368,7 +368,7 @@ describe Identity::Parsers::GCIds do
         let(:id_object) { "#{id}^PN^200VIDM^USDVA^A" }
 
         it 'returns a parsed idme id from the input xml object' do
-          expect(subject[:idme_id]).to eq id
+          expect(subject[:idme_uuid]).to eq id
         end
       end
 

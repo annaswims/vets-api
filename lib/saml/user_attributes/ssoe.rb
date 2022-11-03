@@ -124,13 +124,13 @@ module SAML
       def idme_uuid
         return safe_attr('va_eauth_uid') if csid == SAML::User::IDME_CSID
 
-        mvi_ids[:idme_id]
+        mvi_ids[:idme_uuid]
       end
 
       def logingov_uuid
         return safe_attr('va_eauth_uid') if csid == SAML::User::LOGINGOV_CSID
 
-        mvi_ids[:logingov_id]
+        mvi_ids[:logingov_uuid]
       end
 
       # only applies to Login.gov IAL2 verification
@@ -251,7 +251,7 @@ module SAML
       end
 
       def needs_csp_id_mpi_update?
-        idme_uuid == safe_attr('va_eauth_uid') && mvi_ids[:idme_id].blank?
+        idme_uuid == safe_attr('va_eauth_uid') && mvi_ids[:idme_uuid].blank?
       end
 
       def to_hash

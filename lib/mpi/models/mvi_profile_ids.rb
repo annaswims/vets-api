@@ -25,6 +25,8 @@ module MPI
       attribute :historical_icns, Array[String]
       attribute :cerner_facility_ids, Array[String]
       attribute :cerner_id, String
+      attribute :logingov_uuid, String
+      attribute :idme_uuid, String
 
       def mhv_correlation_id
         @active_mhv_ids&.first

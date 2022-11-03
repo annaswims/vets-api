@@ -42,6 +42,9 @@ class MPIData < Common::RedisStore
     mpi_data_instance.mvi_get_person_historical_icns
   end
 
+  delegate :logingov_uuid, to: :profile, allow_nil: true
+  delegate :idme_uuid, to: :profile, allow_nil: true
+
   # A DOD EDIPI (Electronic Data Interchange Personal Identifier) MVI correlation ID
   # or nil for users < LOA 3
   #
