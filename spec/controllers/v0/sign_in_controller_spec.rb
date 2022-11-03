@@ -4,7 +4,6 @@ require 'rails_helper'
 
 RSpec.describe V0::SignInController, type: :controller do
   let(:request_id) { SecureRandom.uuid }
-  let(:request_ip) { request.env['REMOTE_ADDR'] }
 
   before do
     allow_any_instance_of(ActionController::TestRequest).to receive(:request_id).and_return(request_id)
@@ -676,7 +675,8 @@ RSpec.describe V0::SignInController, type: :controller do
                     ssn: user_info.social_security_number,
                     birth_date: Formatters::DateFormatter.format_date(user_info.birthdate),
                     first_name: user_info.given_name,
-                    last_name: user_info.family_name
+                    last_name: user_info.family_name,
+                    fingerprint: request.env['REMOTE_ADDR']
                   }
                 end
                 let(:mpi_profile) do
@@ -1408,8 +1408,7 @@ RSpec.describe V0::SignInController, type: :controller do
     context 'when session has been created with a client id that is anti csrf enabled' do
       let(:client_id) { SignIn::Constants::ClientConfig::ANTI_CSRF_ENABLED.first }
       let(:session_container) do
-        SignIn::SessionCreator.new(validated_credential: validated_credential,
-                                   request_ip: request_ip).perform
+        SignIn::SessionCreator.new(validated_credential: validated_credential).perform
       end
       let(:refresh_token) do
         SignIn::RefreshTokenEncryptor.new(refresh_token: session_container.refresh_token).perform
@@ -1442,8 +1441,7 @@ RSpec.describe V0::SignInController, type: :controller do
 
     context 'when refresh_token is the proper encrypted refresh token format' do
       let(:session_container) do
-        SignIn::SessionCreator.new(validated_credential: validated_credential,
-                                   request_ip: request_ip).perform
+        SignIn::SessionCreator.new(validated_credential: validated_credential).perform
       end
       let(:refresh_token) do
         SignIn::RefreshTokenEncryptor.new(refresh_token: session_container.refresh_token).perform
@@ -1685,8 +1683,7 @@ RSpec.describe V0::SignInController, type: :controller do
       let(:loa) { user.identity.loa[:current] }
       let(:client_id) { SignIn::Constants::ClientConfig::ANTI_CSRF_ENABLED.first }
       let(:session_container) do
-        SignIn::SessionCreator.new(validated_credential: validated_credential,
-                                   request_ip: request_ip).perform
+        SignIn::SessionCreator.new(validated_credential: validated_credential).perform
       end
       let(:refresh_token) do
         SignIn::RefreshTokenEncryptor.new(refresh_token: session_container.refresh_token).perform
@@ -1721,8 +1718,7 @@ RSpec.describe V0::SignInController, type: :controller do
       let(:client_id_value) { user.identity.sign_in[:client_id] }
       let(:loa) { user.identity.loa[:current] }
       let(:session_container) do
-        SignIn::SessionCreator.new(validated_credential: validated_credential,
-                                   request_ip: request_ip).perform
+        SignIn::SessionCreator.new(validated_credential: validated_credential).perform
       end
       let(:refresh_token) do
         SignIn::RefreshTokenEncryptor.new(refresh_token: session_container.refresh_token).perform

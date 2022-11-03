@@ -3,9 +3,8 @@
 require 'rails_helper'
 
 RSpec.describe SignIn::SessionCreator do
-  let(:request_ip) { '111.111.1.1' }
   let(:session_creator) do
-    SignIn::SessionCreator.new(validated_credential: validated_credential, request_ip: request_ip)
+    SignIn::SessionCreator.new(validated_credential: validated_credential)
   end
 
   describe '#perform' do

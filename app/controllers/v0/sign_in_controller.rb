@@ -90,8 +90,7 @@ module V0
       validated_credential = SignIn::CodeValidator.new(code: code,
                                                        code_verifier: code_verifier,
                                                        grant_type: grant_type).perform
-      session_container = SignIn::SessionCreator.new(validated_credential: validated_credential,
-                                                     request_ip: request.ip).perform
+      session_container = SignIn::SessionCreator.new(validated_credential: validated_credential).perform
       serializer_response = SignIn::TokenSerializer.new(session_container: session_container,
                                                         cookies: token_cookies).perform
 
@@ -279,7 +278,8 @@ module V0
       verified_icn = SignIn::AttributeValidator.new(user_attributes: user_attributes).perform
       user_code_map = SignIn::UserCreator.new(user_attributes: user_attributes,
                                               state_payload: state_payload,
-                                              verified_icn: verified_icn).perform
+                                              verified_icn: verified_icn,
+                                              request_ip: request.ip).perform
       context = {
         type: state_payload.type,
         client_id: state_payload.client_id,
