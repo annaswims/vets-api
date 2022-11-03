@@ -53,7 +53,7 @@ module SignIn
     end
 
     def load_user_object
-      UserLoader.new(access_token: @access_token).perform
+      UserLoader.new(access_token: @access_token, request_ip: request.remote_ip).perform
     end
 
     def handle_authenticate_error(error)
