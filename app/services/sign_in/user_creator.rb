@@ -12,7 +12,8 @@ module SignIn
                 :multifactor,
                 :verified_icn,
                 :edipi,
-                :mhv_correlation_id
+                :mhv_correlation_id,
+                :request_ip
 
     def initialize(user_attributes:, state_payload:, verified_icn:, request_ip:)
       @state_payload = state_payload
@@ -43,7 +44,7 @@ module SignIn
       user.uuid = user_uuid
       user_identity_for_user_creation.uuid = user_uuid
       user.last_signed_in = Time.zone.now
-      user.fingerprint = @request_ip
+      user.fingerprint = request_ip
       user.save && user_identity_for_user_creation.save
     end
 

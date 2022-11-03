@@ -70,7 +70,7 @@ module SignIn
       return if @current_user.fingerprint == request.ip
 
       log_context = { request_ip: request.ip, fingerprint: @current_user.fingerprint }
-      Rails.logger.warn(SignIn::Errors::FingerprintMismatchError, log_context)
+      Rails.logger.warn('[SignIn][Authentication] fingerprint mismatch', log_context)
       @current_user.fingerprint = request.ip
       @current_user.save
     end
