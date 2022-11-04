@@ -2,7 +2,7 @@
 
 require 'appeals_api/form_schemas'
 
-class AppealsApi::HigherLevelReviews::V2::HigherLevelReviewsController < AppealsApi::ApplicationController
+class AppealsApi::HigherLevelReviews::V0::HigherLevelReviewsController < AppealsApi::ApplicationController
   skip_before_action :authenticate
 
   FORM_NUMBER = '200996_WITH_SHARED_REFS'
@@ -12,7 +12,7 @@ class AppealsApi::HigherLevelReviews::V2::HigherLevelReviewsController < Appeals
     render json: AppealsApi::JsonSchemaToSwaggerConverter.remove_comments(
       AppealsApi::FormSchemas.new(
         SCHEMA_ERROR_TYPE,
-        schema_version: 'v2'
+        schema_version: 'v0'
       ).schema(self.class::FORM_NUMBER)
     )
   end

@@ -86,6 +86,12 @@ AppealsApi::Engine.routes.draw do
       get 'ci', to: 'docs#ci'
       get 'la', to: 'docs#la'
     end
+
+    namespace :higher_level_reviews do
+      docs_controller_path = '/appeals_api/v2/decision_reviews/contestable_issues'
+      ci_schema_cpath = '/appeals_api/contestable_issues/v2/contestable_issues'
+      get 'v0', to: 'docs#hlr'
+    end
   end
 
   # For now, alias our new routes to their existing controller
@@ -116,9 +122,9 @@ AppealsApi::Engine.routes.draw do
   end
 
   namespace :higher_level_reviews, defaults: { format: 'json' } do
-    namespace :v2 do
+    namespace :v0 do
       cpath = '/appeals_api/v2/decision_reviews/higher_level_reviews'
-      hlr_schema_cpath = '/appeals_api/higher_level_reviews/v2/higher_level_reviews'
+      hlr_schema_cpath = '/appeals_api/higher_level_reviews/v0/higher_level_reviews'
 
       get 'healthcheck', to: '/appeals_api/metadata#healthcheck'
       get 'upstream_healthcheck', to: '/appeals_api/metadata#mail_status_upstream_healthcheck'

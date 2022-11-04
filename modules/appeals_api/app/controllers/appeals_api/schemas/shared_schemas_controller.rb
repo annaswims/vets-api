@@ -18,7 +18,7 @@ class AppealsApi::Schemas::SharedSchemasController < AppealsApi::ApplicationCont
     'legacy_appeals_v2' => { shared_schema_version: 'v1', form: 'headers' },
     'notice_of_disagreements_v1' => { shared_schema_version: 'v1', form: '10182' },
     'notice_of_disagreements_v2' => { shared_schema_version: 'v1', form: '10182' },
-    'higher_level_reviews_v2' => { shared_schema_version: 'v1', form: '200996' },
+    'higher_level_reviews_v0' => { shared_schema_version: 'v1', form: '200996' },
     'supplemental_claims_v2' => { shared_schema_version: 'v1', form: '200995' }
   }.freeze
 

@@ -144,7 +144,7 @@ RSpec.describe 'Appeals Metadata Endpoint', type: :request do
     end
 
     context 'segmented APIs' do
-      it_behaves_like 'a healthcheck', '/services/appeals/higher_level_reviews/v2/healthcheck'
+      it_behaves_like 'a healthcheck', '/services/appeals/higher_level_reviews/v0/healthcheck'
       it_behaves_like 'a healthcheck', '/services/appeals/notice_of_disagreements/v2/healthcheck'
       it_behaves_like 'a healthcheck', '/services/appeals/supplemental_claims/v2/healthcheck'
       it_behaves_like 'a healthcheck', '/services/appeals/contestable_issues/v2/healthcheck'
@@ -297,7 +297,7 @@ RSpec.describe 'Appeals Metadata Endpoint', type: :request do
       )
       it_behaves_like(
         'an upstream healthcheck (central mail)',
-        '/services/appeals/higher_level_reviews/v2/upstream_healthcheck'
+        '/services/appeals/higher_level_reviews/v0/upstream_healthcheck'
       )
       it_behaves_like(
         'an upstream healthcheck (caseflow)',
