@@ -164,14 +164,13 @@ AppealsApi::Engine.routes.draw do
 
   namespace :contestable_issues, defaults: { format: 'json' } do
     namespace :v2 do
-      cpath = '/appeals_api/v2/decision_reviews/contestable_issues'
-      ci_schema_cpath = '/appeals_api/contestable_issues/v2/contestable_issues'
+      oauth_cpath = '/appeals_api/contestable_issues/v2/contestable_issues'
 
-      get 'contestable_issues/:decision_review_type', to: "#{cpath}#index"
+      get 'contestable_issues/:decision_review_type', to: "#{oauth_cpath}#index"
       get 'healthcheck', to: '/appeals_api/metadata#healthcheck'
       get 'upstream_healthcheck', to: '/appeals_api/metadata#appeals_status_upstream_healthcheck'
 
-      namespace :schemas, controller: ci_schema_cpath do
+      namespace :schemas, controller: oauth_cpath do
         get 'headers', action: :schema
       end
 
