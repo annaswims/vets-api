@@ -17,7 +17,7 @@ module BenefitsClaims
 
     configuration BenefitsClaims::TokenConfiguration
 
-    def initialize()
+    def initialize
       @access_token = nil
       @expiry = Time.current
     end
@@ -42,7 +42,6 @@ module BenefitsClaims
     # @return [Faraday::Response]
     #
     def get_access_token
-      puts "GETTING ACCESS TOKEN"
       body = config.get_access_token
 
       set_access_token(body['access_token'])

@@ -46,8 +46,6 @@ module BenefitsClaims
         faraday.use      :breakers
         faraday.use      Faraday::Response::RaiseError
 
-        faraday.request(:curl, ::Logger.new(STDOUT), :warn) unless Rails.env.production?
-
         faraday.response :json
         faraday.adapter Faraday.default_adapter
       end
