@@ -122,7 +122,6 @@ Rails.application.routes.draw do
       resources :burial_claims, only: %i[create show]
     end
 
-    get 'access_token', to: 'benefits_claims#get_access_token'
     resources :benefits_claims, only: %i[index show]
 
     get 'claim_letters', to: 'claim_letters#index'
