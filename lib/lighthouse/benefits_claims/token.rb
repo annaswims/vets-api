@@ -17,18 +17,20 @@ module BenefitsClaims
 
     configuration BenefitsClaims::TokenConfiguration
 
-    @@access_token = nil
-    @@expiry = Time.current
+    def initialize()
+      @access_token = nil
+      @expiry = Time.current
+    end
 
     def with_access_token
       get_access_token if expired?
-      yield @@access_token
+      yield @access_token
     end
 
     private
 
     def expired?
-      Time.current.to_i >= @@expiry.to_i
+      Time.current.to_i >= @expiry.to_i
     end
 
     ##
@@ -48,7 +50,7 @@ module BenefitsClaims
     end
 
     def set_access_token(new_access_token)
-      @@access_token = new_access_token
+      @access_token = new_access_token
     end
 
     def set_expiry(duration)
@@ -57,7 +59,7 @@ module BenefitsClaims
       threshold = duration - 10
       new_expiry = Time.current.to_i + threshold
 
-      @@expiry = Time.at(new_expiry).to_datetime
+      @expiry = Time.at(new_expiry).to_datetime
     end
   end
 end

@@ -26,22 +26,6 @@ module BenefitsClaims
     end
 
     ##
-    # @return [String] new JTW token
-    #
-    def token
-      jwt_generator.generate_token
-    end
-
-    def body
-      {
-        grant_type: 'client_credentials',
-        client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
-        client_assertion: token,
-        scope: settings.api_scope.join(' ')
-      }.as_json
-    end
-
-    ##
     # @return [Hash] The basic headers required for any benefits_claims API call.
     #
     def self.base_request_headers
@@ -69,7 +53,23 @@ module BenefitsClaims
       end
     end
 
-    private 
+    private
+
+    ##
+    # @return [String] new JTW token
+    #
+    def token
+      jwt_generator.generate_token
+    end
+
+    def body
+      {
+        grant_type: 'client_credentials',
+        client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+        client_assertion: token,
+        scope: settings.api_scope.join(' ')
+      }.as_json
+    end
 
     def jwt_generator
       @generator ||= JWTGenerator.new
