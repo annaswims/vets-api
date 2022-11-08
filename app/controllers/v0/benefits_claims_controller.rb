@@ -4,7 +4,6 @@ require 'lighthouse/benefits_claims/service'
 
 module V0
   class BenefitsClaimsController < ApplicationController
-
     def index
       claims = service.get_claims
       
