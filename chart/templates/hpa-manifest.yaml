@@ -1,0 +1,21 @@
+{{- if .Values.web.autoscaling.enabled }}
+---
+apiVersion: datadoghq.com/v1alpha1
+kind: DatadogMetric
+metadata:
+  name: puma-backlog
+  namespace: {{ .Release.Namespace }}
+spec:
+	query: sum:puma.backlog{kube_cluster_name:dsva-vagov-{{ .Values.target_env }}-cluster,kube_deployment:{{ .Values.appName }}-web} by {kube_cluster_name}
+{{- end }}
+
+---
+{{- if .Values.worker.autoscaling.enabled }}
+apiVersion: datadoghq.com/v1alpha1
+kind: DatadogMetric
+metadata:
+  name: sidekiq-queue
+  namespace: {{ .Release.Namespace }}
+spec:
+  query: max:vets_api.statsd.api_jobs_queue_size{kube_cluster_name:dsva-vagov-{{ .Values.target_env }}-cluster,kube_deployment:{{ .Values.appName }}-web} by {kube_cluster_name}
+{{- end }}
