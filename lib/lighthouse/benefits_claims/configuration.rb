@@ -33,11 +33,11 @@ module BenefitsClaims
     end
 
     ##
-    # @return [Faraday::Response] 
+    # @return [Faraday::Response] response from GET request
     #
     def get(path, params = {})
       token_service.with_access_token do |access_token|
-        connection.get(path, params, { Authorization: "Bearer #{access_token}"})
+        connection.get(path, params, { Authorization: "Bearer #{access_token}" })
       end
     end
 
@@ -72,8 +72,7 @@ module BenefitsClaims
     # @return [BenefitsClaims::TokenService] Service used to generate access tokens.
     #
     def token_service
-      puts TokenService.new.class
-      @token_service ||= TokenService.new()
+      @token_service ||= TokenService.new
     end
   end
 end

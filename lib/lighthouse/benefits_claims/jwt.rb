@@ -20,7 +20,7 @@ module BenefitsClaims
       @key ||= OpenSSL::PKey::RSA.new(File.read(settings.pem))
     end
 
-    def token
+    def generate_token
       JWT.encode(payload, rsa_key, 'RS256')
     end
   end

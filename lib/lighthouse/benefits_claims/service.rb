@@ -15,11 +15,11 @@ module BenefitsClaims
     end
 
     def get_claims
-      config.get(@icn + '/claims').body
+      config.get("#{@icn}/claims").body
     end
 
     def get_claim(id)
-      config.get(@icn + '/claims/' + id).body
+      config.get("#{@icn}/claims/#{id}").body
     end
   end
 end

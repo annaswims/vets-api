@@ -9,7 +9,6 @@ module BenefitsClaims
   # sets the base path, the base request headers, and a service name for breakers and metrics.
   #
   class TokenConfiguration < Common::Client::Configuration::REST
-
     ##
     # @return [Config::Options] Settings for benefits_claims API
     #
@@ -26,8 +25,11 @@ module BenefitsClaims
       settings.host
     end
 
+    ##
+    # @return [String] new JTW token
+    #
     def token
-      JWTGenerator.new.token()
+      jwt_generator.generate_token
     end
 
     def body
@@ -35,7 +37,7 @@ module BenefitsClaims
         grant_type: 'client_credentials',
         client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
         client_assertion: token,
-        scope: settings.api_scope.join(' '),
+        scope: settings.api_scope.join(' ')
       }.as_json
     end
 
@@ -43,7 +45,7 @@ module BenefitsClaims
     # @return [Hash] The basic headers required for any benefits_claims API call.
     #
     def self.base_request_headers
-      super.merge({ 'Content-Type': 'application/x-www-form-urlencoded'})
+      super.merge({ 'Content-Type': 'application/x-www-form-urlencoded' })
     end
 
     def get_access_token
@@ -65,6 +67,12 @@ module BenefitsClaims
         faraday.response :json
         faraday.adapter Faraday.default_adapter
       end
+    end
+
+    private 
+
+    def jwt_generator
+      @generator ||= JWTGenerator.new
     end
   end
 end
