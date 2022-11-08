@@ -16,12 +16,12 @@ module BenefitsClaims
       }
     end
 
-    def rsa_key
+    def self.rsa_key
       @key ||= OpenSSL::PKey::RSA.new(File.read(settings.pem))
     end
 
     def token
-      @token ||= JWT.encode(payload, rsa_key, 'RS256')
+      JWT.encode(payload, rsa_key, 'RS256')
     end
   end
 end
