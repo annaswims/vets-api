@@ -6,7 +6,7 @@ module V0
   class BenefitsClaimsController < ApplicationController
     def index
       claims = service.get_claims
-      
+
       render json: claims
     end
 
