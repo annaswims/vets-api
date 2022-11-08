@@ -2,9 +2,6 @@
 
 require 'common/client/base'
 require 'common/client/concerns/monitoring'
-require 'common/client/errors'
-require 'common/exceptions/forbidden'
-require 'common/exceptions/schema_validation_errors'
 require 'lighthouse/benefits_claims/token_configuration'
 
 module BenefitsClaims
@@ -18,8 +15,9 @@ module BenefitsClaims
     configuration BenefitsClaims::TokenConfiguration
 
     def initialize
+      super
       @access_token = nil
-      @expiry = Time.current
+      @expiry = Time.current.to_i
     end
 
     def with_access_token
@@ -30,7 +28,7 @@ module BenefitsClaims
     private
 
     def expired?
-      Time.current.to_i >= @expiry.to_i
+      Time.current.to_i >= @expiry
     end
 
     ##
@@ -58,7 +56,7 @@ module BenefitsClaims
       threshold = duration - 10
       new_expiry = Time.current.to_i + threshold
 
-      @expiry = Time.at(new_expiry).to_datetime
+      @expiry = new_expiry
     end
   end
 end

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require 'common/client/configuration/rest'
-require 'lighthouse/benefits_claims/jwt'
+require 'lighthouse/benefits_claims/jwt_generator'
 
 module BenefitsClaims
   ##

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require 'common/client/configuration/rest'
-require 'lighthouse/benefits_claims/token'
+require 'lighthouse/benefits_claims/token_service'
 
 module BenefitsClaims
   ##
