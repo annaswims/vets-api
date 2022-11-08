@@ -1073,7 +1073,7 @@ lighthouse:
   api_key: fake_key
   benefits_claims:
     host: https://sandbox-api.va.gov
-    path: '/services/claims/v2/veterans'
+    path: 'services/claims/v2/veterans'
     aud_claim_url: https://deptva-eval.okta.com/oauth2/ausdg7guis2TYDlFe2p7/v1/token
     client_id: 0oaj7q9k0sGIrkXZC2p7
     pem: config/certs/key.pem

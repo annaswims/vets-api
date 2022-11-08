@@ -11,12 +11,12 @@ module BenefitsClaims
         iss: settings.client_id,
         sub: settings.client_id,
         aud: settings.aud_claim_url,
-        iat: 0.minutes.from_now.to_i,
-        exp: 15.minutes.from_now.to_i
+        iat: Time.current.to_i,
+        exp: 5.minutes.from_now.to_i
       }
     end
 
-    def self.rsa_key
+    def rsa_key
       @key ||= OpenSSL::PKey::RSA.new(File.read(settings.pem))
     end
 

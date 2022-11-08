@@ -12,7 +12,7 @@ module BenefitsClaims
     self.read_timeout = Settings.lighthouse.benefits_claims.timeout || 20
 
     ##
-    # @return [Config::Options] Settings for benefits_claims API
+    # @return [Config::Options] Settings for benefits_claims API.
     #
     def settings
       Settings.lighthouse.benefits_claims
@@ -22,7 +22,7 @@ module BenefitsClaims
     # @return [String] Base path for benefits_claims URLs.
     #
     def base_path
-      settings.host + settings.path
+      "#{settings.host}/#{settings.path}"
     end
 
     ##
@@ -32,6 +32,9 @@ module BenefitsClaims
       'BenefitsClaims'
     end
 
+    ##
+    # @return [Faraday::Response] 
+    #
     def get(path, params = {})
       token_service.with_access_token do |access_token|
         connection.get(path, params, { Authorization: "Bearer #{access_token}"})
@@ -65,7 +68,11 @@ module BenefitsClaims
       settings.mock || false
     end
 
+    ##
+    # @return [BenefitsClaims::TokenService] Service used to generate access tokens.
+    #
     def token_service
+      puts TokenService.new.class
       @token_service ||= TokenService.new()
     end
   end
