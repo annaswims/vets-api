@@ -4,6 +4,48 @@ require 'decision_review/schemas'
 
 class Swagger::V1::Requests::Appeals::Appeals
   include Swagger::Blocks
+  
+      # For V1 we are making this a generic endpoint. The submission for NOD and SC are exactly the same process
+      # just with the url swapped out. So it makes sense to have a generic handler for this... maybe 
+      swagger_path '/v1/decision_review_evidence/{submission_type}' do
+        operation :post do
+          extend Swagger::Responses::BadRequestError
+
+          key :description, 'Uploadfile containing supporting evidence for Notice of Disagreements or Supplemental Claims'
+          key :operationId, 'decisionReviewEvidence'
+          key :tags, %w[decision_review_evidence]
+
+          parameter do
+            key :name, :submission_type
+            key :in, :path
+            key :description, 'Submission Type, one of either: SC or NOD'
+            key :required, true
+            key :type, :string
+            key :enum, ['SC', 'NOD']
+          end
+
+          parameter do
+            key :name, :decision_review_evidence_attachment
+            key :in, :body
+            key :description, 'Object containing file name'
+            key :required, true
+            
+            schema do
+              key :required, %i[file_data, submission_type]
+              property :file_data, type: :string, example: 'filename.pdf'            
+            end
+          end
+
+         
+
+          response 200 do
+            key :description, 'Response is ok'
+            schema do
+              key :$ref, :DecisionReviewEvidence
+            end
+          end
+        end
+      end
 
   swagger_path '/v1/higher_level_reviews' do
     operation :post do

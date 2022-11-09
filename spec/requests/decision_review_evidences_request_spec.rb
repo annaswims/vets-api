@@ -53,4 +53,49 @@ RSpec.describe 'Decision Review Evidences' do
       end
     end
   end
+
+
+  describe 'Post /v1/decision_review_evidence' do
+    %w(nod sc NOD SC).each do |submission_type_string|
+      let(:url) {"/v1/decision_review_evidence/#{submission_type_string}"}
+
+      context 'with valid parameters' do
+        it 'returns a 200 and an upload guid' do
+          post url,
+              params: { decision_review_evidence_attachment: { file_data: pdf_file } }
+          expect(response).to have_http_status(:ok)
+          sea = DecisionReviewEvidenceAttachment.last
+          expect(JSON.parse(response.body)['data']['attributes']['guid']).to eq sea.guid
+          expect(sea.get_file&.read).not_to be_nil
+        end
+      end
+
+      context 'with valid encrypted parameters' do
+        it 'returns a 422  for a file that not an allowed type' do
+          post url,
+              params: { decision_review_evidence_attachment:
+                        { file_data: fixture_file_upload('saml_responses/loa1.xml',
+                                                          'application/xml') } }
+          expect(response).to have_http_status(:unprocessable_entity)
+          err = JSON.parse(response.body)['errors'][0]
+          expect(err['title']).to eq 'Unprocessable Entity'
+          expect(err['detail']).to eq(
+            'You can’t upload "xml" files. The allowed file types are: pdf'
+          )
+        end
+      end
+
+      context 'with invalid parameters' do
+        it 'returns a 500 with no parameters' do
+          post url, params: nil
+          expect(response).to have_http_status(:bad_request)
+        end
+
+        it 'returns a 500 with no file_data' do
+          post '/v1/decision_review_evidence', params: { decision_review_evidence_attachment: {} }
+          expect(response).to have_http_status(:bad_request)
+        end
+      end
+    end
+  end
 end

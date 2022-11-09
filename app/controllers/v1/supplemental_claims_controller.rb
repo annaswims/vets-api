@@ -28,12 +28,22 @@ module V1
 
       clear_in_progress_form(submitted_appeal_uuid) unless submitted_appeal_uuid.nil?
 
+      queue_uploads
+
       render json: sc_response.body, status: sc_response.status
     rescue => e
       handle_personal_info_error(e)
     end
 
     private
+
+    def queue_uploads(uploads_arr)
+      uploads_arr.each do |upload_attrs|
+        asu = AppealSubmissionUpload.create(decision_review_evidence_attachment_guid: upload_attrs['confirmationCode'],
+                                            appeal_submission_id: id)
+        DecisionReviewV1::SubmitUpload.perform_async(asu.id)
+      end
+    end
 
     def handle_personal_info_error(e)
       request = begin

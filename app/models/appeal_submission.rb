@@ -38,4 +38,5 @@ class AppealSubmission < ApplicationRecord
       DecisionReview::SubmitUpload.perform_async(asu.id)
     end
   end
+
 end
