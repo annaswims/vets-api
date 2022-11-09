@@ -15,22 +15,26 @@ module KMSKeyRotation
     end
 
     def batch_records
-      models = get_model_names
-      records = models.each_with_object([]) do |model, selected_records|
-        selected_records << m.where("encryption_updated_at = ? OR encryption_updated_at < ?", nil, 11.months.ago).limit(LIMIT - selected_records.count)
-        break if selected_records.count == LIMIT
-        next
-      end
+      records = get_records
+      return nil if records.empty?
 
-    
       batch.jobs do
-        records.each { |records| KMSKeyRotation::UpdateRecordJob.perform_async(records) }
+        records.each { |record| KMSKeyRotation::UpdateRecordJob.new.perform_async(record) }
       end
     end
 
     private
 
-    def get_model_names
+    def get_records
+      models = get_models
+      models.each_with_object([]).with_index do |(model, selected_records), index|
+        selected_records << m.where("encryption_updated_at = ? OR encryption_updated_at < ?", nil, 11.months.ago).limit(LIMIT - selected_records.count)
+        break if selected_records.count == LIMIT || index == models.count - 1
+        next
+      end
+    end
+
+    def get_models
       ApplicationRecord.descendants_using_encryption.map(&:name).map(&:constantize).each do |model|   
         model.descendants.empty? && model.try(:lockbox_attributes) && !model.lockbox_attributes.empty?
       end
