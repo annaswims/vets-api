@@ -183,6 +183,7 @@ module KmsEncrypted::Model::Monkeypatch
         # update atomically
         # begin monkeypatch
         if key_method == :kms_key {
+          self.encryption_updated_at = DateTime.now # test this
           save! touch: false
         } else {
           save!
