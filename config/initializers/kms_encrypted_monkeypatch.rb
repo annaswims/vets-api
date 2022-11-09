@@ -181,11 +181,13 @@ module KmsEncrypted::Model::Monkeypatch
         end
 
         # update atomically
+        # begin monkeypatch
         if key_method == :kms_key {
           save! touch: false
         } else {
           save!
         }
+        # end monkeypatch
       end
     end
   end
