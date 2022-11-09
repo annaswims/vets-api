@@ -17,13 +17,16 @@
     do
         if file "${cert}" | grep 'PEM'
         then
-            cp "${cert}" "${cert}.pem"
+            cp "${cert}" "${cert}.crt"
         else
-            openssl x509 -in "${cert}" -inform der -outform pem -out "${cert}.pem"
+            openssl x509 -in "${cert}" -inform der -outform pem -out "${cert}.crt"
         fi
         rm "${cert}"
-        cat "${cert}.pem" >> ca-bundle.pem
     done
 
-    update-ca-certificates
+    update-ca-certificates --fresh
+
+    # Display VA Internal certificates that are now trusted
+    awk -v cmd='openssl x509 -noout -subject' '/BEGIN/{close(cmd)};{print | cmd}' < /etc/ssl/certs/ca-certificates.crt \
+    | grep -i 'VA-Internal'
 )
