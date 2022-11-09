@@ -11,7 +11,7 @@ module KMSKeyRotation
     def initialize
       @batch = Sidekiq::Batch.new
       batch.description = "KMS Key Rotation #{batch.bid}"
-      batch.on(:success, KMSKeyRotation::Batcher::Callback, 'success')
+      batch.on(:complete, KMSKeyRotation::Batcher)
     end
 
     def batch_records
@@ -21,6 +21,14 @@ module KMSKeyRotation
       batch.jobs do
         records.each { |record| KMSKeyRotation::UpdateRecordJob.new.perform_async(record) }
       end
+    end
+
+    def on_complete
+      status = Sidekiq::Batch::Status.new(batch.bid)
+      # log total jobs in batch - status.total
+      # log total failures - status.failures
+      # do we need to retry failed jobs? - status.failure_info # an array of failed jobs
+      KMSKeyRotation::Batcher.new
     end
 
     private
@@ -41,14 +49,6 @@ module KMSKeyRotation
       ApplicationRecord.descendants_using_encryption.map(&:name).map(&:constantize).each do |model|
         model.descendants.empty? && model.try(:lockbox_attributes) && !model.lockbox_attributes.empty?
       end
-    end
-
-    def on_complete
-      status = Sidekiq::Batch::Status.new(batch.bid)
-      # log total jobs in batch - status.total
-      # log total failures - status.failures
-      # do we need to retry failed jobs? - status.failure_info # an array of failed jobs
-      KMSKeyRotation::Batcher.new
     end
   end
 end
