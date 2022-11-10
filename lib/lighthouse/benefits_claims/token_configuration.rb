@@ -32,8 +32,12 @@ module BenefitsClaims
       super.merge({ 'Content-Type': 'application/x-www-form-urlencoded' })
     end
 
+    ##
+    # @return [String] The access token needed to make further benefits_claims API calls.
+    #
     def get_access_token
-      connection.post('/oauth2/claims/system/v1/token', URI.encode_www_form(body)).body
+      res = connection.post('/oauth2/claims/system/v1/token', URI.encode_www_form(body))
+      res.body['access_token']
     end
 
     ##

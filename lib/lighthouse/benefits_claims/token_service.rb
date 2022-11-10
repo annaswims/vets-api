@@ -9,15 +9,14 @@ module BenefitsClaims
   # Proxy Service for the Lighthouse Benefits Reference Data API.
   #
   class TokenService < Common::Client::Base
-    include SentryLogging
-    include Common::Client::Concerns::Monitoring
-
     configuration BenefitsClaims::TokenConfiguration
+    
+    EXPIRATION_LATENCY = 10
 
     def initialize
       super
       @access_token = nil
-      @expiry = Time.current.to_i
+      @expiration = Time.current.to_i
     end
 
     def with_access_token
@@ -27,8 +26,13 @@ module BenefitsClaims
 
     private
 
+    ##
+    # Determine if the access_token is expired
+    #
+    # @return [Boolean]
+    #
     def expired?
-      Time.current.to_i >= @expiry
+      Time.current.to_i >= @expiration
     end
 
     ##
@@ -40,23 +44,10 @@ module BenefitsClaims
     # @return [Faraday::Response]
     #
     def get_access_token
-      body = config.get_access_token
+      @access_token = config.get_access_token
 
-      set_access_token(body['access_token'])
-      set_expiry(body['expires_in'].to_i)
-    end
-
-    def set_access_token(new_access_token)
-      @access_token = new_access_token
-    end
-
-    def set_expiry(duration)
-      # We want to request a new access token before
-      # the existing one actually expires
-      threshold = duration - 10
-      new_expiry = Time.current.to_i + threshold
-
-      @expiry = new_expiry
+      decoded = JWT.decode(@access_token, nil, false, algorithm: 'RS256')
+      @expiration = decoded[0]['exp'] - EXPIRATION_LATENCY
     end
   end
 end
