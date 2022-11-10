@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# rubocop:disable all
 module KmsEncrypted::Model::Monkeypatch
   def has_kms_key(name: nil, key_id: nil, eager_encrypt: false, version: 1, previous_versions: nil, upgrade_context: false)
     key_id ||= KmsEncrypted.key_id
@@ -182,14 +183,15 @@ module KmsEncrypted::Model::Monkeypatch
 
         # update atomically
         # begin monkeypatch
-        if key_method == :kms_key {
+        if key_method == :kms_key
           self.encryption_updated_at = DateTime.now # test this
           save! touch: false
-        } else {
+        else
           save!
-        }
+        end
         # end monkeypatch
       end
     end
   end
 end
+# rubocop:enable all
