@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'decision_review/utilities/pdf_validation/service'
 
 # Files uploaded as part of a Notice of Disagreement submission that will be sent to Lighthouse upon form submission.
@@ -9,7 +10,7 @@ class DecisionReviewEvidenceAttachment < FormAttachment
   validate :validate_pdf
 
   def validate_pdf
-    decision_review_pdf_service.validate_pdf_with_lighthouse(self.get_file)
+    decision_review_pdf_service.validate_pdf_with_lighthouse(get_file)
   end
 
   private
