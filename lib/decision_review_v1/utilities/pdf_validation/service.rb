@@ -23,9 +23,6 @@ module DecisionReviewV1
         )
       end
 
-      private
-
-      def rejiggered_lighthouse_return; end
     end
   end
 end
