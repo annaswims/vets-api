@@ -10,8 +10,8 @@ module KMSKeyRotation
 
     def initialize
       @batch = Sidekiq::Batch.new
-      batch.description = "KMS Key Rotation #{batch.bid}"
-      batch.on(:complete, KMSKeyRotation::Batcher)
+      @batch.description = "KMS Key Rotation #{batch.bid}"
+      @batch.on(:complete, KMSKeyRotation::Batcher)
     end
 
     def batch_records
