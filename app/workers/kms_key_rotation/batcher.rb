@@ -34,18 +34,15 @@ module KMSKeyRotation
     private
 
     def get_records
-      models = get_models
-      models.each_with_object([]).with_index do |(model, selected_records), index|
-        selected_records << model
-                            .where('encryption_updated_at = ? OR encryption_updated_at < ?', nil, 11.months.ago)
-                            .limit(LIMIT - selected_records.count)
-        break if selected_records.count == LIMIT || index == models.count - 1
-
-        next
+      models.each_with_object([]) do |model, records|
+        records << model
+                  .where('encryption_updated_at = ? OR encryption_updated_at < ?', nil, 11.months.ago)
+                  .limit(LIMIT - records.count)
+        break if records.count == LIMIT
       end
     end
 
-    def get_models
+    def models
       ApplicationRecord.descendants_using_encryption.map(&:name).map(&:constantize).each do |model|
         model.descendants.empty? && model.try(:lockbox_attributes) && !model.lockbox_attributes.empty?
       end
