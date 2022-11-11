@@ -11,42 +11,30 @@ module Mobile
 
       # returns list of letters available for a given user. List includes letter display name and letter type
       def index
-        if Flipper.enabled?(:mobile_lighthouse_letters, @current_user)
-          client = Lighthouse::VeteransHealth::Client.new(@current_user.icn)
-          #TODO
-        else
-          render json: Mobile::V0::LettersSerializer.new(@current_user.uuid, evss_service.get_letters.letters)
-        end
+        render json: Mobile::V0::LettersSerializer.new(@current_user.uuid, evss_service.get_letters.letters)
       end
 
       # returns options and info needed to create user form required for benefit letter download
       def beneficiary
-        if Flipper.enabled?(:mobile_lighthouse_letters, @current_user)
-          #TODO
-        else
-          render json: Mobile::V0::LettersBeneficiarySerializer.new(@current_user.uuid, evss_service.get_letter_beneficiary)
-        end
+        render json: Mobile::V0::LettersBeneficiarySerializer.new(@current_user.uuid,
+                                                                  evss_service.get_letter_beneficiary)
       end
 
       # returns a pdf of the requested letter type given the user has that letter type available
       def download
-        if Flipper.enabled?(:mobile_lighthouse_letters, @current_user)
-          #TODO
-        else
-          unless EVSS::Letters::Letter::LETTER_TYPES.include? params[:type]
-            Raven.tags_context(team: 'va-mobile-app') # tag sentry logs with team name
-            raise Common::Exceptions::ParameterMissing, 'letter_type', "#{params[:type]} is not a valid letter type"
-          end
-
-          response = evss_download_service.download_letter(params[:type], request.body.string)
-
-          StatsD.increment('mobile.letters.download.type', tags: ["type:#{params[:type]}"], sample_rate: 1.0)
-
-          send_data response,
-                    filename: "#{params[:type]}.pdf",
-                    type: 'application/pdf',
-                    disposition: 'attachment'
+        unless EVSS::Letters::Letter::LETTER_TYPES.include? params[:type]
+          Raven.tags_context(team: 'va-mobile-app') # tag sentry logs with team name
+          raise Common::Exceptions::ParameterMissing, 'letter_type', "#{params[:type]} is not a valid letter type"
         end
+
+        response = evss_download_service.download_letter(params[:type], request.body.string)
+
+        StatsD.increment('mobile.letters.download.type', tags: ["type:#{params[:type]}"], sample_rate: 1.0)
+
+        send_data response,
+                  filename: "#{params[:type]}.pdf",
+                  type: 'application/pdf',
+                  disposition: 'attachment'
       end
 
       def lighthouse_service
