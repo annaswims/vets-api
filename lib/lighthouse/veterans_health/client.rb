@@ -5,7 +5,6 @@ require 'lighthouse/veterans_health/jwt_wrapper'
 
 module Lighthouse
   module VeteransHealth
-
     class Client < Common::Client::Base
       include Common::Client::Concerns::Monitoring
       configuration Lighthouse::VeteransHealth::Configuration
