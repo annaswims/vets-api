@@ -3,39 +3,24 @@
 require 'lighthouse/veterans_health/configuration'
 require 'lighthouse/veterans_health/jwt_wrapper'
 
-# This client was written to work for the specific use case of the
-# VA OCTO's hypertension fast track pilot, which is located in a Sidekiq job that is kicked off
-# one-to-one for each veteran 526 claim for increase submitted in va.gov
-# If you're looking for a more generic Veterans Health Lighthouse client that doesn't instantiate
-# with a set ICN, consider creating/using another client
 module Lighthouse
   module VeteransHealth
-    # Documentation located at:
-    # https://developer.va.gov/explore/health/docs/fhir?version=current
+
     class Client < Common::Client::Base
       include Common::Client::Concerns::Monitoring
       configuration Lighthouse::VeteransHealth::Configuration
 
-      # Initializes the Veterans Health client.
-      #
-      # @example
-      #
-      # Lighthouse::VeteransHealth::Client.new('12345')
-      #
-      # @param [String] icn The ICN of the veteran filing the 526 claim for increase
-      #
-      # @return [Lighthouse::VeteransHealth::Client]
       def initialize(icn)
         @icn = icn
         raise ArgumentError, 'no ICN passed in for LH API request.' if icn.blank?
       end
 
-      def list_bp_observations
+      def get_letters
         params = {
-          category: 'vital-signs',
-          code: '85354-9'
+          icn: @icn
         }
-        list_observations(params)
+
+        perform_get('services/va-letter-generator/v1/eligible-letters', params)
       end
 
       def list_conditions
