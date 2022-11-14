@@ -11,6 +11,7 @@ module Mobile
 
       # returns list of letters available for a given user. List includes letter display name and letter type
       def index
+
         render json: Mobile::V0::LettersSerializer.new(@current_user.uuid, evss_service.get_letters.letters)
       end
 
