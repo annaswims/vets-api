@@ -7,11 +7,10 @@ require 'evss/letters/service'
 module Mobile
   module V0
     class LettersController < ApplicationController
-      before_action { authorize :evss, :access? unless Flipper.enabled?(:mobile_lighthouse_letters, @current_user) }
+      before_action { authorize :evss, :access? }
 
       # returns list of letters available for a given user. List includes letter display name and letter type
       def index
-
         render json: Mobile::V0::LettersSerializer.new(@current_user.uuid, evss_service.get_letters.letters)
       end
 
