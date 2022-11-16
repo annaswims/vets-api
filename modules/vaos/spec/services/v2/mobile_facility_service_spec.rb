@@ -48,6 +48,7 @@ describe VAOS::V2::MobileFacilityService do
     end
   end
 
+  # TODO: verify specs in RI
   describe '#facilities' do
     context 'with a facility id' do
       it 'returns a configuration' do
