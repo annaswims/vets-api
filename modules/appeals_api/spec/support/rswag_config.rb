@@ -106,38 +106,26 @@ class AppealsApi::RswagConfig
     when 'higher_level_reviews'
       a << hlr_v2_create_schemas
       a << hlr_v2_response_schemas('#/components/schemas')
-      a << contestable_issues_schema('#/components/schemas')
-      a << generic_schemas('#/components/schemas')
-      a << {
-        'X-VA-NonVeteranClaimant-SSN': {
-          'description': 'social security number',
-          'type': 'string',
-          'minLength': 9,
-          'maxLength': 9,
-          'pattern': '^[0-9]{9}$'
-        }
-      }
+      a << generic_schemas('#/components/schemas').slice(*%i[errorModel uuid])
       a << shared_schemas
     when 'notice_of_disagreements'
       a << nod_v2_create_schemas
       a << nod_v2_response_schemas('#/components/schemas')
-      a << contestable_issues_schema('#/components/schemas')
-      a << generic_schemas('#/components/schemas')
-      a << shared_schemas
+      a << contestable_issues_schema('#/components/schemas').slice(*%i[contestableIssue])
+      a << generic_schemas('#/components/schemas').slice(*%i[errorModel uuid])
+      a << shared_schemas.slice(*%i[address phone timezone])
     when 'supplemental_claims'
       a << sc_create_schemas
       a << sc_response_schemas('#/components/schemas')
-      a << contestable_issues_schema('#/components/schemas')
-      a << generic_schemas('#/components/schemas')
-      a << shared_schemas
+      a << contestable_issues_schema('#/components/schemas').slice(*%i[contestableIssue])
+      a << generic_schemas('#/components/schemas').slice(*%i[errorModel])
+      a << shared_schemas.slice(*%i[address phone timezone])
     when 'contestable_issues'
       a << contestable_issues_schema('#/components/schemas')
-      a << generic_schemas('#/components/schemas').slice(*%i[errorModel errorWithTitleAndDetail X-VA-SSN X-VA-File-Number])
-      a << shared_schemas.slice(*%i[non_blank_string])
+      a << generic_schemas('#/components/schemas').slice(*%i[errorModel])
     when 'legacy_appeals'
       a << legacy_appeals_schema('#/components/schemas')
-      a << generic_schemas('#/components/schemas').slice(*%i[errorModel errorWithTitleAndDetail X-VA-SSN X-VA-File-Number])
-      a << shared_schemas.slice(*%i[non_blank_string])
+      a << generic_schemas('#/components/schemas').slice(*%i[errorModel])
     when nil
       a << hlr_v2_create_schemas
       a << hlr_v2_response_schemas('#/components/schemas')
