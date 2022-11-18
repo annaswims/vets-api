@@ -587,34 +587,15 @@
                 "example": {
                   "errors": [
                     {
-                      "status": 404,
-                      "detail": "NoticeOfDisagreement with uuid invalid not found"
+                      "code": "404",
+                      "detail": "NoticeOfDisagreement with uuid invalid not found",
+                      "status": "404",
+                      "title": "Record not found"
                     }
                   ]
                 },
                 "schema": {
-                  "schema": {
-                    "type": "object",
-                    "properties": {
-                      "errors": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "status": {
-                              "type": "integer",
-                              "enum": [
-                                404
-                              ]
-                            },
-                            "detail": {
-                              "type": "string"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
+                  "$ref": "#/components/schemas/errorModel"
                 }
               }
             }
@@ -2084,54 +2065,17 @@
                     "value": {
                       "errors": [
                         {
-                          "status": 422,
+                          "code": "109",
                           "detail": "The request body isn't a JSON object",
-                          "source": null
+                          "status": "422",
+                          "title": "Validation error"
                         }
                       ]
                     }
                   }
                 },
                 "schema": {
-                  "$ref": "#/components/schemas/errorModel",
-                  "required": [
-                    "errors"
-                  ],
-                  "properties": {
-                    "errors": {
-                      "type": "array",
-                      "items": {
-                        "additionalProperties": false,
-                        "required": [
-                          "detail",
-                          "source",
-                          "status"
-                        ],
-                        "properties": {
-                          "detail": {
-                            "type": "string",
-                            "description": "HTTP error detail",
-                            "enum": [
-                              "The request body isn't a JSON object"
-                            ]
-                          },
-                          "source": {
-                            "type": "null",
-                            "enum": [
-                              null
-                            ]
-                          },
-                          "status": {
-                            "enum": [
-                              422
-                            ],
-                            "type": "integer",
-                            "description": "HTTP error code"
-                          }
-                        }
-                      }
-                    }
-                  }
+                  "$ref": "#/components/schemas/errorModel"
                 }
               }
             }

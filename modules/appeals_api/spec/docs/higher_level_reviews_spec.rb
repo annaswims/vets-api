@@ -200,7 +200,7 @@ describe 'Higher-Level Reviews', swagger_doc: DocHelpers.output_json_path, type:
       end
 
       response '404', 'Higher-Level Review not found' do
-        schema JSON.parse(File.read(AppealsApi::Engine.root.join('spec', 'support', 'schemas', 'errors', '404.json')))
+        schema '$ref' => '#/components/schemas/errorModel'
 
         let(:uuid) { 'invalid' }
 
@@ -276,7 +276,7 @@ describe 'Higher-Level Reviews', swagger_doc: DocHelpers.output_json_path, type:
         end
 
         response '404', 'Veteran not found' do
-          schema JSON.parse(File.read(AppealsApi::Engine.root.join('spec', 'support', 'schemas', 'errors', '404.json')))
+          schema '$ref' => '#/components/schemas/errorModel'
 
           let(:benefit_type) { 'compensation' }
           let(:'X-VA-SSN') { '000000000' }
@@ -565,8 +565,8 @@ describe 'Higher-Level Reviews', swagger_doc: DocHelpers.output_json_path, type:
       end
 
       response '422', 'Error' do
-        schema JSON.parse(File.read(AppealsApi::Engine.root.join('spec', 'support', 'schemas', 'errors',
-                                                                 'not_json.json')))
+        schema '$ref' => '#/components/schemas/errorModel'
+
         let(:hlr_body) do
           nil
         end

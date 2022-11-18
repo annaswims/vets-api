@@ -145,7 +145,7 @@ describe 'Supplemental Claims', swagger_doc: DocHelpers.output_json_path, type: 
       end
 
       response '404', 'Supplemental Claim not found' do
-        schema JSON.parse(File.read(AppealsApi::Engine.root.join('spec', 'support', 'schemas', 'errors', '404.json')))
+        schema '$ref' => '#/components/schemas/errorModel'
 
         let(:uuid) { 'invalid' }
 
@@ -493,7 +493,7 @@ describe 'Supplemental Claims', swagger_doc: DocHelpers.output_json_path, type: 
       end
 
       response '404', 'Supplemental Claim Evidence Submission not found' do
-        schema JSON.parse(File.read(AppealsApi::Engine.root.join('spec', 'support', 'schemas', 'errors', '404.json')))
+        schema '$ref' => '#/components/schemas/errorModel'
 
         let(:uuid) { 'invalid' }
 

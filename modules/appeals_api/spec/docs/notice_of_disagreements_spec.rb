@@ -152,7 +152,7 @@ describe 'Notice of Disagreements', swagger_doc: DocHelpers.output_json_path, ty
       end
 
       response '404', 'Notice of Disagreement not found' do
-        schema JSON.parse(File.read(AppealsApi::Engine.root.join('spec', 'support', 'schemas', 'errors', '404.json')))
+        schema '$ref' => '#/components/schemas/errorModel'
 
         let(:uuid) { 'invalid' }
 
@@ -289,8 +289,8 @@ describe 'Notice of Disagreements', swagger_doc: DocHelpers.output_json_path, ty
       end
 
       response '422', 'Error' do
-        schema JSON.parse(File.read(AppealsApi::Engine.root.join('spec', 'support', 'schemas', 'errors',
-                                                                 'not_json.json')))
+        schema '$ref' => '#/components/schemas/errorModel'
+
         let(:nod_body) do
           nil
         end
