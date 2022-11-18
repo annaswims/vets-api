@@ -29,7 +29,7 @@ module SignIn
                         format: :html)
       end
 
-      def normalized_attributes(user_info, credential_level, client_id)
+      def normalized_attributes(user_info, credential_level)
         attributes = case type
                      when 'idme'
                        idme_attributes(user_info)
@@ -38,7 +38,7 @@ module SignIn
                      when 'mhv'
                        mhv_attributes(user_info)
                      end
-        attributes.merge(standard_attributes(user_info, credential_level, client_id))
+        attributes.merge(standard_attributes(user_info, credential_level))
       end
 
       def token(code)
@@ -68,15 +68,12 @@ module SignIn
                             "status: #{status}, description: #{description}"
       end
 
-      def standard_attributes(user_info, credential_level, client_id)
-        loa_current = ial_to_loa(credential_level.current_ial)
-        loa_highest = ial_to_loa(credential_level.max_ial)
+      def standard_attributes(user_info, credential_level)
         {
-          uuid: user_info.sub,
           idme_uuid: user_info.sub,
-          loa: { current: loa_current, highest: loa_highest },
-          sign_in: { service_name: type, auth_broker: Constants::Auth::BROKER_CODE,
-                     client_id: client_id },
+          current_ial: credential_level.current_ial,
+          max_ial: credential_level.max_ial,
+          service_name: type,
           csp_email: user_info.email,
           multifactor: user_info.multifactor,
           authn_context: get_authn_context(credential_level.current_ial),
@@ -100,7 +97,8 @@ module SignIn
           ssn: user_info.social&.tr('-', ''),
           birth_date: user_info.birth_date,
           first_name: user_info.fname,
-          last_name: user_info.lname
+          last_name: user_info.lname,
+          address: normalize_address(user_info)
         }
       end
 
@@ -123,19 +121,24 @@ module SignIn
         }
       end
 
-      def ial_to_loa(ial)
-        ial == IAL::TWO ? LOA::THREE : LOA::ONE
+      def normalize_address(user_info)
+        return unless address_defined?(user_info)
+
+        {
+          street: user_info.street,
+          postal_code: user_info.zip,
+          state: user_info.state,
+          city: user_info.city,
+          country: united_states_country_code
+        }
       end
 
-      def scope
-        case type
-        when 'idme'
-          config.idme_scope
-        when 'dslogon'
-          config.dslogon_scope
-        when 'mhv'
-          config.mhv_scope
-        end
+      def address_defined?(user_info)
+        user_info.street && user_info.zip && user_info.state && user_info.city
+      end
+
+      def united_states_country_code
+        'USA'
       end
 
       def jwe_decrypt(encrypted_jwe)

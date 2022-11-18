@@ -124,6 +124,23 @@ RSpec.describe 'Folders Integration', type: :request do
       end
     end
 
+    describe '#update' do
+      context 'with valid folder id' do
+        let(:id) { 7_207_029 }
+        let(:params) { { folder: { name: 'Test222' } } }
+
+        it 'responds to RENAME #update' do
+          VCR.use_cassette('sm_client/folders/renames_a_folder') do
+            put "/my_health/v1/messaging/folders/#{id}", params: params
+          end
+
+          expect(response).to be_successful
+          expect(response).to have_http_status(:created)
+          expect(response).to match_response_schema('folder')
+        end
+      end
+    end
+
     describe '#destroy' do
       context 'with valid folder id' do
         let(:id) { 674_886 }
@@ -135,6 +152,22 @@ RSpec.describe 'Folders Integration', type: :request do
 
           expect(response).to be_successful
           expect(response).to have_http_status(:no_content)
+        end
+      end
+    end
+
+    describe '#search' do
+      context 'with valid search criteria' do
+        let(:id) { 0 }
+
+        it 'responds to POST #search' do
+          VCR.use_cassette('sm_client/folders/searches_a_folder') do
+            post "/my_health/v1/messaging/folders/#{id}/search", params: { subject: 'test' }
+          end
+
+          expect(response).to be_successful
+          expect(response).to have_http_status(:ok)
+          expect(response).to match_response_schema('folder_search')
         end
       end
     end

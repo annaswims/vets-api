@@ -675,7 +675,8 @@ RSpec.describe V0::SignInController, type: :controller do
                     ssn: user_info.social_security_number,
                     birth_date: Formatters::DateFormatter.format_date(user_info.birthdate),
                     first_name: user_info.given_name,
-                    last_name: user_info.family_name
+                    last_name: user_info.family_name,
+                    fingerprint: request.ip
                   }
                 end
                 let(:mpi_profile) do
@@ -901,7 +902,7 @@ RSpec.describe V0::SignInController, type: :controller do
             context 'and code is given that matches expected code for auth service' do
               let(:response) { OpenStruct.new(access_token: token) }
               let(:level_of_assurance) { LOA::THREE }
-              let(:acr) { 'loa3' }
+              let(:acr) { SignIn::Constants::Auth::MIN }
               let(:ial) { 2 }
               let(:credential_ial) { LOA::IDME_CLASSIC_LOA3 }
               let(:client_code) { 'some-client-code' }
@@ -949,7 +950,7 @@ RSpec.describe V0::SignInController, type: :controller do
 
               context 'and dslogon account is not premium' do
                 let(:dslogon_assurance) { 'some-dslogon-assurance' }
-                let(:ial) { 1 }
+                let(:ial) { IAL::ONE }
                 let(:expected_user_attributes) do
                   {
                     ssn: nil,
@@ -966,7 +967,7 @@ RSpec.describe V0::SignInController, type: :controller do
 
               context 'and dslogon account is premium' do
                 let(:dslogon_assurance) { LOA::DSLOGON_ASSURANCE_THREE }
-                let(:ial) { 2 }
+                let(:ial) { IAL::TWO }
                 let(:expected_user_attributes) do
                   {
                     ssn: user_info.dslogon_idvalue,
@@ -984,7 +985,7 @@ RSpec.describe V0::SignInController, type: :controller do
           end
 
           context 'when type in state JWT is mhv' do
-            let(:type) { 'mhv' }
+            let(:type) { SignIn::Constants::Auth::MHV }
             let(:user_info) do
               OpenStruct.new(
                 sub: 'some-sub',
@@ -992,7 +993,8 @@ RSpec.describe V0::SignInController, type: :controller do
                 credential_ial: credential_ial,
                 mhv_uuid: '123456789',
                 mhv_icn: mhv_icn,
-                mhv_assurance: mhv_assurance
+                mhv_assurance: mhv_assurance,
+                email: 'some-email'
               )
             end
             let(:mhv_icn) { '987654321V123456' }
@@ -1024,12 +1026,13 @@ RSpec.describe V0::SignInController, type: :controller do
             context 'and code is given that matches expected code for auth service' do
               let(:response) { OpenStruct.new(access_token: token) }
               let(:level_of_assurance) { LOA::THREE }
-              let(:acr) { 'loa3' }
-              let(:ial) { 2 }
+              let(:acr) { SignIn::Constants::Auth::MIN }
+              let(:ial) { IAL::TWO }
               let(:credential_ial) { LOA::IDME_CLASSIC_LOA3 }
               let(:client_code) { 'some-client-code' }
+              let(:mobile_redirect_uris) { Settings.sign_in.client_redirect_uris.mobile }
               let(:expected_url) do
-                "#{Settings.sign_in.client_redirect_uris.mobile}?code=#{client_code}&state=#{client_state}&type=#{type}"
+                "#{mobile_redirect_uris}?code=#{client_code}&state=#{client_state}&type=#{type}"
               end
               let(:expected_log) { '[SignInService] [V0::SignInController] callback' }
               let(:statsd_callback_success) { SignIn::Constants::Statsd::STATSD_SIS_CALLBACK_SUCCESS }
@@ -1072,7 +1075,7 @@ RSpec.describe V0::SignInController, type: :controller do
 
               context 'and mhv account is not premium' do
                 let(:mhv_assurance) { 'some-mhv-assurance' }
-                let(:ial) { 1 }
+                let(:ial) { IAL::ONE }
                 let(:expected_user_attributes) do
                   {
                     mhv_correlation_id: nil,
@@ -1085,7 +1088,7 @@ RSpec.describe V0::SignInController, type: :controller do
 
               context 'and mhv account is premium' do
                 let(:mhv_assurance) { 'Premium' }
-                let(:ial) { 2 }
+                let(:ial) { IAL::TWO }
                 let(:expected_user_attributes) do
                   {
                     mhv_correlation_id: user_info.mhv_uuid,
@@ -1405,7 +1408,9 @@ RSpec.describe V0::SignInController, type: :controller do
 
     context 'when session has been created with a client id that is anti csrf enabled' do
       let(:client_id) { SignIn::Constants::ClientConfig::ANTI_CSRF_ENABLED.first }
-      let(:session_container) { SignIn::SessionCreator.new(validated_credential: validated_credential).perform }
+      let(:session_container) do
+        SignIn::SessionCreator.new(validated_credential: validated_credential).perform
+      end
       let(:refresh_token) do
         SignIn::RefreshTokenEncryptor.new(refresh_token: session_container.refresh_token).perform
       end
@@ -1436,7 +1441,9 @@ RSpec.describe V0::SignInController, type: :controller do
     end
 
     context 'when refresh_token is the proper encrypted refresh token format' do
-      let(:session_container) { SignIn::SessionCreator.new(validated_credential: validated_credential).perform }
+      let(:session_container) do
+        SignIn::SessionCreator.new(validated_credential: validated_credential).perform
+      end
       let(:refresh_token) do
         SignIn::RefreshTokenEncryptor.new(refresh_token: session_container.refresh_token).perform
       end
@@ -1676,7 +1683,9 @@ RSpec.describe V0::SignInController, type: :controller do
       let(:client_id_value) { user.identity.sign_in[:client_id] }
       let(:loa) { user.identity.loa[:current] }
       let(:client_id) { SignIn::Constants::ClientConfig::ANTI_CSRF_ENABLED.first }
-      let(:session_container) { SignIn::SessionCreator.new(validated_credential: validated_credential).perform }
+      let(:session_container) do
+        SignIn::SessionCreator.new(validated_credential: validated_credential).perform
+      end
       let(:refresh_token) do
         SignIn::RefreshTokenEncryptor.new(refresh_token: session_container.refresh_token).perform
       end
@@ -1709,7 +1718,9 @@ RSpec.describe V0::SignInController, type: :controller do
       let(:type) { user.identity.sign_in[:service_name] }
       let(:client_id_value) { user.identity.sign_in[:client_id] }
       let(:loa) { user.identity.loa[:current] }
-      let(:session_container) { SignIn::SessionCreator.new(validated_credential: validated_credential).perform }
+      let(:session_container) do
+        SignIn::SessionCreator.new(validated_credential: validated_credential).perform
+      end
       let(:refresh_token) do
         SignIn::RefreshTokenEncryptor.new(refresh_token: session_container.refresh_token).perform
       end

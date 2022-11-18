@@ -189,7 +189,7 @@ central_mail:
   upload:
     enabled: true
     host: "test2.domaonline.com/EmmsAPI"
-    token: "<PENSIONS_TOKEN>"
+    token: "<CENTRAL_MAIL_TOKEN>"
 
 # Settings for BIP Services
 bip:
@@ -241,6 +241,9 @@ decision_review:
   url: https://sandbox-api.va.gov/services/appeals/v1/decision_reviews
   api_key: abcd1234abcd1234abcd1234abcd1234abcd1234
   mock: false
+  pdf_validation:
+    enabled: true
+    url: https://sandbox-api.va.gov/services/vba_documents/v1
   s3:
     aws_access_key_id: ~
     aws_secret_access_key: ~
@@ -267,13 +270,14 @@ dhp:
 
 # Settings for modules/appeals_api
 modules_appeals_api:
+  token_validation:
+    api_key: ''
   slack:
     api_token: ''
     appeals_channel_id: ''
   documentation:
     path_enabled_flag: false
     wip_docs:
-      - segmented_apis
       # List of flags to indicate parts of documentation that are still WIP and not ready for production.
       # See the rswag:appeals_api:dev rake task, spec_helper, and DocHelpers#wip_doc_enabled? for usage info to opt-in.
       # NOTE: Do not remove this key even if it's empty.
@@ -336,6 +340,12 @@ modules_appeals_api:
         - kelly@adhocteam.us
         - laura.trager@adhocteam.us
         - nathan.wright@oddball.io
+    weekly_error:
+      recipients:
+        - drew.fisher@adhocteam.us
+        - cassey.williams@adhocteam.us
+        - michel.mcdonald@adhocteam.us
+
   schema_dir: config/schemas
   evidence_submissions:
     location:
@@ -586,7 +596,6 @@ vba_documents:
   slack:
     enabled: false
     default_alert_url:
-    deployment_notification_forms_url:
     in_flight_notification_hung_time_in_days: 14
     renotification_in_minutes: 240
     update_stalled_notification_in_minutes: 180
@@ -848,6 +857,7 @@ search_click_tracking:
   url: https://api.gsa.gov/technology/searchgov/v2
 
 flipper:
+  mute_logs: false
   admin_user_emails:
     - aditya.sharma@thoughtworks.com # Virtual Agent
     - adrian.rollett@agile6.com # Adrian Rollett (Agile6), Engineer/Product Manager Health Care Experience/Check-In
@@ -993,6 +1003,7 @@ flipper:
     - jerek.shoemaker@adhocteam.us # Jerek Shoemaker - Benefits Team #1
     - sam.cormier@coforma.io # Sam Cormier - Benefits Team #1
     - scott.meyers@coforma.io # Scott Meyers - Benefits Team #1
+    - johncater@gmail.com # John Cater - FE Engineer Auth Exp
 
 bgs:
   application: ~
@@ -1138,8 +1149,7 @@ covid_vaccine:
       password: fake_password
 
 virtual_agent:
-  webchat_secret_a: fake_secret_a
-  webchat_secret_b: fake_secret_b
+  webchat_secret: fake_secret
   lighthouse_api_uri: https://sandbox-api.va.gov/services/appeals/v0/appeals
   lighthouse_api_key: fake_api_key
   cxdw_client_secret: fake_secret
@@ -1308,6 +1318,9 @@ github_cvu:
 
 check_in:
   travel_reimbursement_api:
+    auth_url: https://login.microsoftonline.us
+    tenant_id: abcdefgh-1234-5678-12345-11e8b8ce491e
+    claims_url: https://dev.integration.d365.va.gov/EC/ClaimIngestSvc/api
     redis_token_expiry: 3540 # 59 minutes
     service_name: BTSSS-API
   authentication:
