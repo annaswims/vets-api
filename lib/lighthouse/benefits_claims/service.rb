@@ -5,7 +5,6 @@ require 'lighthouse/benefits_claims/configuration'
 
 module BenefitsClaims
   class Service < Common::Client::Base
-    include Common::Client::Concerns::Monitoring
     configuration BenefitsClaims::Configuration
     STATSD_KEY_PREFIX = 'api.benefits_claims'
 

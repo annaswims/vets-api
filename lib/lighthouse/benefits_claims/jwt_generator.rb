@@ -2,6 +2,12 @@
 
 module BenefitsClaims
   class JWTGenerator
+    TTL = 300
+
+    def iat
+      Time.now.to_i
+    end
+
     def settings
       Settings.lighthouse.benefits_claims
     end
@@ -11,8 +17,8 @@ module BenefitsClaims
         iss: settings.client_id,
         sub: settings.client_id,
         aud: settings.aud_claim_url,
-        iat: Time.current.to_i,
-        exp: 5.minutes.from_now.to_i
+        iat: iat,
+        exp: iat + TTL
       }
     end
 
