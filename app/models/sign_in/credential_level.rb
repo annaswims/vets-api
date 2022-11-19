@@ -29,7 +29,7 @@ module SignIn
     end
 
     def can_uplevel_credential?
-      requested_acr == 'min' && current_ial < max_ial
+      requested_acr == SignIn::Constants::Auth::MIN && current_ial < max_ial
     end
 
     private

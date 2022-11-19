@@ -227,7 +227,7 @@ GEM
     blueprinter (0.25.3)
     bootsnap (1.13.0)
       msgpack (~> 1.2)
-    brakeman (5.3.1)
+    brakeman (5.4.0)
     breakers (0.6.0)
       faraday (>= 0.7.4, < 2.0)
       multi_json (~> 1.0)
@@ -360,7 +360,7 @@ GEM
     erubi (1.11.0)
     et-orbi (1.2.7)
       tzinfo
-    ethon (0.15.0)
+    ethon (0.16.0)
       ffi (>= 1.15.0)
     expgen (0.1.1)
       parslet
@@ -416,7 +416,7 @@ GEM
       nokogiri (>= 1.11.4)
     filelock (1.1.1)
     find_a_port (1.0.1)
-    fitbit_api (0.13.0)
+    fitbit_api (0.14.2)
       oauth2 (~> 1.0)
     flipper (0.22.2)
     flipper-active_record (0.22.1)
@@ -611,7 +611,7 @@ GEM
     octokit (4.21.0)
       faraday (>= 0.9)
       sawyer (~> 0.8.0, >= 0.5.3)
-    oj (3.13.22)
+    oj (3.13.23)
     okcomputer (1.18.4)
     olive_branch (4.0.1)
       multi_json
@@ -648,7 +648,7 @@ GEM
       activerecord (>= 5.2)
       request_store (~> 1.1)
     parallel (1.22.1)
-    parallel_tests (3.13.0)
+    parallel_tests (4.0.0)
       parallel
     parser (3.1.2.1)
       ast (~> 2.4.1)
@@ -730,7 +730,7 @@ GEM
       loofah (~> 2.3)
     rails-session_cookie (0.3.0)
       rails (>= 4.0)
-    rails_semantic_logger (4.10.0)
+    rails_semantic_logger (4.11.0)
       rack
       railties (>= 5.1)
       semantic_logger (~> 4.9)
@@ -813,7 +813,7 @@ GEM
     rswag-ui (2.7.0)
       actionpack (>= 3.1, < 7.1)
       railties (>= 3.1, < 7.1)
-    rubocop (1.38.0)
+    rubocop (1.39.0)
       json (~> 2.3)
       parallel (~> 1.10)
       parser (>= 3.1.2.1)
@@ -856,7 +856,7 @@ GEM
     script_utils (0.0.4)
     seedbank (0.5.0)
       rake (>= 10.0)
-    semantic_logger (4.10.0)
+    semantic_logger (4.12.0)
       concurrent-ruby (~> 1.0)
     sentry-raven (2.13.0)
       faraday (>= 0.7.6, < 1.0)
@@ -984,7 +984,7 @@ GEM
       nokogiri (~> 1.5)
     yard (0.9.28)
       webrick (~> 1.7.0)
-    zeitwerk (2.6.3)
+    zeitwerk (2.6.6)
 
 PLATFORMS
   ruby
