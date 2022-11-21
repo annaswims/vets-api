@@ -13,6 +13,7 @@ require 'evss/claims_service'
 require 'evss/common_service'
 require 'evss/dependents/configuration'
 require 'evss/disability_compensation_form/configuration'
+require 'evss/disability_compensation_form/dvp_configuration'
 require 'evss/documents_service'
 require 'evss/letters/service'
 require 'evss/gi_bill_status/service'
@@ -55,6 +56,7 @@ Rails.application.reloader.to_prepare do
     EVSS::ClaimsService.breakers_service,
     EVSS::CommonService.breakers_service,
     EVSS::DisabilityCompensationForm::Configuration.instance.breakers_service,
+    EVSS::DisabilityCompensationForm::DvpConfiguration.instance.breakers_service,
     EVSS::DocumentsService.breakers_service,
     EVSS::Letters::Configuration.instance.breakers_service,
     EVSS::PCIUAddress::Configuration.instance.breakers_service,

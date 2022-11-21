@@ -5,6 +5,7 @@ require 'common/client/errors'
 require 'evss/service'
 require 'evss/disability_compensation_auth_headers'
 require_relative 'configuration'
+require_relative 'dvp_configuration'
 require_relative 'rated_disabilities_response'
 require_relative 'form_submit_response'
 require_relative 'service_unavailable_exception'
@@ -22,7 +23,11 @@ module EVSS
     #   EVSS::DisabilityCompensationForm::Service.new(disability_auth_headers)
     #
     class Service < EVSS::Service
-      configuration EVSS::DisabilityCompensationForm::Configuration
+      if Flipper.enabled? :form526_dvp
+        configuration EVSS::DisabilityCompensationForm::DvpConfiguration
+      else
+        configuration EVSS::DisabilityCompensationForm::Configuration
+      end
 
       # @param headers [EVSS::DisabilityCompensationAuthHeaders] VAAFI headers for a user
       #
