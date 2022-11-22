@@ -106,7 +106,7 @@ module DecisionReviewV1
     def get_supplemental_claim_upload_url(sc_uuid:, ssn:)
       with_monitoring_and_error_handling do
         perform :post, 'supplemental_claims/evidence_submissions', { sc_uuid: sc_uuid },
-                { 'X-VA-SSN ' => ssn.to_s.strip.presence }
+                { 'X-VA-SSN' => ssn.to_s.strip.presence }
       end
     end
 
