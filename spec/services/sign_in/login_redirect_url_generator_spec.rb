@@ -22,11 +22,7 @@ RSpec.describe SignIn::LoginRedirectUrlGenerator do
 
     context 'when client_id is set to mobile' do
       let(:client_id) { SignIn::Constants::ClientConfig::MOBILE_CLIENT }
-      let(:redirect_uri) { 'some-redirect-uri' }
-
-      before do
-        allow(Settings.sign_in.client_redirect_uris).to receive(:mobile).and_return(redirect_uri)
-      end
+      let(:redirect_uri) { Settings.sign_in.client_redirect_uris.mobile }
 
       it 'returns expected redirect uri for mobile client' do
         expect(subject).to eq(expected_redirect_uri)
@@ -35,7 +31,7 @@ RSpec.describe SignIn::LoginRedirectUrlGenerator do
 
     context 'when client_id is set to mobile_test' do
       let(:client_id) { SignIn::Constants::ClientConfig::MOBILE_TEST_CLIENT }
-      let(:redirect_uri) { 'some-redirect-uri' }
+      let(:redirect_uri) { Settings.sign_in.client_redirect_uris.mobile_test }
 
       before do
         allow(Settings.sign_in.client_redirect_uris).to receive(:mobile_test).and_return(redirect_uri)
@@ -48,13 +44,13 @@ RSpec.describe SignIn::LoginRedirectUrlGenerator do
 
     context 'when client_id is set to web' do
       let(:client_id) { SignIn::Constants::ClientConfig::WEB_CLIENT }
-      let(:redirect_uri) { 'some-redirect-uri' }
+      let(:redirect_uri) { Settings.sign_in.client_redirect_uris.web }
 
       before do
         allow(Settings.sign_in.client_redirect_uris).to receive(:web).and_return(redirect_uri)
       end
 
-      it 'returns expected redirect uri for mobile client' do
+      it 'returns expected redirect uri for web client' do
         expect(subject).to eq(expected_redirect_uri)
       end
     end
@@ -72,13 +68,9 @@ RSpec.describe SignIn::LoginRedirectUrlGenerator do
 
     context 'when client_state is nil' do
       let(:client_id) { SignIn::Constants::ClientConfig::WEB_CLIENT }
-      let(:redirect_uri) { 'some-redirect-uri' }
+      let(:redirect_uri) { Settings.sign_in.client_redirect_uris.web }
       let(:client_state) { nil }
       let(:state_param) { nil }
-
-      before do
-        allow(Settings.sign_in.client_redirect_uris).to receive(:web).and_return(redirect_uri)
-      end
 
       it 'returns expected redirect uri without state param' do
         expect(subject).to eq(expected_redirect_uri)
