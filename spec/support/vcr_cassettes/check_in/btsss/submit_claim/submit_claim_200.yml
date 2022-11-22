@@ -20,7 +20,10 @@ http_interactions:
           {
             "value": {
               "claimNumber": "TC202207000011666"
-            }
+            },
+            "formatters": [],
+            "contentTypes": [],
+            "declaredType": null,
             "statusCode": 200
           }
     recorded_at: Thu, 19 Nov 2020 16:45:03 GMT

@@ -1281,18 +1281,20 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
 
     describe 'decision review evidence upload' do
       it 'supports uploading a file' do
-        expect(subject).to validate(
-          :post,
-          '/v0/decision_review_evidence',
-          200,
-          headers.update(
-            '_data' => {
-              'decision_review_evidence_attachment' => {
-                'file_data' => fixture_file_upload('spec/fixtures/pdf_fill/extras.pdf')
+        VCR.use_cassette('decision_review/200_pdf_validation') do
+          expect(subject).to validate(
+            :post,
+            '/v0/decision_review_evidence',
+            200,
+            headers.update(
+              '_data' => {
+                'decision_review_evidence_attachment' => {
+                  'file_data' => fixture_file_upload('spec/fixtures/pdf_fill/extras.pdf')
+                }
               }
-            }
+            )
           )
-        )
+        end
       end
 
       it 'returns a 400 if no attachment data is given' do
@@ -3585,7 +3587,7 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
     describe 'virtual agent' do
       describe 'POST v0/virtual_agent_token' do
         it 'returns webchat token' do
-          VCR.use_cassette('virtual_agent/webchat_token_a') do
+          VCR.use_cassette('virtual_agent/webchat_token_success') do
             expect(subject).to validate(:post, '/v0/virtual_agent_token', 200)
           end
         end
@@ -3759,6 +3761,14 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
         )
       end
     end
+
+    describe 'claim letters' do
+      it 'retrieves a list of claim letters metadata' do
+        # Response comes from fixture: spec/fixtures/claim_letter/claim_letter_list.json
+        expect(subject).to validate(:get, '/v0/claim_letters', 200, headers)
+        expect(subject).to validate(:get, '/v0/claim_letters', 401)
+      end
+    end
   end
 
   context 'and' do
@@ -3768,6 +3778,7 @@ RSpec.describe 'the API documentation', type: %i[apivore request], order: :defin
       subject.untested_mappings.delete('/v0/financial_status_reports/download_pdf')
       subject.untested_mappings.delete('/v0/form1095_bs/download_pdf/{tax_year}')
       subject.untested_mappings.delete('/v0/form1095_bs/download_txt/{tax_year}')
+      subject.untested_mappings.delete('/v0/claim_letters/{document_id}')
       # SiS methods that involve forms & redirects
       subject.untested_mappings.delete('/v0/sign_in/authorize')
       subject.untested_mappings.delete('/v0/sign_in/callback')

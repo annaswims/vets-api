@@ -14,7 +14,7 @@ RSpec.describe SignIn::CredentialLevel, type: :model do
   let(:requested_acr) { SignIn::Constants::Auth::ACR_VALUES.first }
   let(:current_ial) { IAL::ONE }
   let(:max_ial) { IAL::ONE }
-  let(:credential_type) { SignIn::Constants::Auth::REDIRECT_URLS.first }
+  let(:credential_type) { SignIn::Constants::Auth::CSP_TYPES.first }
 
   describe 'validations' do
     describe '#requested_acr' do
@@ -91,7 +91,7 @@ RSpec.describe SignIn::CredentialLevel, type: :model do
     subject { credential_level.can_uplevel_credential? }
 
     context 'when requested acr is min' do
-      let(:requested_acr) { 'min' }
+      let(:requested_acr) { SignIn::Constants::Auth::MIN }
 
       context 'and current_ial is less than max_ial' do
         let(:current_ial) { IAL::ONE }
@@ -112,7 +112,7 @@ RSpec.describe SignIn::CredentialLevel, type: :model do
       end
     end
 
-    context 'when requested acr is not min' do
+    context 'when requested acr is some other value' do
       let(:requested_acr) { SignIn::Constants::Auth::ACR_VALUES.first }
 
       it 'returns false' do

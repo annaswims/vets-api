@@ -12,7 +12,7 @@ RSpec.describe SignIn::CredentialLevelCreator do
     end
 
     let(:requested_acr) { SignIn::Constants::Auth::ACR_VALUES.first }
-    let(:type) { SignIn::Constants::Auth::REDIRECT_URLS.first }
+    let(:type) { SignIn::Constants::Auth::CSP_TYPES.first }
     let(:id_token) { JWT.encode(id_token_payload, OpenSSL::PKey::RSA.new(2048), 'RS256') }
     let(:id_token_payload) { 'some-id-token' }
     let(:verified_at) { Time.zone.now }
@@ -40,6 +40,21 @@ RSpec.describe SignIn::CredentialLevelCreator do
 
       it 'raises an invalid credential level error' do
         expect { subject }.to raise_error(expected_error, expected_error_message)
+      end
+    end
+
+    shared_examples 'unverified credential blocked error' do
+      let(:expected_error) { SignIn::Errors::UnverifiedCredentialBlockedError }
+      let(:expected_error_message) { 'Unverified credential for authorization requiring verified credential' }
+
+      it 'raises an unverified credential blocked error' do
+        expect { subject }.to raise_error(expected_error, expected_error_message)
+      end
+
+      it 'adds the expected error code to the raised error' do
+        subject
+      rescue => e
+        expect(e.code).to eq(expected_error_code)
       end
     end
 
@@ -112,10 +127,9 @@ RSpec.describe SignIn::CredentialLevelCreator do
 
           context 'and requested_acr is set to ial2' do
             let(:requested_acr) { SignIn::Constants::Auth::IAL2 }
-            let(:expected_current_ial) { IAL::TWO }
-            let(:expected_auto_uplevel) { true }
+            let(:expected_error_code) { SignIn::Constants::ErrorCode::GENERIC_EXTERNAL_ISSUE }
 
-            it_behaves_like 'an auto-uplevel capable credential'
+            it_behaves_like 'unverified credential blocked error'
           end
 
           context 'and requested_acr is set to min' do
@@ -187,15 +201,35 @@ RSpec.describe SignIn::CredentialLevelCreator do
       context 'and mhv assurance is not set to premium' do
         let(:mhv_assurance) { 'some-mhv-assurance' }
         let(:expected_max_ial) { IAL::ONE }
-        let(:expected_current_ial) { IAL::ONE }
 
-        it_behaves_like 'a created credential level'
+        context 'and requested_acr is set to loa3' do
+          let(:requested_acr) { SignIn::Constants::Auth::LOA3 }
+          let(:expected_error_code) { SignIn::Constants::ErrorCode::MHV_UNVERIFIED_BLOCKED }
+
+          it_behaves_like 'unverified credential blocked error'
+        end
+
+        context 'and requested_acr is set to min' do
+          let(:requested_acr) { SignIn::Constants::Auth::MIN }
+          let(:expected_current_ial) { IAL::ONE }
+
+          it_behaves_like 'a created credential level'
+        end
+
+        context 'and requested_acr is set to loa1' do
+          let(:requested_acr) { SignIn::Constants::Auth::LOA1 }
+          let(:expected_current_ial) { IAL::ONE }
+
+          it_behaves_like 'a created credential level'
+        end
       end
     end
 
     context 'when type is dslogon' do
       let(:type) { SAML::User::DSLOGON_CSID }
-      let(:expected_rails_log) { "[CredentialLevelCreator] DSLogon level of assurance #{dslogon_assurance}" }
+      let(:expected_rails_log) do
+        "[CredentialLevelCreator] DSLogon level of assurance: #{dslogon_assurance}, credential_uuid: #{sub}"
+      end
 
       it 'logs the dslogon assurance from the user info' do
         expect(Rails.logger).to receive(:info).with(expected_rails_log)
@@ -257,9 +291,27 @@ RSpec.describe SignIn::CredentialLevelCreator do
       context 'and dslogon assurance is set to an arbitrary value' do
         let(:dslogon_assurance) { 'some-dslogon-assurance' }
         let(:expected_max_ial) { IAL::ONE }
-        let(:expected_current_ial) { IAL::ONE }
 
-        it_behaves_like 'a created credential level'
+        context 'and requested_acr is set to loa3' do
+          let(:requested_acr) { SignIn::Constants::Auth::LOA3 }
+          let(:expected_error_code) { SignIn::Constants::ErrorCode::GENERIC_EXTERNAL_ISSUE }
+
+          it_behaves_like 'unverified credential blocked error'
+        end
+
+        context 'and requested_acr is set to min' do
+          let(:requested_acr) { SignIn::Constants::Auth::MIN }
+          let(:expected_current_ial) { IAL::ONE }
+
+          it_behaves_like 'a created credential level'
+        end
+
+        context 'and requested_acr is set to loa1' do
+          let(:requested_acr) { SignIn::Constants::Auth::LOA1 }
+          let(:expected_current_ial) { IAL::ONE }
+
+          it_behaves_like 'a created credential level'
+        end
       end
     end
 
@@ -309,10 +361,9 @@ RSpec.describe SignIn::CredentialLevelCreator do
 
           context 'and requested_acr is set to loa3' do
             let(:requested_acr) { SignIn::Constants::Auth::LOA3 }
-            let(:expected_current_ial) { IAL::TWO }
-            let(:expected_auto_uplevel) { true }
+            let(:expected_error_code) { SignIn::Constants::ErrorCode::GENERIC_EXTERNAL_ISSUE }
 
-            it_behaves_like 'an auto-uplevel capable credential'
+            it_behaves_like 'unverified credential blocked error'
           end
 
           context 'and requested_acr is set to min' do

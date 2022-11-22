@@ -125,45 +125,6 @@ RSpec.describe User, type: :model do
     end
   end
 
-  describe '#person_types' do
-    let(:user) { build(:user, person_types: identity_person_types) }
-    let(:mpi_profile) { build(:mvi_profile, person_types: mpi_person_types) }
-    let(:identity_person_types) { ['some_identity_person_types'] }
-    let(:mpi_person_types) { 'some_mpi_person_types' }
-
-    before do
-      allow(user).to receive(:mpi).and_return(mpi_profile)
-    end
-
-    context 'when person_types on User Identity exists' do
-      let(:identity_person_types) { ['some_identity_person_types'] }
-
-      it 'returns person_types off the User Identity' do
-        expect(user.person_types).to eq(identity_person_types)
-      end
-    end
-
-    context 'when person_types on identity does not exist' do
-      let(:identity_person_types) { nil }
-
-      context 'and person_types on MPI Data exists' do
-        let(:mpi_person_types) { 'some_mpi_person_types' }
-
-        it 'returns person_types from the MPI Data' do
-          expect(user.person_types).to eq([mpi_person_types])
-        end
-      end
-
-      context 'and person_types on MPI Data does not exist' do
-        let(:mpi_person_types) { nil }
-
-        it 'returns an empty array' do
-          expect(user.person_types).to eq([])
-        end
-      end
-    end
-  end
-
   describe '#all_emails' do
     let(:user) { build(:user, :loa3) }
     let(:vet360_email) { user.vet360_contact_info.email.email_address }
@@ -436,10 +397,6 @@ RSpec.describe User, type: :model do
           expect(user.gender).to be(user.identity.gender)
         end
 
-        it 'fetches person_types from IDENTITY' do
-          expect(user.identity_person_types).to be(user.identity.person_types)
-        end
-
         it 'fetches properly parsed birth_date from IDENTITY' do
           expect(user.birth_date).to eq(Date.parse(user.identity.birth_date).iso8601)
         end
@@ -542,7 +499,7 @@ RSpec.describe User, type: :model do
         end
 
         it 'fetches person_types from MPI' do
-          expect(user.mpi_person_types).to be(mvi_profile.person_types)
+          expect(user.person_types).to be(mvi_profile.person_types)
         end
 
         it 'fetches gender from MPI' do
@@ -1170,8 +1127,21 @@ RSpec.describe User, type: :model do
       context 'and there is not an mhv_correlation_id' do
         let(:mhv_correlation_id) { nil }
 
-        it 'returns user verification with a matching idme_uuid' do
-          expect(user.user_verification.idme_uuid).to eq(idme_uuid)
+        context 'and user has an idme_uuid' do
+          let(:idme_uuid) { 'some-idme-uuid' }
+
+          it 'returns user verification with a matching idme_uuid' do
+            expect(user.user_verification.idme_uuid).to eq(idme_uuid)
+          end
+        end
+
+        context 'and user does not have an idme_uuid' do
+          let(:idme_uuid) { nil }
+          let(:user_verification) { nil }
+
+          it 'returns nil' do
+            expect(user.user_verification).to be nil
+          end
         end
       end
     end
@@ -1190,8 +1160,21 @@ RSpec.describe User, type: :model do
       context 'and there is not an edipi' do
         let(:edipi) { nil }
 
-        it 'returns user verification with a matching idme_uuid' do
-          expect(user.user_verification.idme_uuid).to eq(idme_uuid)
+        context 'and user has an idme_uuid' do
+          let(:idme_uuid) { 'some-idme-uuid' }
+
+          it 'returns user verification with a matching idme_uuid' do
+            expect(user.user_verification.idme_uuid).to eq(idme_uuid)
+          end
+        end
+
+        context 'and user does not have an idme_uuid' do
+          let(:idme_uuid) { nil }
+          let(:user_verification) { nil }
+
+          it 'returns nil' do
+            expect(user.user_verification).to be nil
+          end
         end
       end
     end
@@ -1207,10 +1190,22 @@ RSpec.describe User, type: :model do
 
     context 'when user is logged in with idme' do
       let(:authn_context) { LOA::IDME_LOA1_VETS }
-      let(:idme_uuid) { 'some-idme-uuid' }
 
-      it 'returns user verification with a matching idme_uuid' do
-        expect(user.user_verification.idme_uuid).to eq(idme_uuid)
+      context 'and user has an idme_uuid' do
+        let(:idme_uuid) { 'some-idme-uuid' }
+
+        it 'returns user verification with a matching idme_uuid' do
+          expect(user.user_verification.idme_uuid).to eq(idme_uuid)
+        end
+      end
+
+      context 'and user does not have an idme_uuid' do
+        let(:idme_uuid) { nil }
+        let(:user_verification) { nil }
+
+        it 'returns nil' do
+          expect(user.user_verification).to be nil
+        end
       end
     end
   end
@@ -1239,6 +1234,38 @@ RSpec.describe User, type: :model do
     context 'when no Inherited Proof Verified User Account is found' do
       it 'returns false' do
         expect(user.inherited_proof_verified).to be false
+      end
+    end
+  end
+
+  describe '#address' do
+    let(:user) { build(:user, :loa3, :mvi_profile_street_and_suffix) }
+    let(:mvi_profile) { build(:mvi_profile, suffix: 'Jr.') }
+
+    before do
+      stub_mpi(mvi_profile)
+    end
+
+    context 'user has an address' do
+      it 'returns address as hash, with user_identity record\'s address preferred over mpi_profile\'s address' do
+        expect(user.address).to eq(user.identity.address)
+        user.identity.address = nil
+        expect(user.address).to eq(user.send(:mpi_profile).address.to_h)
+      end
+    end
+
+    context 'user does not have an address' do
+      it 'returns a hash where all values are nil' do
+        user.identity.address = nil
+        user.send(:mpi_profile).address = nil
+        expect(user.address).to eq({
+                                     street: nil,
+                                     street2: nil,
+                                     city: nil,
+                                     state: nil,
+                                     country: nil,
+                                     postal_code: nil
+                                   })
       end
     end
   end
