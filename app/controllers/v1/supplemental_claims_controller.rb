@@ -23,6 +23,8 @@ module V1
         form4142_resp = decision_review_service.process_form4142_submission(
           request_body: request_body_obj, form4142: form4142, user: @current_user, response: sc_response
         )
+        # We are not using this right now, but keeping it here incase we decide we want to return this
+        # or do some action based on the central mail response, currently we do not.
         merged_response[:form4142] = { body: form4142_resp.body, status: form4142_resp.status }
       end
 

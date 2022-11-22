@@ -66,7 +66,6 @@ RSpec.describe V1::SupplementalClaimsController do
     it 'creates a supplemental claim and sends a 4142 form when 4142 info is provided' do
       VCR.use_cassette('decision_review/SC-CREATE-RESPONSE-WITH-4142-200_V1') do
         VCR.use_cassette('central_mail/submit_4142') do
-          pre_existing_generated_files = Dir['tmp/*']
           previous_appeal_submission_ids = AppealSubmission.all.pluck :submitted_appeal_uuid
           subject
           expect(response).to be_successful
@@ -75,10 +74,6 @@ RSpec.describe V1::SupplementalClaimsController do
           expect(previous_appeal_submission_ids).not_to include id
           appeal_submission = AppealSubmission.find_by(submitted_appeal_uuid: id)
           expect(appeal_submission.type_of_appeal).to eq('SC')
-          post_existing_files = Dir['tmp/*']
-          expect(post_existing_files.count - 1).to eq(pre_existing_generated_files.count)
-          generated_file = post_existing_files - pre_existing_generated_files
-          expect(MIME::Types.type_for(generated_file).first.content_type).to eq('application/pdf')
         end
       end
     end
