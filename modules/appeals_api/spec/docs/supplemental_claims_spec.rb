@@ -6,7 +6,7 @@ require Rails.root.join('spec', 'rswag_override.rb').to_s
 require 'rails_helper'
 require AppealsApi::Engine.root.join('spec', 'spec_helper.rb')
 
-# rubocop:disable RSpec/VariableName, RSpec/ScatteredSetup, RSpec/RepeatedExample, Layout/LineLength
+# rubocop:disable RSpec/VariableName, RSpec/RepeatedExample, Layout/LineLength
 describe 'Supplemental Claims', swagger_doc: DocHelpers.output_json_path, type: :request do
   include DocHelpers
   let(:apikey) { 'apikey' }
@@ -481,4 +481,4 @@ describe 'Supplemental Claims', swagger_doc: DocHelpers.output_json_path, type: 
     end
   end
 end
-# rubocop:enable RSpec/VariableName, RSpec/ScatteredSetup, RSpec/RepeatedExample, Layout/LineLength
+# rubocop:enable RSpec/VariableName, RSpec/RepeatedExample, Layout/LineLength
