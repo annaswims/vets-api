@@ -121,6 +121,8 @@ describe 'Notice of Disagreements', swagger_doc: DocHelpers.output_json_path, ty
 
         it_behaves_like 'rswag example', desc: 'returns a 422 response'
       end
+
+      it_behaves_like 'rswag 500 response'
     end
   end
 
@@ -158,6 +160,8 @@ describe 'Notice of Disagreements', swagger_doc: DocHelpers.output_json_path, ty
 
         it_behaves_like 'rswag example', desc: 'returns a 404 response', scopes: scopes
       end
+
+      it_behaves_like 'rswag 500 response'
     end
   end
 
@@ -173,6 +177,8 @@ describe 'Notice of Disagreements', swagger_doc: DocHelpers.output_json_path, ty
         response '200', 'the JSON Schema for POST /notice_of_disagreements' do
           it_behaves_like 'rswag example', desc: 'returns a 200 response'
         end
+
+        it_behaves_like 'rswag 500 response'
       end
     end
   else
@@ -207,10 +213,12 @@ describe 'Notice of Disagreements', swagger_doc: DocHelpers.output_json_path, ty
         end
 
         response '404', '`schema_type` not found' do
-          schema JSON.parse(File.read(AppealsApi::Engine.root.join('spec', 'support', 'schemas', 'errors', '404.json')))
+          schema '$ref' => '#/components/schemas/errorModel'
           let(:schema_type) { 'invalid_schema_type' }
           it_behaves_like 'rswag example', desc: 'schema type not found', scopes: scopes
         end
+
+        it_behaves_like 'rswag 500 response'
       end
     end
   end
@@ -297,6 +305,8 @@ describe 'Notice of Disagreements', swagger_doc: DocHelpers.output_json_path, ty
 
         it_behaves_like 'rswag example', desc: 'Not JSON object', extract_desc: true, scopes: scopes
       end
+
+      it_behaves_like 'rswag 500 response'
     end
   end
 
@@ -340,107 +350,24 @@ describe 'Notice of Disagreements', swagger_doc: DocHelpers.output_json_path, ty
 
       response '400', 'Bad Request' do
         let(:nod_uuid) { nil }
-
-        schema type: :object,
-               properties: {
-                 errors: {
-                   type: :array,
-                   items: {
-                     properties: {
-                       status: {
-                         type: 'integer',
-                         example: 400
-                       },
-                       detail: {
-                         type: 'string',
-                         example: 'Must supply a corresponding NOD id in order to submit evidence'
-                       }
-                     }
-                   }
-                 }
-               }
-
+        schema '$ref' => '#/components/schemas/errorModel'
         it_behaves_like 'rswag example', desc: 'returns a 400 response', skip_match: true, scopes: scopes
       end
 
       response '404', 'Associated Notice of Disagreement not found' do
         let(:nod_uuid) { '101010101010101010101010' }
-
-        schema type: :object,
-               properties: {
-                 errors: {
-                   type: :array,
-                   items: {
-                     properties: {
-                       status: {
-                         type: 'integer',
-                         example: 404
-                       },
-                       detail: {
-                         type: 'string',
-                         example: 'The record identified by {nod_uuid} not found.'
-                       }
-                     }
-                   }
-                 }
-               }
-
+        schema '$ref' => '#/components/schemas/errorModel'
         it_behaves_like 'rswag example', desc: 'returns a 404 response', scopes: scopes
       end
 
       response '422', 'Validation errors' do
         let(:nod_uuid) { FactoryBot.create(:notice_of_disagreement_v2, :board_review_direct_review).id }
         let(:'X-VA-File-Number') { '987654321' }
-
         schema '$ref' => '#/components/schemas/errorModel'
-
         it_behaves_like 'rswag example', desc: 'returns a 422 response', scopes: scopes
       end
 
-      response '500', 'Unknown Error' do
-        let(:nod_uuid) { nil }
-
-        schema type: :object,
-               properties: {
-                 errors: {
-                   type: :array,
-                   items: {
-                     properties: {
-                       status: {
-                         type: 'integer',
-                         example: 500
-                       },
-                       detail: {
-                         type: 'string',
-                         example: 'An unknown error has occurred.'
-                       },
-                       code: {
-                         type: 'string',
-                         example: '151'
-                       },
-                       title: {
-                         type: 'string',
-                         example: 'Internal Server Error'
-                       }
-                     }
-                   }
-                 },
-                 status: {
-                   type: 'integer',
-                   example: 500
-                 }
-               }
-
-        before do |example|
-          with_rswag_auth(scopes) do
-            submit_request(example.metadata)
-          end
-        end
-
-        it 'returns a 500 response' do |example|
-          # NOOP
-        end
-      end
+      it_behaves_like 'rswag 500 response'
     end
   end
 
@@ -485,6 +412,8 @@ describe 'Notice of Disagreements', swagger_doc: DocHelpers.output_json_path, ty
           # noop
         end
       end
+
+      it_behaves_like 'rswag 500 response'
     end
   end
 
@@ -516,12 +445,12 @@ describe 'Notice of Disagreements', swagger_doc: DocHelpers.output_json_path, ty
       end
 
       response '404', 'Notice of Disagreement Evidence Submission not found' do
-        schema JSON.parse(File.read(AppealsApi::Engine.root.join('spec', 'support', 'schemas', 'errors', '404.json')))
-
+        schema '$ref' => '#/components/schemas/errorModel'
         let(:uuid) { 'invalid' }
-
         it_behaves_like 'rswag example', desc: 'returns a 404 response', scopes: scopes
       end
+
+      it_behaves_like 'rswag 500 response'
     end
   end
 end

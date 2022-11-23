@@ -27,6 +27,14 @@
               "pointer": {
                 "type": "string",
                 "description": "Pointer to source of error"
+              },
+              "parameter": {
+                "type": "string",
+                "description": "Invalid request parameter"
+              },
+              "header": {
+                "type": "string",
+                "description": "Invalid header"
               }
             }
           },
