@@ -11,18 +11,19 @@ describe Sidekiq::Form526JobStatusTracker::JobTracker do
   end
 
   context 'with an exhausted callback message' do
+   
+    let!(:form526_submission) { create :form526_submission }
+    let!(:from526_job_status) do
+      create :form526_job_status, job_id: msg['jid'], form526_submission: form526_submission
+    end
     let(:msg) do
       {
         'class' => 'EVSS::DisabilityCompensationForm::SubmitForm526AllClaim',
         'jid' => SecureRandom.uuid,
-        'args' => [123],
+        'args' => [form526_submission.id],
         'error_message' => 'Did not receive a timely response from an upstream server',
         'error_class' => 'Common::Exceptions::GatewayTimeout'
       }
-    end
-    let!(:form526_submission) { create :form526_submission }
-    let!(:from526_job_status) do
-      create :form526_job_status, job_id: msg['jid'], form526_submission: form526_submission
     end
 
     it 'tracks an exhausted job' do

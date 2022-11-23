@@ -278,8 +278,7 @@ module DecisionReviewV1
     end
 
     def submit_form4142(form_data:, user:, response:)
-      processor = DecisionReviewV1::Processor::Form4142Processor.new(form_data: form_data, user: user,
-                                                                     response: response)
+      processor = DecisionReviewV1::Processor::Form4142Processor.new(form_data: form_data, response: response)
       CentralMail::Service.new.upload(processor.request_body)
     end
   end

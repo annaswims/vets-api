@@ -830,3 +830,7 @@ features:
   move_form_back_button:
     actor_type: user
     description: Test moving form back button to the top of the page
+  form526_submit_to_central_mail_on_exhaustion:
+    actor_type: user
+    description: Enables backup submission to Central Mail Portal of exhausted 526 claims
+    enable_in_development: true

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require 'sidekiq/form526_job_status_tracker/backup_submission'
 
 module Sidekiq
   module Form526JobStatusTracker
@@ -31,6 +32,10 @@ module Sidekiq
             updated_at: timestamp
           }
 
+          backup = Sidekiq::Form526JobStatusTracker::BackupSubmission::Processor.new(form526_submission_id)
+          backup.process!
+ap backup; 
+raise "KKKK"
           form_job_status = Form526JobStatus.find_by(job_id: job_id)
           bgjob_errors = form_job_status.bgjob_errors || {}
           new_error = {
@@ -48,7 +53,6 @@ module Sidekiq
           Form526JobStatus.upsert(values, unique_by: :job_id)
           # rubocop:enable Rails/SkipsModelValidations
 
-          submission_obj = Form526Submission.find(form526_submission_id)
           additional_birls_to_try = submission_obj.birls_ids_that_havent_been_tried_yet
           vagov_id = JSON.parse(submission_obj.auth_headers_json)['va_eauth_service_transaction_id']
 
@@ -61,12 +65,14 @@ module Sidekiq
                                  remaining_birls: additional_birls_to_try,
                                  va_eauth_service_transaction_id: vagov_id
           )
-        rescue => e
-          emsg = 'Form526 Exhausted, with error tracking job exhausted'
-          error_details = { message: emsg, error: e, class: msg['class'].demodulize, jid: msg['jid'] }
-          ::Rails.logger.error(emsg, error_details)
-        ensure
-          Metrics.new(statsd_key_prefix).increment_exhausted
+        
+          
+        # rescue => e
+        #   emsg = 'Form526 Exhausted, with error tracking job exhausted'
+        #   error_details = { message: emsg, error: e, class: msg['class'].demodulize, jid: msg['jid'] }
+        #   ::Rails.logger.error(emsg, error_details)
+        # ensure
+        #   Metrics.new(statsd_key_prefix).increment_exhausted
         end
         # rubocop:enable Metrics/MethodLength
       end
