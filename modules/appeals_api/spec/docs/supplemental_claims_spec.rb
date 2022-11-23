@@ -206,7 +206,7 @@ describe 'Supplemental Claims', swagger_doc: DocHelpers.output_json_path, type: 
         end
 
         response '404', '`schema_type` not found' do
-          schema JSON.parse(File.read(AppealsApi::Engine.root.join('spec', 'support', 'schemas', 'errors', '404.json')))
+          schema '$ref' => '#/components/schemas/errorModel'
           let(:schema_type) { 'invalid_schema_type' }
           it_behaves_like 'rswag example', desc: 'schema type not found', scopes: scopes
         end
@@ -379,9 +379,7 @@ describe 'Supplemental Claims', swagger_doc: DocHelpers.output_json_path, type: 
 
       response '404', 'Associated Supplemental Claim not found' do
         let(:sc_uuid) { nil }
-
-        schema JSON.parse(File.read(AppealsApi::Engine.root.join('spec', 'support', 'schemas', 'errors', '404.json')))
-
+        schema '$ref' => '#/components/schemas/errorModel'
         it_behaves_like 'rswag example', desc: 'returns a 404 response', scopes: scopes
       end
 

@@ -62,9 +62,7 @@ describe 'Legacy Appeals', swagger_doc: DocHelpers.output_json_path, type: :requ
       response '404', 'Veteran record not found' do
         let(:'X-VA-SSN') { '234840293' }
 
-        schema JSON.parse(
-          File.read(AppealsApi::Engine.root.join('spec', 'support', 'schemas', 'errors', '404.json'))
-        )
+        schema '$ref' => '#/components/schemas/errorModel'
 
         before do |example|
           VCR.use_cassette('caseflow/legacy_appeals_no_veteran_record') do
