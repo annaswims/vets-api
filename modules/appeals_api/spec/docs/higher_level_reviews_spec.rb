@@ -156,6 +156,8 @@ describe 'Higher-Level Reviews', swagger_doc: DocHelpers.output_json_path, type:
           assert_response_matches_metadata(example.metadata)
         end
       end
+
+      it_behaves_like 'rswag 500 response'
     end
   end
 
@@ -180,23 +182,9 @@ describe 'Higher-Level Reviews', swagger_doc: DocHelpers.output_json_path, type:
 
         let(:uuid) { FactoryBot.create(:minimal_higher_level_review_v2).id }
 
-        before do |example|
-          with_rswag_auth(scopes) do
-            submit_request(example.metadata)
-          end
-        end
-
-        after do |example|
-          example.metadata[:response][:content] = {
-            'application/json' => {
-              example: normalize_appeal_response(response)
-            }
-          }
-        end
-
-        it 'returns a 200 response' do |example|
-          assert_response_matches_metadata(example.metadata)
-        end
+        it_behaves_like 'rswag example', desc: 'returns a 200 response',
+                                         response_wrapper: :normalize_appeal_response,
+                                         scopes: scopes
       end
 
       response '404', 'Higher-Level Review not found' do
@@ -204,24 +192,10 @@ describe 'Higher-Level Reviews', swagger_doc: DocHelpers.output_json_path, type:
 
         let(:uuid) { 'invalid' }
 
-        before do |example|
-          with_rswag_auth(scopes) do
-            submit_request(example.metadata)
-          end
-        end
-
-        after do |example|
-          example.metadata[:response][:content] = {
-            'application/json' => {
-              example: JSON.parse(response.body, symbolize_names: true)
-            }
-          }
-        end
-
-        it 'returns a 404 response' do |example|
-          assert_response_matches_metadata(example.metadata)
-        end
+        it_behaves_like 'rswag example', desc: 'returns a 404 response', scopes: scopes
       end
+
+      it_behaves_like 'rswag 500 response'
     end
   end
 
@@ -331,6 +305,8 @@ describe 'Higher-Level Reviews', swagger_doc: DocHelpers.output_json_path, type:
           end
         end
 
+        it_behaves_like 'rswag 500 response'
+
         response '502', 'Unknown error' do
           # schema JSON.parse(File.read(AppealsApi::Engine.root.join('spec', 'support', 'schemas', 'errors', 'default.json')))
           # #/errors/0/source is a string 'Appeals Caseflow' instead of an object...
@@ -375,6 +351,8 @@ describe 'Higher-Level Reviews', swagger_doc: DocHelpers.output_json_path, type:
         response '200', 'the JSON Schema for POST /higher_level_reviews' do
           it_behaves_like 'rswag example', desc: 'returns a 200 response'
         end
+
+        it_behaves_like 'rswag 500 response'
       end
     end
   else
@@ -413,6 +391,8 @@ describe 'Higher-Level Reviews', swagger_doc: DocHelpers.output_json_path, type:
           let(:schema_type) { 'invalid_schema_type' }
           it_behaves_like 'rswag example', desc: 'schema type not found', scopes: scopes
         end
+
+        it_behaves_like 'rswag 500 response'
       end
     end
   end
@@ -594,6 +574,8 @@ describe 'Higher-Level Reviews', swagger_doc: DocHelpers.output_json_path, type:
           assert_response_matches_metadata(example.metadata)
         end
       end
+
+      it_behaves_like 'rswag 500 response'
     end
   end
 end
