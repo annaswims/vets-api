@@ -170,6 +170,8 @@ describe 'Contestable Issues', swagger_doc: DocHelpers.output_json_path, type: :
         end
       end
 
+      it_behaves_like 'rswag 500 response'
+
       response '502', 'Unknown error' do
         # schema JSON.parse(File.read(AppealsApi::Engine.root.join('spec', 'support', 'schemas', 'errors', 'default.json')))
         # #/errors/0/source is a string 'Appeals Caseflow' instead of an object...
