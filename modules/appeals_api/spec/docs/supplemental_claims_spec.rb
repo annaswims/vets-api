@@ -114,6 +114,8 @@ describe 'Supplemental Claims', swagger_doc: DocHelpers.output_json_path, type: 
 
         it_behaves_like 'rswag example', desc: 'returns a 422 response', scopes: scopes
       end
+
+      it_behaves_like 'rswag 500 response'
     end
   end
 
@@ -151,6 +153,8 @@ describe 'Supplemental Claims', swagger_doc: DocHelpers.output_json_path, type: 
 
         it_behaves_like 'rswag example', desc: 'returns a 404 response', scopes: scopes
       end
+
+      it_behaves_like 'rswag 500 response'
     end
   end
 
@@ -166,6 +170,8 @@ describe 'Supplemental Claims', swagger_doc: DocHelpers.output_json_path, type: 
         response '200', 'the JSON Schema for POST /supplemental_claims' do
           it_behaves_like 'rswag example', desc: 'returns a 200 response'
         end
+
+        it_behaves_like 'rswag 500 response'
       end
     end
   else
@@ -204,6 +210,8 @@ describe 'Supplemental Claims', swagger_doc: DocHelpers.output_json_path, type: 
           let(:schema_type) { 'invalid_schema_type' }
           it_behaves_like 'rswag example', desc: 'schema type not found', scopes: scopes
         end
+
+        it_behaves_like 'rswag 500 response'
       end
     end
   end
@@ -291,6 +299,8 @@ describe 'Supplemental Claims', swagger_doc: DocHelpers.output_json_path, type: 
 
         it_behaves_like 'rswag example', desc: 'returns a 422 response', scopes: scopes
       end
+
+      it_behaves_like 'rswag 500 response'
     end
   end
 
@@ -343,13 +353,21 @@ describe 'Supplemental Claims', swagger_doc: DocHelpers.output_json_path, type: 
                    type: :array,
                    items: {
                      properties: {
-                       status: {
-                         type: 'integer',
-                         example: 400
+                       title: {
+                         type: 'string',
+                         example: 'Bad request'
                        },
                        detail: {
                          type: 'string',
                          example: 'Must supply a corresponding SC id in order to submit evidence'
+                       },
+                       code: {
+                         type: 'string',
+                         example: '400'
+                       },
+                       status: {
+                         type: 'string',
+                         example: '400'
                        }
                      }
                    }
@@ -376,50 +394,7 @@ describe 'Supplemental Claims', swagger_doc: DocHelpers.output_json_path, type: 
         it_behaves_like 'rswag example', desc: 'returns a 422 response', scopes: scopes
       end
 
-      response '500', 'Unknown Error' do
-        let(:sc_uuid) { nil }
-
-        schema type: :object,
-               properties: {
-                 errors: {
-                   type: :array,
-                   items: {
-                     properties: {
-                       status: {
-                         type: 'integer',
-                         example: 500
-                       },
-                       detail: {
-                         type: 'string',
-                         example: 'An unknown error has occurred.'
-                       },
-                       code: {
-                         type: 'string',
-                         example: '151'
-                       },
-                       title: {
-                         type: 'string',
-                         example: 'Internal Server Error'
-                       }
-                     }
-                   }
-                 },
-                 status: {
-                   type: 'integer',
-                   example: 500
-                 }
-               }
-
-        before do |example|
-          with_rswag_auth do
-            submit_request(example.metadata)
-          end
-        end
-
-        it 'returns a 500 response' do |example|
-          # NOOP
-        end
-      end
+      it_behaves_like 'rswag 500 response'
     end
   end
 
@@ -466,6 +441,8 @@ describe 'Supplemental Claims', swagger_doc: DocHelpers.output_json_path, type: 
           # noop
         end
       end
+
+      it_behaves_like 'rswag 500 response'
     end
   end
 
@@ -499,6 +476,8 @@ describe 'Supplemental Claims', swagger_doc: DocHelpers.output_json_path, type: 
 
         it_behaves_like 'rswag example', desc: 'returns a 404 response', scopes: scopes
       end
+
+      it_behaves_like 'rswag 500 response'
     end
   end
 end
