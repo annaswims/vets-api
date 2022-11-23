@@ -208,34 +208,10 @@
                       "title": "Veteran not found",
                       "detail": "A veteran with that SSN was not found in our systems."
                     }
-                  ],
-                  "code": "404",
-                  "detail": "Veteran not found",
-                  "source": "A veteran with that SSN was not found in our systems."
+                  ]
                 },
                 "schema": {
-                  "schema": {
-                    "type": "object",
-                    "properties": {
-                      "errors": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "status": {
-                              "type": "integer",
-                              "enum": [
-                                404
-                              ]
-                            },
-                            "detail": {
-                              "type": "string"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
+                  "$ref": "#/components/schemas/errorModel"
                 }
               }
             }
@@ -266,10 +242,7 @@
                           "title": "Invalid Receipt Date",
                           "detail": "\"2019-02-18\" is before AMA Activation Date (2019-02-19)."
                         }
-                      ],
-                      "code": "invalid_receipt_date",
-                      "detail": "Invalid Receipt Date",
-                      "source": "\"2019-02-18\" is before AMA Activation Date (2019-02-19)."
+                      ]
                     }
                   }
                 },
@@ -512,10 +485,7 @@
             "items": {
               "additionalProperties": false,
               "required": [
-                "title",
-                "detail",
-                "code",
-                "status"
+                "title"
               ],
               "properties": {
                 "title": {

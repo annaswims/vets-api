@@ -2086,28 +2086,7 @@
                   ]
                 },
                 "schema": {
-                  "schema": {
-                    "type": "object",
-                    "properties": {
-                      "errors": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "status": {
-                              "type": "integer",
-                              "enum": [
-                                404
-                              ]
-                            },
-                            "detail": {
-                              "type": "string"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
+                  "$ref": "#/components/schemas/errorModel"
                 }
               }
             }
@@ -2822,10 +2801,7 @@
             "items": {
               "additionalProperties": false,
               "required": [
-                "title",
-                "detail",
-                "code",
-                "status"
+                "title"
               ],
               "properties": {
                 "title": {

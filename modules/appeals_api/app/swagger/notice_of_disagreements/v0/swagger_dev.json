@@ -2957,10 +2957,7 @@
             "items": {
               "additionalProperties": false,
               "required": [
-                "title",
-                "detail",
-                "code",
-                "status"
+                "title"
               ],
               "properties": {
                 "title": {
