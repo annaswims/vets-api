@@ -5,7 +5,7 @@
       "type": "array",
       "items": {
         "additionalProperties": false,
-        "required": ["title", "detail", "code", "status"],
+        "required": ["title"],
         "properties": {
           "title": {
             "type": "string",
