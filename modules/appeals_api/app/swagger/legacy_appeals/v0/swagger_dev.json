@@ -210,6 +210,26 @@
               }
             }
           },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "title": "Internal server error",
+                      "detail": "Internal server error",
+                      "code": "500",
+                      "status": "500"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/errorModel"
+                }
+              }
+            }
+          },
           "502": {
             "description": "Unknown Error",
             "content": {
@@ -327,6 +347,14 @@
                     "pointer": {
                       "type": "string",
                       "description": "Pointer to source of error"
+                    },
+                    "parameter": {
+                      "type": "string",
+                      "description": "Invalid request parameter"
+                    },
+                    "header": {
+                      "type": "string",
+                      "description": "Invalid header"
                     }
                   }
                 },

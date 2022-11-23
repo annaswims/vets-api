@@ -494,6 +494,26 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "title": "Internal server error",
+                      "detail": "Internal server error",
+                      "code": "500",
+                      "status": "500"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/errorModel"
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -837,34 +857,35 @@
                 "example": {
                   "errors": [
                     {
-                      "status": 404,
-                      "detail": "SupplementalClaim with uuid \"invalid\" not found."
+                      "code": "404",
+                      "detail": "SupplementalClaim with uuid invalid not found",
+                      "status": "404",
+                      "title": "Record not found"
                     }
                   ]
                 },
                 "schema": {
-                  "schema": {
-                    "type": "object",
-                    "properties": {
-                      "errors": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "status": {
-                              "type": "integer",
-                              "enum": [
-                                404
-                              ]
-                            },
-                            "detail": {
-                              "type": "string"
-                            }
-                          }
-                        }
-                      }
+                  "$ref": "#/components/schemas/errorModel"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "title": "Internal server error",
+                      "detail": "Internal server error",
+                      "code": "500",
+                      "status": "500"
                     }
-                  }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/errorModel"
                 }
               }
             }
@@ -2211,19 +2232,25 @@
             "content": {
               "application/json": {
                 "example": {
-                  "title": "not_found",
-                  "detail": "The 'invalid_schema_type' request parameter is invalid",
-                  "code": "InvalidSchemaType",
-                  "status": "404",
-                  "source": {
-                    "parameter": "invalid_schema_type"
-                  },
-                  "meta": [
-                    "200995",
-                    "address",
-                    "non_blank_string",
-                    "phone",
-                    "timezone"
+                  "errors": [
+                    {
+                      "title": "not_found",
+                      "detail": "The 'invalid_schema_type' request parameter is invalid",
+                      "code": "InvalidSchemaType",
+                      "status": "404",
+                      "source": {
+                        "parameter": "invalid_schema_type"
+                      },
+                      "meta": {
+                        "available_options": [
+                          "200995",
+                          "address",
+                          "non_blank_string",
+                          "phone",
+                          "timezone"
+                        ]
+                      }
+                    }
                   ]
                 },
                 "schema": {
@@ -2249,6 +2276,26 @@
                       }
                     }
                   }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "title": "Internal server error",
+                      "detail": "Internal server error",
+                      "code": "500",
+                      "status": "500"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/errorModel"
                 }
               }
             }
@@ -2482,6 +2529,26 @@
                           "veteran"
                         ]
                       }
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/errorModel"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "title": "Internal server error",
+                      "detail": "Internal server error",
+                      "code": "500",
+                      "status": "500"
                     }
                   ]
                 },
@@ -2849,7 +2916,9 @@
                   "errors": [
                     {
                       "title": "not_found",
-                      "detail": "SupplementalClaim with uuid  not found"
+                      "detail": "SupplementalClaim with uuid  not found",
+                      "code": "404",
+                      "status": "404"
                     }
                   ]
                 },
@@ -2860,13 +2929,21 @@
                       "type": "array",
                       "items": {
                         "properties": {
-                          "status": {
-                            "type": "integer",
-                            "example": 400
+                          "title": {
+                            "type": "string",
+                            "example": "Bad request"
                           },
                           "detail": {
                             "type": "string",
                             "example": "Must supply a corresponding SC id in order to submit evidence"
+                          },
+                          "code": {
+                            "type": "string",
+                            "example": "400"
+                          },
+                          "status": {
+                            "type": "string",
+                            "example": "400"
                           }
                         }
                       }
@@ -2884,7 +2961,9 @@
                   "errors": [
                     {
                       "title": "not_found",
-                      "detail": "SupplementalClaim with uuid  not found"
+                      "detail": "SupplementalClaim with uuid  not found",
+                      "code": "404",
+                      "status": "404"
                     }
                   ]
                 },
@@ -2936,40 +3015,21 @@
             }
           },
           "500": {
-            "description": "Unknown Error",
+            "description": "Internal Server Error",
             "content": {
               "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "errors": {
-                      "type": "array",
-                      "items": {
-                        "properties": {
-                          "status": {
-                            "type": "integer",
-                            "example": 500
-                          },
-                          "detail": {
-                            "type": "string",
-                            "example": "An unknown error has occurred."
-                          },
-                          "code": {
-                            "type": "string",
-                            "example": "151"
-                          },
-                          "title": {
-                            "type": "string",
-                            "example": "Internal Server Error"
-                          }
-                        }
-                      }
-                    },
-                    "status": {
-                      "type": "integer",
-                      "example": 500
+                "example": {
+                  "errors": [
+                    {
+                      "title": "Internal server error",
+                      "detail": "Internal server error",
+                      "code": "500",
+                      "status": "500"
                     }
-                  }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/errorModel"
                 }
               }
             }
@@ -3030,6 +3090,28 @@
                       "description": "Identifier for debug purposes"
                     }
                   }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "title": "Internal server error",
+                      "detail": "Internal server error",
+                      "code": "500",
+                      "status": "500"
+                    }
+                  ]
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "$ref": "#/components/schemas/errorModel"
                 }
               }
             }
@@ -3120,28 +3202,27 @@
                   ]
                 },
                 "schema": {
-                  "schema": {
-                    "type": "object",
-                    "properties": {
-                      "errors": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "status": {
-                              "type": "integer",
-                              "enum": [
-                                404
-                              ]
-                            },
-                            "detail": {
-                              "type": "string"
-                            }
-                          }
-                        }
-                      }
+                  "$ref": "#/components/schemas/errorModel"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "title": "Internal server error",
+                      "detail": "Internal server error",
+                      "code": "500",
+                      "status": "500"
                     }
-                  }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/errorModel"
                 }
               }
             }
@@ -3472,6 +3553,14 @@
                     "pointer": {
                       "type": "string",
                       "description": "Pointer to source of error"
+                    },
+                    "parameter": {
+                      "type": "string",
+                      "description": "Invalid request parameter"
+                    },
+                    "header": {
+                      "type": "string",
+                      "description": "Invalid header"
                     }
                   }
                 },

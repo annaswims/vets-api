@@ -458,6 +458,26 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "title": "Internal server error",
+                      "detail": "Internal server error",
+                      "code": "500",
+                      "status": "500"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/errorModel"
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -769,6 +789,26 @@
                       "detail": "HigherLevelReview with uuid invalid not found",
                       "status": "404",
                       "title": "Record not found"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/errorModel"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "title": "Internal server error",
+                      "detail": "Internal server error",
+                      "code": "500",
+                      "status": "500"
                     }
                   ]
                 },
@@ -2024,19 +2064,25 @@
             "content": {
               "application/json": {
                 "example": {
-                  "title": "not_found",
-                  "detail": "The 'invalid_schema_type' request parameter is invalid",
-                  "code": "InvalidSchemaType",
-                  "status": "404",
-                  "source": {
-                    "parameter": "invalid_schema_type"
-                  },
-                  "meta": [
-                    "200996",
-                    "address",
-                    "non_blank_string",
-                    "phone",
-                    "timezone"
+                  "errors": [
+                    {
+                      "title": "not_found",
+                      "detail": "The 'invalid_schema_type' request parameter is invalid",
+                      "code": "InvalidSchemaType",
+                      "status": "404",
+                      "source": {
+                        "parameter": "invalid_schema_type"
+                      },
+                      "meta": {
+                        "available_options": [
+                          "200996",
+                          "address",
+                          "non_blank_string",
+                          "phone",
+                          "timezone"
+                        ]
+                      }
+                    }
                   ]
                 },
                 "schema": {
@@ -2062,6 +2108,26 @@
                       }
                     }
                   }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "title": "Internal server error",
+                      "detail": "Internal server error",
+                      "code": "500",
+                      "status": "500"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/errorModel"
                 }
               }
             }
@@ -2325,6 +2391,26 @@
                       ]
                     }
                   }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/errorModel"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "errors": [
+                    {
+                      "title": "Internal server error",
+                      "detail": "Internal server error",
+                      "code": "500",
+                      "status": "500"
+                    }
+                  ]
                 },
                 "schema": {
                   "$ref": "#/components/schemas/errorModel"
@@ -2762,6 +2848,14 @@
                     "pointer": {
                       "type": "string",
                       "description": "Pointer to source of error"
+                    },
+                    "parameter": {
+                      "type": "string",
+                      "description": "Invalid request parameter"
+                    },
+                    "header": {
+                      "type": "string",
+                      "description": "Invalid header"
                     }
                   }
                 },
