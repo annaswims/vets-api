@@ -2,10 +2,11 @@
 
 module KmsKeyRotation
   class UpdateRecordJob
-    include Sidekiq::Worker
+    include Sidekiq::Job
 
-    def perform(record:)
-      record.rotate_kms_key!
+    def perform(record)
+      puts 'perform key rotation!'
+      # record.rotate_kms_key!
     end
   end
 end
