@@ -89,7 +89,7 @@ module SignIn
     end
 
     def validity_length
-      client_config[:refresh_token_duration]
+      client_config&.dig(:refresh_token_duration)
     end
 
     def updated_anti_csrf_token
@@ -97,7 +97,7 @@ module SignIn
     end
 
     def anti_csrf_enabled_client?
-      client_config[:anti_csrf]
+      client_config&.dig(:anti_csrf)
     end
 
     def client_config

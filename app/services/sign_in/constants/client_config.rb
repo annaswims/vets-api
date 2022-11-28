@@ -34,12 +34,6 @@ module SignIn
           refresh_token_duration: Constants::RefreshToken::VALIDITY_LENGTH_SHORT_MINUTES.minutes
         },
       }
-      AUDIENCE = [MOBILE_AUDIENCE = 'vamobile', MOBILE_TEST_AUDIENCE = 'vamobile', WEB_AUDIENCE = 'va.gov'].freeze
-      COOKIE_AUTH = [WEB_CLIENT].freeze
-      API_AUTH = [MOBILE_CLIENT, MOBILE_TEST_CLIENT].freeze
-      ANTI_CSRF_ENABLED = [WEB_CLIENT].freeze
-      SHORT_TOKEN_EXPIRATION = [WEB_CLIENT].freeze
-      LONG_TOKEN_EXPIRATION = [MOBILE_CLIENT, MOBILE_TEST_CLIENT].freeze
     end
   end
 end

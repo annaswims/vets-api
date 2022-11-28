@@ -62,7 +62,7 @@ module SignIn
     end
 
     def anti_csrf_enabled_client?
-      Constants::ClientConfig::CLIENTS[:"#{session.client_id}"][:anti_csrf]
+      Constants::ClientConfig::CLIENTS[:"#{session.client_id}"]&.dig(:anti_csrf)
     end
 
     def get_hash(object)

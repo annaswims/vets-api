@@ -82,7 +82,7 @@ module SignIn
     end
 
     def validity_length
-      Constants::ClientConfig::CLIENTS[:"#{client_id}"][:access_token_duration]
+      Constants::ClientConfig::CLIENTS[:"#{client_id}"]&.dig(:access_token_duration)
     end
   end
 end

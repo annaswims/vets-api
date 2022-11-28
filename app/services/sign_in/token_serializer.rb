@@ -78,15 +78,15 @@ module SignIn
     end
 
     def cookie_authentication_client?
-      client_config[:cookie_auth] if client_config
+      client_config&.dig(:cookie_auth)
     end
 
     def api_authentication_client?
-      (client_config[:cookie_auth] == false) if client_config
+      (client_config&.dig(:cookie_auth) == false)
     end
 
     def anti_csrf_enabled_client?
-      client_config[:anti_csrf] if client_config
+      client_config&.dig(:anti_csrf)
     end
 
     def session_expiration
