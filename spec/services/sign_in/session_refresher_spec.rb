@@ -44,7 +44,7 @@ RSpec.describe SignIn::SessionRefresher do
       after { Timecop.return }
 
       context 'when client id is in list of anti csrf enabled clients' do
-        let(:client_id) { SignIn::Constants::ClientConfig::ANTI_CSRF_ENABLED.first }
+        let(:client_id) { SignIn::Constants::ClientConfig::WEB_CLIENT }
 
         context 'and anti csrf token does not match value in refresh token' do
           let(:input_anti_csrf_token) { 'some-arbitrary-csrf-token-value' }
@@ -66,7 +66,7 @@ RSpec.describe SignIn::SessionRefresher do
               end
 
               context 'and client_id is set to a short token expiration configuration' do
-                let(:client_id) { SignIn::Constants::ClientConfig::SHORT_TOKEN_EXPIRATION.first }
+                let(:client_id) { SignIn::Constants::ClientConfig::WEB_CLIENT }
                 let(:refresh_expiration_time) { SignIn::Constants::RefreshToken::VALIDITY_LENGTH_SHORT_MINUTES.minutes }
                 let(:updated_session_expiration) { Time.zone.now + refresh_expiration_time }
 
@@ -80,7 +80,7 @@ RSpec.describe SignIn::SessionRefresher do
               end
 
               context 'and client_id is set to a long token expiration configuration' do
-                let(:client_id) { SignIn::Constants::ClientConfig::LONG_TOKEN_EXPIRATION.first }
+                let(:client_id) { SignIn::Constants::ClientConfig::MOBILE_CLIENT }
                 let(:refresh_expiration_time) { SignIn::Constants::RefreshToken::VALIDITY_LENGTH_LONG_DAYS.days }
                 let(:updated_session_expiration) { Time.zone.now + refresh_expiration_time }
 

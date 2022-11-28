@@ -78,22 +78,15 @@ module SignIn
     end
 
     def cookie_authentication_client?
-      # Constants::ClientConfig::COOKIE_AUTH.include?(client_id)
-      if (client_config = Constants::ClientConfig::CLIENTS[:"#{client_id}"])
-        client_config[:cookie_auth]
-      end
+      client_config[:cookie_auth] if client_config
     end
 
     def api_authentication_client?
-      if (client_config = Constants::ClientConfig::CLIENTS[:"#{client_id}"])
-        client_config[:cookie_auth] == false
-      end
+      (client_config[:cookie_auth] == false) if client_config
     end
 
     def anti_csrf_enabled_client?
-      if (client_config = Constants::ClientConfig::CLIENTS[:"#{client_id}"])
-        client_config[:anti_csrf]
-      end
+      client_config[:anti_csrf] if client_config
     end
 
     def session_expiration
@@ -119,6 +112,10 @@ module SignIn
 
     def client_id
       @client_id ||= session_container.client_id
+    end
+
+    def client_config
+      @client_config ||= Constants::ClientConfig::CLIENTS[:"#{client_id}"]
     end
   end
 end

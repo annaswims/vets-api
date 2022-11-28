@@ -74,7 +74,7 @@ RSpec.describe SignIn::SessionCreator do
         end
 
         context 'and client_id is set to a short token expiration configuration' do
-          let(:client_id) { SignIn::Constants::ClientConfig::SHORT_TOKEN_EXPIRATION.first }
+          let(:client_id) { SignIn::Constants::ClientConfig::WEB_CLIENT }
           let(:refresh_expiration_time) { SignIn::Constants::RefreshToken::VALIDITY_LENGTH_SHORT_MINUTES.minutes }
 
           it 'creates a session with the expected expiration time' do
@@ -83,7 +83,7 @@ RSpec.describe SignIn::SessionCreator do
         end
 
         context 'and client_id is set to a long token expiration configuration' do
-          let(:client_id) { SignIn::Constants::ClientConfig::LONG_TOKEN_EXPIRATION.first }
+          let(:client_id) { SignIn::Constants::ClientConfig::MOBILE_CLIENT }
           let(:refresh_expiration_time) { SignIn::Constants::RefreshToken::VALIDITY_LENGTH_LONG_DAYS.days }
 
           it 'creates a session with the expected expiration time' do

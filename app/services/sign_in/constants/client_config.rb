@@ -3,7 +3,11 @@
 module SignIn
   module Constants
     module ClientConfig
-      CLIENT_IDS = [MOBILE_CLIENT = 'mobile', MOBILE_TEST_CLIENT = 'mobile_test', WEB_CLIENT = 'web'].freeze
+      CLIENT_IDS = [
+        WEB_CLIENT = 'web',
+        MOBILE_CLIENT = 'mobile',
+        MOBILE_TEST_CLIENT = 'mobile_test'
+      ].freeze
       CLIENTS = {
         "#{WEB_CLIENT}": {
           cookie_auth: true,

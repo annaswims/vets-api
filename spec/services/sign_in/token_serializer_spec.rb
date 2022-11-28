@@ -21,7 +21,7 @@ RSpec.describe SignIn::TokenSerializer do
     let(:refresh_token) { create(:refresh_token) }
     let(:access_token) { create(:access_token) }
     let(:anti_csrf_token) { 'some-anti-csrf-token' }
-    let(:client_id) { SignIn::Constants::ClientConfig::CLIENT_IDS.first }
+    let(:client_id) { SignIn::Constants::ClientConfig::MOBILE_CLIENT }
     let(:encoded_access_token) do
       SignIn::AccessTokenJwtEncoder.new(access_token: access_token).perform
     end
@@ -114,7 +114,7 @@ RSpec.describe SignIn::TokenSerializer do
     end
 
     context 'when client id is in the list of api auth clients' do
-      let(:client_id) { SignIn::Constants::ClientConfig::API_AUTH.first }
+      let(:client_id) { SignIn::Constants::ClientConfig::MOBILE_CLIENT }
       let(:token_payload) { { access_token: encoded_access_token, refresh_token: encrypted_refresh_token } }
       let(:expected_json_payload) { { data: token_payload } }
 

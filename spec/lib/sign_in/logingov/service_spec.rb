@@ -171,7 +171,7 @@ describe SignIn::Logingov::Service do
   end
 
   describe '#normalized_attributes' do
-    let(:client_id) { SignIn::Constants::ClientConfig::COOKIE_AUTH }
+    let(:client_id) { SignIn::Constants::ClientConfig::WEB_CLIENT }
     let(:expected_standard_attributes) do
       {
         logingov_uuid: user_uuid,

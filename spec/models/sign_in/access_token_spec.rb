@@ -19,7 +19,7 @@ RSpec.describe SignIn::AccessToken, type: :model do
 
   let(:session_handle) { create(:oauth_session).handle }
   let(:user_uuid) { create(:user_account).id }
-  let(:client_id) { SignIn::Constants::ClientConfig::CLIENT_IDS.first }
+  let(:client_id) { SignIn::Constants::ClientConfig::MOBILE_CLIENT }
   let(:refresh_token_hash) { SecureRandom.hex }
   let(:parent_refresh_token_hash) { SecureRandom.hex }
   let(:anti_csrf_token) { SecureRandom.hex }
@@ -161,7 +161,7 @@ RSpec.describe SignIn::AccessToken, type: :model do
         let(:expected_expiration_time) { Time.zone.now + validity_length }
 
         context 'and client_id is in a short token expiration defined config' do
-          let(:client_id) { SignIn::Constants::ClientConfig::SHORT_TOKEN_EXPIRATION.first }
+          let(:client_id) { SignIn::Constants::ClientConfig::WEB_CLIENT }
           let(:validity_length) { SignIn::Constants::AccessToken::VALIDITY_LENGTH_SHORT_MINUTES.minutes }
 
           it 'sets expired time to VALIDITY_LENGTH_SHORT_MINUTES from now' do
@@ -170,7 +170,7 @@ RSpec.describe SignIn::AccessToken, type: :model do
         end
 
         context 'and client_id is in a long token expiration defined config' do
-          let(:client_id) { SignIn::Constants::ClientConfig::LONG_TOKEN_EXPIRATION.first }
+          let(:client_id) { SignIn::Constants::ClientConfig::MOBILE_CLIENT }
           let(:validity_length) { SignIn::Constants::AccessToken::VALIDITY_LENGTH_LONG_MINUTES.minutes }
 
           it 'sets expired time to VALIDITY_LENGTH_LONG_MINUTES from now' do

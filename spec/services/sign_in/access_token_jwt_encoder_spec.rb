@@ -7,7 +7,7 @@ RSpec.describe SignIn::AccessTokenJwtEncoder do
     subject { SignIn::AccessTokenJwtEncoder.new(access_token: access_token).perform }
 
     let(:access_token) { create(:access_token, client_id: client_id) }
-    let(:client_id) { SignIn::Constants::ClientConfig::CLIENT_IDS.first }
+    let(:client_id) { SignIn::Constants::ClientConfig::MOBILE_CLIENT }
 
     context 'when input object is an access token' do
       let(:expected_sub) { access_token.user_uuid }
