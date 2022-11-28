@@ -25,7 +25,8 @@ RSpec.describe SignIn::AccessToken, type: :model do
   let(:anti_csrf_token) { SecureRandom.hex }
   let(:last_regeneration_time) { Time.zone.now }
   let(:version) { SignIn::Constants::AccessToken::CURRENT_VERSION }
-  let(:expiration_time) { Time.zone.now + SignIn::Constants::AccessToken::VALIDITY_LENGTH_SHORT_MINUTES.minutes }
+  let(:validity_length) { SignIn::Constants::ClientConfig::CLIENTS[:"#{client_id}"][:access_token_duration] }
+  let(:expiration_time) { Time.zone.now + validity_length }
   let(:created_time) { Time.zone.now }
 
   describe 'validations' do
@@ -48,6 +49,7 @@ RSpec.describe SignIn::AccessToken, type: :model do
 
       context 'when client_id is nil' do
         let(:client_id) { nil }
+        let(:validity_length) { 5.minutes }
         let(:expected_error_message) { "Validation failed: Client can't be blank, Client is not included in the list" }
         let(:expected_error) { ActiveModel::ValidationError }
 
@@ -58,6 +60,7 @@ RSpec.describe SignIn::AccessToken, type: :model do
 
       context 'when client_id is arbitrary' do
         let(:client_id) { 'some-arbitrary-client-id' }
+        let(:validity_length) { 5.minutes }
         let(:expected_error_message) { 'Validation failed: Client is not included in the list' }
         let(:expected_error) { ActiveModel::ValidationError }
 

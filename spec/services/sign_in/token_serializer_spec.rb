@@ -30,7 +30,7 @@ RSpec.describe SignIn::TokenSerializer do
     end
 
     context 'when client id is in the list of cookie auth clients' do
-      let(:client_id) { SignIn::Constants::ClientConfig::COOKIE_AUTH.first }
+      let(:client_id) { SignIn::Constants::ClientConfig::WEB_CLIENT }
       let(:access_token_expiration) { access_token.expiration_time }
       let(:refresh_token_expiration) { session_container.session.refresh_expiration }
       let(:info_cookie_value) do

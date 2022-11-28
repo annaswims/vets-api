@@ -45,7 +45,7 @@ RSpec.describe SignIn::AccessTokenJwtEncoder do
 
       context 'and client id is MOBILE_CLIENT' do
         let(:client_id) { SignIn::Constants::ClientConfig::MOBILE_CLIENT }
-        let(:expected_aud) { SignIn::Constants::ClientConfig::MOBILE_AUDIENCE }
+        let(:expected_aud) { SignIn::Constants::ClientConfig::CLIENTS[:"#{client_id}"][:access_token_audience] }
 
         it 'returns an encoded jwt with expected audience parameter' do
           decoded_jwt = OpenStruct.new(JWT.decode(subject, false, nil).first)
@@ -55,7 +55,7 @@ RSpec.describe SignIn::AccessTokenJwtEncoder do
 
       context 'and client id is MOBILE_TEST_CLIENT' do
         let(:client_id) { SignIn::Constants::ClientConfig::MOBILE_TEST_CLIENT }
-        let(:expected_aud) { SignIn::Constants::ClientConfig::MOBILE_TEST_AUDIENCE }
+        let(:expected_aud) { SignIn::Constants::ClientConfig::CLIENTS[:"#{client_id}"][:access_token_audience] }
 
         it 'returns an encoded jwt with expected audience parameter' do
           decoded_jwt = OpenStruct.new(JWT.decode(subject, false, nil).first)
@@ -65,7 +65,7 @@ RSpec.describe SignIn::AccessTokenJwtEncoder do
 
       context 'and client id is WEB_CLIENT' do
         let(:client_id) { SignIn::Constants::ClientConfig::WEB_CLIENT }
-        let(:expected_aud) { SignIn::Constants::ClientConfig::WEB_AUDIENCE }
+        let(:expected_aud) { SignIn::Constants::ClientConfig::CLIENTS[:"#{client_id}"][:access_token_audience] }
 
         it 'returns an encoded jwt with expected audience parameter' do
           decoded_jwt = OpenStruct.new(JWT.decode(subject, false, nil).first)
