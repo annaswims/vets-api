@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module KmsKeyRotation
-  class UpdateRecordJob
+  class UpdateRecordsJob
     include Sidekiq::Job
 
     def perform(records)

@@ -3,8 +3,7 @@
 module KmsKeyRotation
   class Batcher
     LIMIT = 1000
-    DIVIDER = 10
-    BULK = LIMIT / DIVIDER
+    BULK_NUMBER = LIMIT / 10
 
     attr_reader :batch
 
@@ -20,8 +19,8 @@ module KmsKeyRotation
       return nil if records.empty?
 
       batch.jobs do
-        0.upto((records.count / DIVIDER).ceil) do |i|
-          Sidekiq::Client.push_bulk('class' => KmsKeyRotation::UpdateRecordJob, 'args' => records[from(i)..to(i)])
+        records.in_groups_of(BULK_NUMBER).each do |records_group|
+          Sidekiq::Client.push_bulk('class' => KmsKeyRotation::UpdateRecordsJob, 'args' => records_group)
         end
       end
     end
@@ -59,14 +58,6 @@ module KmsKeyRotation
         models << model
         tables[model.table_name] = true
       end.map(&:name).map(&:constantize)
-    end
-
-    def from(i)
-      i * BULK
-    end
-
-    def to(i)
-      (i + 1) * BULK - 1
     end
   end
 end
