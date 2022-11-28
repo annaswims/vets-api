@@ -2,8 +2,6 @@
 
 module KmsKeyRotation
   class Batcher
-    # include Sidekiq::Worker
-
     LIMIT = 1000
 
     attr_reader :batch
@@ -11,6 +9,7 @@ module KmsKeyRotation
     def initialize
       @batch = Sidekiq::Batch.new
       @batch.description = "KMS Key Rotation #{batch.bid}"
+      @batch.on(:success, KmsKeyRotation::Batcher)
       @batch.on(:complete, KmsKeyRotation::Batcher)
     end
 
@@ -19,11 +18,17 @@ module KmsKeyRotation
       return nil if records.empty?
 
       batch.jobs do
-        records.each { |record| KmsKeyRotation::UpdateRecordJob.new.perform_async(record) }
+        Sidekiq::Client.push_bulk('class' => KmsKeyRotation::UpdateRecordJob, 'args' => records)
       end
     end
 
+    def on_success
+      puts 'success!'
+    end
+
     def on_complete
+      puts 'complete!'
+
       status = Sidekiq::Batch::Status.new(batch.bid)
       # log total jobs in batch - status.total
       # log total failures - status.failures
