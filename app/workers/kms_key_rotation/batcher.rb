@@ -2,7 +2,7 @@
 
 module KmsKeyRotation
   class Batcher
-    include Sidekiq::Worker
+    # include Sidekiq::Worker
 
     LIMIT = 1000
 
@@ -34,16 +34,22 @@ module KmsKeyRotation
     private
 
     def get_records
-      models.each_with_object([]) do |model, records|
-        records << model
-                  .where('encryption_updated_at = ? OR encryption_updated_at < ?', nil, 11.months.ago)
-                  .limit(LIMIT - records.count)
+      get_models.each_with_object([]) do |model, records|
+        records << model.where('encryption_updated_at IS NULL OR encryption_updated_at < ?', 11.months.ago)
+                        .limit(LIMIT - records.count)
         break if records.count == LIMIT
-      end
+      end.flatten
     end
 
-    def models
-      ApplicationRecord.descendants_using_encryption.map(&:name).map(&:constantize)
+    def get_models
+      tables = {}
+
+      ApplicationRecord.descendants_using_encryption.each_with_object([]) do |model, models|
+        next if tables[model.table_name]
+
+        models << model
+        tables[model.table_name] = true
+      end.map(&:name).map(&:constantize)
     end
   end
 end
