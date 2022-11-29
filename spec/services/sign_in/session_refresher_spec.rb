@@ -37,7 +37,8 @@ RSpec.describe SignIn::SessionRefresher do
       end
       let(:session_expiration) { Time.zone.now + 5.minutes }
       let(:client_id) { SignIn::Constants::ClientConfig::MOBILE_CLIENT }
-      let(:refresh_expiration_time) { SignIn::Constants::RefreshToken::VALIDITY_LENGTH_LONG_DAYS.days }
+      let(:client_config) { SignIn::Constants::ClientConfig::CLIENTS[:"#{client_id}"] }
+      let(:refresh_expiration_time) { client_config[:refresh_token_duration] }
 
       before { Timecop.freeze(Time.zone.now.floor) }
 
@@ -67,7 +68,6 @@ RSpec.describe SignIn::SessionRefresher do
 
               context 'and client_id is set to a short token expiration configuration' do
                 let(:client_id) { SignIn::Constants::ClientConfig::WEB_CLIENT }
-                let(:refresh_expiration_time) { SignIn::Constants::RefreshToken::VALIDITY_LENGTH_SHORT_MINUTES.minutes }
                 let(:updated_session_expiration) { Time.zone.now + refresh_expiration_time }
 
                 it 'updates the session with a new expiration time' do
@@ -81,7 +81,6 @@ RSpec.describe SignIn::SessionRefresher do
 
               context 'and client_id is set to a long token expiration configuration' do
                 let(:client_id) { SignIn::Constants::ClientConfig::MOBILE_CLIENT }
-                let(:refresh_expiration_time) { SignIn::Constants::RefreshToken::VALIDITY_LENGTH_LONG_DAYS.days }
                 let(:updated_session_expiration) { Time.zone.now + refresh_expiration_time }
 
                 it 'updates the session with a new expiration time' do

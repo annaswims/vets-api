@@ -21,7 +21,7 @@ module SignIn
     private
 
     def get_client_id_mapped_redirect_uri
-      if Constants::ClientConfig::CLIENT_IDS.includes?(client_id)
+      if Constants::ClientConfig::CLIENT_IDS.include?(client_id)
         URI.parse(Constants::ClientConfig::CLIENTS[:"#{client_id}"]&.dig(:redirect_uri))
       else
         raise Errors::InvalidClientIdError, message: 'Client id is not valid'
