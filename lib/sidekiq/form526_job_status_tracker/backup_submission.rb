@@ -1,4 +1,7 @@
 # frozen_string_literal: true
+require 'common/client/base'
+require 'common/client/concerns/monitoring'
+require 'common/client/errors'
 require 'form526_backup_submission/service'
 require 'decision_review_v1/utilities/form_4142_processor'
 require 'central_mail/datestamp_pdf'
@@ -24,6 +27,8 @@ module Sidekiq
         BIRLS_KEY = 'va_eauth_birlsfilenumber'
         EVIDENCE_LOOKUP = {}
 
+        CONSUMER_NAME = 'vets_api_backup_submission'
+
         def initialize(submission_id, docs=[])
           @submission = Form526Submission.find(submission_id)
           @docs = docs
@@ -37,7 +42,7 @@ module Sidekiq
         def process!
           self.gather_docs!
           self.add_meta_data_to_docs!
-          self.send_docs_to_central_mail
+          self.send_to_central_mail_through_lighthouse_claims_intake_api!
         end
   
         private
@@ -67,14 +72,12 @@ module Sidekiq
           end
         end
 
-        def generate_multipart_payload_from_docs
-          # TODO
-          raise "figure out multipart upload"
-          docs.map do |doc|            
-            [
-              { :file => Faraday::UploadIO.new(doc[:metadata].to_json, "application/json", nil, "Content-Disposition" => 'form-data; name="metadata"') },
-              { :file => Faraday::UploadIO.new(doc[:metadata].to_json, "application/pdf", nil, "Content-Disposition" => 'form-data; name="content"') }
+        def send_to_central_mail_through_lighthouse_claims_intake_api!
 
+          # need to refactor to do 526+evidence 
+          docs.each do |doc|  
+            # ap doc;
+            lighthouse_service.upload_doc(upload_url: @upload_location, file: doc[:file], metadata: doc[:metadata].to_json)
           end
         end
 
@@ -95,6 +98,11 @@ module Sidekiq
 
         def get_form526_pdf
           # TODO
+          # temp pdf from test dir until this is actually implimented 
+          docs << {
+            type: '21-526EZ',
+            file: 'spec/fixtures/files/doctors-note.pdf'
+          }
         end
 
         def get_uploads          
@@ -105,7 +113,7 @@ module Sidekiq
             # file_body = sea&.get_file&.read
             file = sea&.get_file
             raise ArgumentError, "supporting evidence attachment with guid #{guid} has no file data" if file.nil?
-            docs << upload.merge!(file: file, type: EVIDENCE_LOOKUP[upload['attachmentId']] )
+            docs << upload.merge!(file: file, type: 'evidence', evssDocType: upload['attachmentId'] )
           end
         end
 
@@ -125,8 +133,8 @@ module Sidekiq
 
         def get_form8940_pdf
           # refactor away from EVSS eventually
-          files = EVSS::DisabilityCompensationForm::SubmitForm8940.new.get_docs(submission.id, upload_uuid)
-          docs << files
+          file = EVSS::DisabilityCompensationForm::SubmitForm8940.new.get_docs(submission.id, upload_uuid)
+          docs << file
         end
 
         def get_bdd_pdf
@@ -138,27 +146,22 @@ module Sidekiq
         end
 
         def gather_docs!
-          # get_form526_pdf      # 21-526EZ    
+          get_form526_pdf      # 21-526EZ    
           get_uploads      if submission.form[FORM_526_UPLOADS]      
           get_form4142_pdf if submission.form[FORM_4142]
           get_form0781_pdf if submission.form[FORM_0781]
           get_form8940_pdf if submission.form[FORM_8940]
           get_bdd_pdf      if bdd?
-
           # Not going to support flashes since this JOB could have already worked and be successful
-          # Plus if the error is in BGS it wont work anyway
-        
+          # Plus if the error is in BGS it wont work anyway      
         end
-
-
-
       end
 
 
       class Enqueue
         include SentryLogging
         include Sidekiq::Worker
-        sidekiq_options retry: 15
+        sidekiq_options retry: 5
         
         def perform(failed_values)
           return unless enabled?

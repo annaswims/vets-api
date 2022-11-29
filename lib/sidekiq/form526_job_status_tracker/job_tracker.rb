@@ -32,10 +32,14 @@ module Sidekiq
             updated_at: timestamp
           }
 
-          backup = Sidekiq::Form526JobStatusTracker::BackupSubmission::Processor.new(form526_submission_id)
-          backup.process!
-ap backup; 
-raise "KKKK"
+          # if additional_birls_to_try.empty?
+            backup = BackupSubmission::Processor.new(form526_submission_id)
+            backup.process!
+            ap backup; 
+            raise "KKKK"
+          # end
+
+   
           form_job_status = Form526JobStatus.find_by(job_id: job_id)
           bgjob_errors = form_job_status.bgjob_errors || {}
           new_error = {

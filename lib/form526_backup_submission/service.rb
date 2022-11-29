@@ -27,5 +27,30 @@ module Form526BackupSubmission
       return response
     end
 
+    def upload_doc(upload_url:, file:, metadata:)
+      json_tmpfile = Tempfile.new('metadata.json', encoding: 'utf-8')
+      json_tmpfile.write(metadata.to_s)
+      json_tmpfile.rewind
+
+      file_with_full_path = case file
+        when EVSS::DisabilityCompensationForm::Form8940Document
+          file.pdf_path
+        when CarrierWave::SanitizedFile
+          file.file
+        else
+          file
+        end
+
+      file_name = File.basename(file_with_full_path)
+
+      params = { metadata: Faraday::UploadIO.new(json_tmpfile.path, Mime[:json].to_s, 'metadata.json'),
+                 content: Faraday::UploadIO.new(file_with_full_path, Mime[:pdf].to_s, file_name) }
+
+      response = perform :put, upload_url, params, { 'Content-Type' => 'multipart/form-data' }
+      ap response
+    ensure
+      json_tmpfile.close
+      json_tmpfile.unlink
+    end
   end
 end
