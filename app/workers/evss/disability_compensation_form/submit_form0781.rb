@@ -38,13 +38,13 @@ module EVSS
         # process 0781 and 0781a
         if parsed_forms['form0781'].present?
           ret_paths << {
-            type: 'form0781a', 
+            type: '21-0781', 
             file: process_0781(submission.auth_headers, uuid, FORM_ID_0781, parsed_forms['form0781'], false)
           }
         end
         if parsed_forms['form0781a'].present?
           ret_paths << {
-            type: 'form0781a', 
+            type: '21-0781a', 
             file: process_0781(submission.auth_headers, uuid, FORM_ID_0781A, parsed_forms['form0781a'], false)
           }
         end
