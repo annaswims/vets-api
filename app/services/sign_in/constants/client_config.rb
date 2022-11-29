@@ -32,8 +32,8 @@ module SignIn
           access_token_duration: Constants::AccessToken::VALIDITY_LENGTH_SHORT_MINUTES.minutes,
           access_token_audience: 'vamobile',
           refresh_token_duration: Constants::RefreshToken::VALIDITY_LENGTH_SHORT_MINUTES.minutes
-        },
-      }
+        }
+      }.freeze
     end
   end
 end
