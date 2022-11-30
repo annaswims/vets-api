@@ -164,8 +164,8 @@ class User < Common::RedisStore
     ssn&.gsub(/[^\d]/, '')
   end
 
-  def zip
-    identity&.zip || mpi&.profile&.address&.postal_code
+  def postal_code
+    identity&.postal_code || mpi&.profile&.address&.postal_code
   end
 
   # MPI getter methods
@@ -367,7 +367,9 @@ class User < Common::RedisStore
   end
 
   def mhv_account
-    @mhv_account ||= MHVAccount.find_or_initialize_by(user_uuid: uuid, mhv_correlation_id: mhv_correlation_id)
+    @mhv_account ||= MHVAccount.find_or_initialize_by(user_uuid: uuid,
+                                                      mhv_correlation_id: mhv_correlation_id,
+                                                      user_account: user_account)
                                .tap { |m| m.user = self } # MHV account should not re-initialize use
   end
 

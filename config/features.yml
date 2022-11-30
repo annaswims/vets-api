@@ -353,9 +353,9 @@ features:
     actor_type: user
     description: Form 10182 Notice of Disagreement - Request a board appeal
     enable_in_development: true
-  form686c_confirmation_email:
+  form674_confirmation_email:
     actor_type: user
-    description: Form 686c - Email submission confirmation
+    description: Form 674 - Email submission confirmation
     enable_in_development: true
   fsr_confirmation_email:
     actor_type: user
@@ -453,6 +453,10 @@ features:
     actor_type: user
     description: This determines the visibility of the OmniChannel link in the claim status tool
     enable_in_development: true
+  pdf_warning_banner:
+    description: "When enabled, will allow display of PDF cert warnings in find-a-form"
+    actor_type: user
+    enable_in_development: true
   pre_entry_covid19_screener:
     actor_type: user
     description: >
@@ -508,6 +512,10 @@ features:
     actor_type: user
   profile_use_vafsc:
     description: "Use VA Forms System Core for forms instead of schema based forms"
+    actor_type: user
+    enable_in_development: true
+  profile_block_for_fiduciary_deceased_or_incompetent:
+    description: "Blocks profile access when a user has 1 of 3 user criteria, fiduciary, deceased, or incompetent flag"
     actor_type: user
     enable_in_development: true
   pw_ehr_cta_drupal_source_of_truth:
