@@ -22,9 +22,13 @@ module KmsKeyRotation
         records.in_groups_of(BULK_NUMBER).each do |records_group|
           record_identifiers = records_group.map do |record|
             record.nil? ? [] : [{ model: record.class.name, id: record.id }.to_json] 
-          end.select { |record| record.present? }
+          end.select { |record_identifier| record_identifier.present? }
+
+          byebug
+
+          record_identifiers.each { |record_identifier| KmsKeyRotation::UpdateRecordsJob.perform_async(record_identifier.first) }
           
-          Sidekiq::Client.push_bulk('class' => KmsKeyRotation::UpdateRecordsJob, 'args' => record_identifiers)
+          # Sidekiq::Client.push_bulk('class' => KmsKeyRotation::UpdateRecordsJob, 'args' => record_identifiers)
         end
       end
     end
