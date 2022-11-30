@@ -66,9 +66,4 @@ namespace :jobs do
   task process_10203_submissions: :environment do
     EducationForm::Process10203Submissions.perform_async
   end
-
-  desc 'Rotate KMS Key Annually'
-  task rotate_kms_key: :environment do
-    KMSKeyRotation::Batcher.new
-  end
 end
