@@ -4,9 +4,9 @@ module KmsKeyRotation
   class UpdateRecordsJob
     include Sidekiq::Job
 
-    def perform(records)
-      puts 'perform key rotation!'
-      records.each { |record| record.rotate_kms_key! }
+    def perform(record)
+      puts "record class: #{record.class}"
+      r.rotate_kms_key!
     end
   end
 end

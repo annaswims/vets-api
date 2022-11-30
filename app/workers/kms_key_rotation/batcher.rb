@@ -2,7 +2,7 @@
 
 module KmsKeyRotation
   class Batcher
-    LIMIT = 1000
+    LIMIT = 100
     BULK_NUMBER = LIMIT / 10
 
     attr_reader :batch
@@ -20,7 +20,10 @@ module KmsKeyRotation
 
       batch.jobs do
         records.in_groups_of(BULK_NUMBER).each do |records_group|
-          Sidekiq::Client.push_bulk('class' => KmsKeyRotation::UpdateRecordsJob, 'args' => records_group)
+          # args must be an array of arrays:
+          # error: ArgumentError (Bulk arguments must be an Array of Arrays: [[1], [2]])
+          # docs - https://github.com/mperham/sidekiq/wiki/Batches#huge-batches
+          Sidekiq::Client.push_bulk('class' => KmsKeyRotation::UpdateRecordsJob, 'args' => records_group.map{ |record| [record] })
         end
       end
     end
