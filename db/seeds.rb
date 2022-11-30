@@ -24,6 +24,6 @@ form = {
   }
 }.to_json
 
-1.times do
+5000.times do
   SavedClaim::Burial.create!(:form_id => '21P-530', :guid =>SecureRandom.uuid, :type => SavedClaim::Burial.to_s, :form => form)
 end
