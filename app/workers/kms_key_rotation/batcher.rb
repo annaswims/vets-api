@@ -20,10 +20,11 @@ module KmsKeyRotation
 
       batch.jobs do
         records.in_groups_of(BULK_NUMBER).each do |records_group|
-          # args must be an array of arrays:
-          # error: ArgumentError (Bulk arguments must be an Array of Arrays: [[1], [2]])
-          # docs - https://github.com/mperham/sidekiq/wiki/Batches#huge-batches
-          Sidekiq::Client.push_bulk('class' => KmsKeyRotation::UpdateRecordsJob, 'args' => records_group.map{ |record| [record] })
+          record_identifiers = records_group.map do |record|
+            record.nil? ? [] : [{ model: record.class.name, id: record.id }.to_json] 
+          end.select { |record| record.present? }
+          
+          Sidekiq::Client.push_bulk('class' => KmsKeyRotation::UpdateRecordsJob, 'args' => record_identifiers)
         end
       end
     end
