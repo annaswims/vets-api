@@ -204,6 +204,7 @@ ActiveRecord::Schema.define(version: 2022_11_22_220205) do
     t.text "encrypted_kms_key"
     t.date "verified_decryptable_at"
     t.datetime "encryption_updated_at"
+    t.uuid "user_account_id"
     t.index ["created_at"], name: "index_async_transactions_on_created_at"
     t.index ["id", "type"], name: "index_async_transactions_on_id_and_type"
     t.index ["source_id"], name: "index_async_transactions_on_source_id"
@@ -568,6 +569,7 @@ ActiveRecord::Schema.define(version: 2022_11_22_220205) do
     t.text "encrypted_kms_key"
     t.date "verified_decryptable_at"
     t.datetime "encryption_updated_at"
+    t.uuid "user_account_id"
     t.index ["saved_claim_id"], name: "index_form526_submissions_on_saved_claim_id", unique: true
     t.index ["submitted_claim_id"], name: "index_form526_submissions_on_submitted_claim_id", unique: true
     t.index ["user_uuid"], name: "index_form526_submissions_on_user_uuid"
@@ -581,6 +583,8 @@ ActiveRecord::Schema.define(version: 2022_11_22_220205) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.datetime "encryption_updated_at"
+    t.uuid "user_account_id"
+    t.index ["user_account_id"], name: "index_form5655_submissions_on_user_account_id"
     t.index ["user_uuid"], name: "index_form5655_submissions_on_user_uuid"
   end
 
@@ -630,6 +634,8 @@ ActiveRecord::Schema.define(version: 2022_11_22_220205) do
     t.text "encrypted_kms_key"
     t.date "verified_decryptable_at"
     t.datetime "encryption_updated_at"
+    t.uuid "user_account_id"
+    t.index ["user_account_id"], name: "index_health_quest_questionnaire_responses_on_user_account_id"
     t.index ["user_uuid", "questionnaire_response_id"], name: "find_by_user_qr", unique: true
   end
 
@@ -1118,6 +1124,10 @@ ActiveRecord::Schema.define(version: 2022_11_22_220205) do
   add_foreign_key "deprecated_user_accounts", "user_accounts"
   add_foreign_key "deprecated_user_accounts", "user_verifications"
   add_foreign_key "education_stem_automated_decisions", "user_accounts"
+  add_foreign_key "evss_claims", "user_accounts"
+  add_foreign_key "form526_submissions", "user_accounts"
+  add_foreign_key "form5655_submissions", "user_accounts"
+  add_foreign_key "health_quest_questionnaire_responses", "user_accounts"
   add_foreign_key "in_progress_forms", "user_accounts"
   add_foreign_key "inherited_proof_verified_user_accounts", "user_accounts"
   add_foreign_key "mhv_opt_in_flags", "user_accounts"
