@@ -5,8 +5,8 @@ module KmsKeyRotation
     include Sidekiq::Job
 
     def perform(json)
-      record = JSON.parse(json)
-      record['model'].constantize.find(record['id']).rotate_kms_key!
+      record_identifiers = JSON.parse(json)
+      record_identifiers['model'].constantize.find(record_identifiers['id']).rotate_kms_key!
     end
   end
 end
