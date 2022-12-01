@@ -12,15 +12,15 @@ module Sidekiq
   # rubocop:disable Metrics/ModuleLength
     module BackupSubmission
       class Processor
-
-        attr_reader :submission, :lighthouse_service, :form, :upload_uuid, :upload_location, :upload_info, :zip
+        attr_reader :submission, :lighthouse_service, :zip, :initial_upload_location, :initial_upload_uuid, :initial_upload
         attr_accessor :docs
-        # Uses
-        # https://developer.va.gov/explore/benefits/docs/benefits?version=current
 
         FORM_526 = 'form526'
+        FORM_526_DOC_TYPE = '21-526EZ'
         FORM_526_UPLOADS = 'form526_uploads'
+        FORM_526_UPLOADS_DOC_TYPE = 'evidence'
         FORM_4142 = 'form4142'
+        FORM_4142_DOC_TYPE = '21-4142'
         FORM_0781 = 'form0781'
         FORM_8940 = 'form8940'
         FLASHES = 'flashes'
@@ -29,23 +29,52 @@ module Sidekiq
 
         CONSUMER_NAME = 'vets_api_backup_submission'
 
+
+        # Takes a submission id, assembles all needed docs from its payload, then sends it to central mail via 
+        # lighthouse benefits intake API - https://developer.va.gov/explore/benefits/docs/benefits?version=current
         def initialize(submission_id, docs=[])
           @submission = Form526Submission.find(submission_id)
           @docs = docs
           @lighthouse_service = Form526BackupSubmission::Service.new
-          @upload_info = lighthouse_service.get_upload_location.body
-          @upload_uuid = upload_info.dig('data', 'id')
-          @upload_location = upload_info.dig('data', 'attributes', 'location')
+          # We need an initial location/uuid as other ancillary docs want a reference id to it 
+          # (eventhough I dont think they actually use it for anything because we are just using them to 
+          # generate the pdf and not the sending portion of those classes... but it needs something there to not error)
+          @initial_upload = get_upload_info
+          uuid_and_location = upload_location_to_location_and_uuid(initial_upload)
+          @initial_upload_uuid = uuid_and_location[:uuid]
+          @initial_upload_location = uuid_and_location[:location]
           determine_zip
         end
 
         def process!
+          # Generates or makes calls to get, all PDFs, adds all to self.docs obj
           self.gather_docs!
+          # Iterate over self.docs obj and add required metadata to objs directly
           self.add_meta_data_to_docs!
+          # Take assemebled self.docs and aggregate and send how needed
           self.send_to_central_mail_through_lighthouse_claims_intake_api!
         end
   
         private
+
+        # Transforms the lighthouse response to the only info we actually need from it
+        def upload_location_to_location_and_uuid(upload_return)
+          {
+            uuid: upload_return.dig('data', 'id'),
+            location: upload_return.dig('data', 'attributes', 'location')
+          }
+        end
+
+        # Instantiates a new location and uuid via lighthouse
+        def get_upload_info
+          lighthouse_service.get_upload_location.body
+        end
+
+        # Combines instantiating a new location/uuid and returning the important bits
+        def get_upload_location_and_uuid
+          upload_info = get_upload_info
+          upload_location_to_location_and_uuid(upload_info)
+        end
 
         def received_date
           date = SavedClaim::DisabilityCompensation.find(submission.saved_claim_id).created_at
@@ -53,6 +82,7 @@ module Sidekiq
           date.strftime('%Y-%m-%d %H:%M:%S')
         end
 
+        # Generate metadata for metadata.json file for the lighthouse benefits intake API to send along to Central Mail
         def get_meta_data(doc_type)
           auth_info = submission.auth_headers
           return {
@@ -73,15 +103,49 @@ module Sidekiq
         end
 
         def send_to_central_mail_through_lighthouse_claims_intake_api!
+          payloads = []
+          # Need to combine 526 form, and evidence docs into 1 payload [content=526.pdf, attachment1=evidence1, etc]
+          is_526_or_evidence = docs.group_by {|doc| doc[:type] == FORM_526_DOC_TYPE || doc[:type] == FORM_526_UPLOADS_DOC_TYPE}
+          initial_payload = is_526_or_evidence[true]
+          other_payloads  = is_526_or_evidence[false]
+          submit_initial_payload(initial_payload)
+          submit_ancillary_payloads(other_payloads)
+        end
 
-          # need to refactor to do 526+evidence 
+        def log_info(message:,upload_type:, uuid:)
+          info = {
+            message: message,
+            upload_type: upload_type,
+            upload_uuid: uuid,
+            submission_id: @submission.id
+          }
+          ::Rails.logger.info(info)
+        end
+
+
+        def submit_initial_payload(initial_payload)
+          seperated = initial_payload.group_by {|doc| doc[:type]}
+          form526_doc = seperated[FORM_526_DOC_TYPE].first
+          evidence_files = seperated[FORM_526_UPLOADS_DOC_TYPE].map{|doc| doc[:file]}
+          log_info(message: 'Uploading initial fallback payload to Lighthouse.', upload_type: FORM_526_DOC_TYPE, uuid: initial_upload_uuid)
+          lighthouse_service.upload_doc(
+            upload_url: initial_upload_location, 
+            file: form526_doc[:file], 
+            metadata: form526_doc[:metadata].to_json, 
+            attachments: evidence_files 
+          )
+        end
+
+        def submit_ancillary_payloads(docs)
           docs.each do |doc|  
-            # ap doc;
-            lighthouse_service.upload_doc(upload_url: @upload_location, file: doc[:file], metadata: doc[:metadata].to_json)
+            ul = get_upload_location_and_uuid
+            log_info( message: 'Uploading ancillary fallback payload(s) to Lighthouse.', upload_type: doc[:type], uuid: ul[:uuid])
+            lighthouse_service.upload_doc(upload_url: ul[:location], file: doc[:file], metadata: doc[:metadata].to_json)
           end
         end
 
         def determine_zip
+          # TODO: figure out if I need to use currentMailingAddress or changeOfAddress zip? I dont think it matters too much though
           z = submission.form.dig('form526', 'form526', 'veteran', 'currentMailingAddress')
           if z.nil? 
             @zip = '00000'
@@ -100,7 +164,7 @@ module Sidekiq
           # TODO
           # temp pdf from test dir until this is actually implimented 
           docs << {
-            type: '21-526EZ',
+            type: FORM_526_DOC_TYPE,
             file: 'spec/fixtures/files/doctors-note.pdf'
           }
         end
@@ -113,27 +177,27 @@ module Sidekiq
             # file_body = sea&.get_file&.read
             file = sea&.get_file
             raise ArgumentError, "supporting evidence attachment with guid #{guid} has no file data" if file.nil?
-            docs << upload.merge!(file: file, type: 'evidence', evssDocType: upload['attachmentId'] )
+            docs << upload.merge!(file: file, type: FORM_526_UPLOADS_DOC_TYPE, evssDocType: upload['attachmentId'] )
           end
         end
 
         def get_form4142_pdf
-          processor_4142 = DecisionReviewV1::Processor::Form4142Processor.new(form_data: submission.form[FORM_4142], response: upload_info)
+          processor_4142 = DecisionReviewV1::Processor::Form4142Processor.new(form_data: submission.form[FORM_4142], response: initial_upload)
           docs << {
-            type: '21-4142',
+            type: FORM_4142_DOC_TYPE,
             file: processor_4142.pdf_path
           }
         end
 
         def get_form0781_pdf
           # refactor away from EVSS eventually
-          files = EVSS::DisabilityCompensationForm::SubmitForm0781.new.get_docs(submission.id, upload_uuid)   
+          files = EVSS::DisabilityCompensationForm::SubmitForm0781.new.get_docs(submission.id, initial_upload_uuid)   
           docs.concat(files)
         end
 
         def get_form8940_pdf
           # refactor away from EVSS eventually
-          file = EVSS::DisabilityCompensationForm::SubmitForm8940.new.get_docs(submission.id, upload_uuid)
+          file = EVSS::DisabilityCompensationForm::SubmitForm8940.new.get_docs(submission.id, initial_upload_uuid)
           docs << file
         end
 

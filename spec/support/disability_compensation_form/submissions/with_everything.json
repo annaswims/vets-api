@@ -157,19 +157,19 @@
   },
   "form526_uploads": [
     {
-      "name": "Screen Shot 2020-07-08 at 1.09.21 AM.png",
+      "name": "doctors-note.pdf",
       "confirmationCode": "59f7e12c-f646-40ca-8022-1cf76e5829a1",
       "attachmentId": "L451"
     },
     {
-      "name": "Screen Shot 2020-07-08 at 1.09.21 AM.png",
+      "name": "doctors-note.pdf",
       "confirmationCode": "1803e414-b11e-44be-b9e7-457a96cd8d59",
       "attachmentId": "L015"
     }
   ],
   "form4142": {
     "privacyAgreementAccepted": true,
-    "limitedConsent": "true",
+    "limitedConsent": "Limit to medical records please. Exclude any psyciatric records.",
     "providerFacility": [
       {
         "providerFacilityName": "provider 1",
