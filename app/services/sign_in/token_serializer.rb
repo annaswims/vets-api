@@ -82,7 +82,7 @@ module SignIn
     end
 
     def api_authentication_client?
-      (client_config&.dig(:cookie_auth) == false)
+      client_config&.dig(:cookie_auth) == false
     end
 
     def anti_csrf_enabled_client?

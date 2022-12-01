@@ -15,7 +15,7 @@ RSpec.describe SignIn::SessionCreator do
       let(:user_uuid) { validated_credential.user_verification.backing_credential_identifier }
       let(:client_id) { SignIn::Constants::ClientConfig::WEB_CLIENT }
       let(:client_config) { SignIn::Constants::ClientConfig::CLIENTS[:"#{client_id}"] }
-      let(:refresh_expiration_time) { client_config[:refresh_token_duration] }
+      let(:refresh_expiration_time) { client_config&.dig(:refresh_token_duration) }
 
       context 'expected anti_csrf_token' do
         let(:expected_anti_csrf_token) { 'some-anti-csrf-token' }
