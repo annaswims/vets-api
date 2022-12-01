@@ -117,12 +117,13 @@ RSpec.describe 'letters', type: :request do
           get '/mobile/v0/letters', headers: iam_headers
         end
         expect(response).to have_http_status(:not_found)
-        expect(response.parsed_body).to eq({ 'errors' =>
-                                               [{ 'title' => 'Record not found',
-                                                  'detail' =>
-                                                    'The record identified by ICN: 24811694708759028 could not be found',
-                                                  'code' => '404',
-                                                  'status' => '404' }] })
+        expect(response.parsed_body['errors']).to eq(
+          [{ 'title' => 'Record not found',
+             'detail' =>
+               'The record identified by ICN: 24811694708759028 could not be found',
+             'code' => '404',
+             'status' => '404' }]
+        )
       end
     end
   end
