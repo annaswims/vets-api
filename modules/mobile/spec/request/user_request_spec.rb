@@ -16,6 +16,7 @@ RSpec.describe 'user', type: :request do
     before(:all) do
       @original_cassette_dir = VCR.configure(&:cassette_library_dir)
       VCR.configure { |c| c.cassette_library_dir = 'modules/mobile/spec/support/vcr_cassettes' }
+      Flipper.disable(:mobile_lighthouse_letters)
     end
 
     after(:all) { VCR.configure { |c| c.cassette_library_dir = @original_cassette_dir } }
@@ -246,8 +247,9 @@ RSpec.describe 'user', type: :request do
       end
 
       context 'with a user who does not have access to evss but is using Lighthouse letters service' do
+        let(:user) { FactoryBot.build(:iam_user, :no_edipi_id) }
+
         before do
-          user = FactoryBot.build(:iam_user, :no_edipi_id)
           iam_sign_in(user)
           Flipper.enable(:mobile_lighthouse_letters, user)
           VCR.use_cassette('payment_information/payment_information') do
@@ -256,6 +258,8 @@ RSpec.describe 'user', type: :request do
             end
           end
         end
+
+        after { Flipper.disable(:mobile_lighthouse_letters, user) }
 
         it 'does not include edipi services (claims, direct deposit, military history) except letters' do
           expect(attributes['authorizedServices']).to eq(
