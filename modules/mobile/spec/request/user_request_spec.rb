@@ -245,6 +245,31 @@ RSpec.describe 'user', type: :request do
         end
       end
 
+      context 'with a user who does not have access to evss but is using Lighthouse letters service' do
+        before do
+          user = FactoryBot.build(:iam_user, :no_edipi_id)
+          iam_sign_in(user)
+          Flipper.enable(:mobile_lighthouse_letters, user)
+          VCR.use_cassette('payment_information/payment_information') do
+            VCR.use_cassette('user/get_facilities_no_ids', match_requests_on: %i[method uri]) do
+              get '/mobile/v0/user', headers: iam_headers
+            end
+          end
+        end
+
+        it 'does not include edipi services (claims, direct deposit, military history) except letters' do
+          expect(attributes['authorizedServices']).to eq(
+            %w[
+              appeals
+              appointments
+              paymentHistory
+              userProfileUpdate
+              lettersAndDocuments
+            ]
+          )
+        end
+      end
+
       context 'with a user who has access to evss but not ppiu (not idme)' do
         before do
           user = FactoryBot.build(:iam_user, :no_multifactor)

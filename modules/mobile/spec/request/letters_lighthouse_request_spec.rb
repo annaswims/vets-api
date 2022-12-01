@@ -81,17 +81,32 @@ RSpec.describe 'letters', type: :request do
         end
       end
     end
+  end
 
+  describe 'GET /mobile/v0/letters/beneficiary' do
+    context 'with a valid lighthouse response' do
+      it 'matches the letters beneficiary schema' do
+        VCR.use_cassette('lighthouse_letters/letters_200', match_requests_on: %i[method uri]) do
+          get '/mobile/v0/letters/beneficiary', headers: iam_headers
+          expect(response).to have_http_status(:ok)
+          allow(File).to receive(:read).and_call_original
+          expect(response.body).to match_json_schema('letter_beneficiary')
+        end
+      end
+    end
+  end
+
+  describe 'Error Handling' do
     context 'with service error' do
       it 'returns a not found response' do
         VCR.use_cassette('lighthouse_letters/letters_503', match_requests_on: %i[method uri]) do
           get '/mobile/v0/letters', headers: iam_headers
           expect(response).to have_http_status(:service_unavailable)
           expect(response.parsed_body).to eq({ 'errors' =>
-                                                [{ 'title' => 'Service unavailable',
-                                                   'detail' => 'Backend Service Outage',
-                                                   'code' => '503',
-                                                   'status' => '503' }] })
+                                                 [{ 'title' => 'Service unavailable',
+                                                    'detail' => 'Backend Service Outage',
+                                                    'code' => '503',
+                                                    'status' => '503' }] })
         end
       end
     end
@@ -103,11 +118,11 @@ RSpec.describe 'letters', type: :request do
         end
         expect(response).to have_http_status(:not_found)
         expect(response.parsed_body).to eq({ 'errors' =>
-                                             [{ 'title' => 'Record not found',
-                                                'detail' =>
-                                                  'The record identified by ICN: 24811694708759028 could not be found',
-                                                'code' => '404',
-                                                'status' => '404' }] })
+                                               [{ 'title' => 'Record not found',
+                                                  'detail' =>
+                                                    'The record identified by ICN: 24811694708759028 could not be found',
+                                                  'code' => '404',
+                                                  'status' => '404' }] })
       end
     end
   end
