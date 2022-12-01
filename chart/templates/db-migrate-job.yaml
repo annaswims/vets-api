@@ -1,4 +1,5 @@
 {{- if .Values.web.dbMigrate.enabled }}
+# Testing helm chart action
 ---
 apiVersion: batch/v1
 kind: Job
