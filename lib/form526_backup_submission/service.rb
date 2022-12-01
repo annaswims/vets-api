@@ -19,12 +19,11 @@ module Form526BackupSubmission
     configuration Form526BackupSubmission::Configuration
 
     REQUIRED_CREATE_HEADERS = %w[X-VA-First-Name X-VA-Last-Name X-VA-SSN X-VA-Birth-Date].freeze
-    
+
     def get_upload_location
       headers = {}
       request_body = {}
-      response = perform :post, 'uploads', request_body, headers
-      return response
+      perform :post, 'uploads', request_body, headers
     end
 
     def upload_doc(upload_url:, file:, metadata:, attachments: [])
@@ -33,32 +32,36 @@ module Form526BackupSubmission
       json_tmpfile.rewind
 
       file_with_full_path = case file
-        when EVSS::DisabilityCompensationForm::Form8940Document
-          file.pdf_path
-        when CarrierWave::SanitizedFile
-          file.file
-        else
-          file
-        end
+                            when EVSS::DisabilityCompensationForm::Form8940Document
+                              file.pdf_path
+                            when CarrierWave::SanitizedFile
+                              file.file
+                            else
+                              file
+                            end
 
       file_name = File.basename(file_with_full_path)
 
       params = { metadata: Faraday::UploadIO.new(json_tmpfile.path, Mime[:json].to_s, 'metadata.json'),
                  content: Faraday::UploadIO.new(file_with_full_path, Mime[:pdf].to_s, file_name) }
 
-      attachments.each.with_index do |evidence_file, i|
-        file_path = evidence_file.file
-        file_name = evidence_file.original_filename.nil? ?  File.basename(file_path) : evidence_file.original_filename
-        params["attachment#{i+1}".to_sym] = Faraday::UploadIO.new(file_path, Mime[:pdf].to_s, file_name)           
+      attachments.each.with_index do |carrierwave_evidence_file, i|
+        file_path = carrierwave_evidence_file.file
+        file_name = carrierwave_evidence_file.original_filename.nil? ? File.basename(file_path) : carrierwave_evidence_file.original_filename
+        params["attachment#{i + 1}".to_sym] = Faraday::UploadIO.new(file_path, Mime[:pdf].to_s, file_name)
       end
       response = perform :put, upload_url, params, { 'Content-Type' => 'multipart/form-data' }
-      ap response
-      
+      Rails.logger.debug response
+
       if file_with_full_path =~ /tmp/
-        if Rails.env.production? 
-          File.delete(file_with_full_path) 
+        if Rails.env.production?
+          File.delete(file_with_full_path)
+          attachments.each(&:delete)
         else
           ::Rails.logger.info("Would have deleted file #{file_with_full_path} if in production env.")
+          attachments.each do |carrierwave_evidence_file|
+            ::Rails.logger.info("Would have deleted file #{carrierwave_evidence_file.file} if in production env.")
+          end
         end
       end
     ensure

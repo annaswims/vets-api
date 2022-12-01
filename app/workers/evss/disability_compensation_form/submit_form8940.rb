@@ -21,8 +21,7 @@ module EVSS
         Metrics.new(STATSD_KEY_PREFIX, msg['jid']).increment_exhausted
       end
 
-
-      def get_docs(submission_id, uuid) 
+      def get_docs(submission_id, _uuid)
         @submission_id = submission_id
         document = EVSS::DisabilityCompensationForm::Form8940Document.new(submission)
         {

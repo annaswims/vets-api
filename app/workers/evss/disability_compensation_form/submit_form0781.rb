@@ -31,24 +31,24 @@ module EVSS
         Metrics.new(STATSD_KEY_PREFIX, msg['jid']).increment_exhausted
       end
 
-      def get_docs(submission_id, uuid) 
+      def get_docs(submission_id, uuid)
         @submission_id = submission_id
         parsed_forms = JSON.parse(submission.form_to_json(Form526Submission::FORM_0781))
         ret_paths = []
         # process 0781 and 0781a
         if parsed_forms['form0781'].present?
           ret_paths << {
-            type: FORM_ID_0781, 
+            type: FORM_ID_0781,
             file: process_0781(submission.auth_headers, uuid, FORM_ID_0781, parsed_forms['form0781'], false)
           }
         end
         if parsed_forms['form0781a'].present?
           ret_paths << {
-            type: FORM_ID_0781A, 
+            type: FORM_ID_0781A,
             file: process_0781(submission.auth_headers, uuid, FORM_ID_0781A, parsed_forms['form0781a'], false)
           }
         end
-        return ret_paths
+        ret_paths
       end
 
       # Performs an asynchronous job for generating and submitting 0781 + 0781A PDF documents to VBMS
@@ -81,7 +81,7 @@ module EVSS
 
       private
 
-      def process_0781(auth_headers, evss_claim_id, form_id, form_content, upload=true)
+      def process_0781(auth_headers, evss_claim_id, form_id, form_content, upload = true)
         # generate and stamp PDF file
         pdf_path0781 = generate_stamp_pdf(form_content, evss_claim_id, form_id)
         upload ? upload_to_vbms(auth_headers, evss_claim_id, pdf_path0781, form_id) : pdf_path0781

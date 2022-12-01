@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'sidekiq/form526_job_status_tracker/backup_submission'
 
 module Sidekiq
@@ -14,7 +15,7 @@ module Sidekiq
         # @param msg [Hash] The message payload from Sidekiq
         #
         # rubocop:disable Metrics/MethodLength
-        def job_exhausted(msg, statsd_key_prefix)
+        def job_exhausted(msg, _statsd_key_prefix)
           job_id = msg['jid']
           error_class = msg['error_class']
           error_message = msg['error_message']
@@ -33,13 +34,12 @@ module Sidekiq
           }
 
           # if additional_birls_to_try.empty?
-            backup = BackupSubmission::Processor.new(form526_submission_id)
-            backup.process!
-            ap backup; 
-            raise "KKKK"
+          backup = BackupSubmission::Processor.new(form526_submission_id)
+          backup.process!
+          Rails.logger.debug backup
+          raise 'KKKK'
           # end
 
-   
           form_job_status = Form526JobStatus.find_by(job_id: job_id)
           bgjob_errors = form_job_status.bgjob_errors || {}
           new_error = {
@@ -69,14 +69,13 @@ module Sidekiq
                                  remaining_birls: additional_birls_to_try,
                                  va_eauth_service_transaction_id: vagov_id
           )
-        
-          
-        # rescue => e
-        #   emsg = 'Form526 Exhausted, with error tracking job exhausted'
-        #   error_details = { message: emsg, error: e, class: msg['class'].demodulize, jid: msg['jid'] }
-        #   ::Rails.logger.error(emsg, error_details)
-        # ensure
-        #   Metrics.new(statsd_key_prefix).increment_exhausted
+
+          # rescue => e
+          #   emsg = 'Form526 Exhausted, with error tracking job exhausted'
+          #   error_details = { message: emsg, error: e, class: msg['class'].demodulize, jid: msg['jid'] }
+          #   ::Rails.logger.error(emsg, error_details)
+          # ensure
+          #   Metrics.new(statsd_key_prefix).increment_exhausted
         end
         # rubocop:enable Metrics/MethodLength
       end

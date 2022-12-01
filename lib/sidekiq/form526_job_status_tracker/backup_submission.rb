@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'common/client/base'
 require 'common/client/concerns/monitoring'
 require 'common/client/errors'
@@ -9,10 +10,10 @@ require 'pdf_fill/filler'
 
 module Sidekiq
   module Form526JobStatusTracker
-  # rubocop:disable Metrics/ModuleLength
     module BackupSubmission
       class Processor
-        attr_reader :submission, :lighthouse_service, :zip, :initial_upload_location, :initial_upload_uuid, :initial_upload
+        attr_reader :submission, :lighthouse_service, :zip, :initial_upload_location, :initial_upload_uuid,
+                    :initial_upload
         attr_accessor :docs
 
         FORM_526 = 'form526'
@@ -25,19 +26,18 @@ module Sidekiq
         FORM_8940 = 'form8940'
         FLASHES = 'flashes'
         BIRLS_KEY = 'va_eauth_birlsfilenumber'
-        EVIDENCE_LOOKUP = {}
+        EVIDENCE_LOOKUP = {}.freeze
 
         CONSUMER_NAME = 'vets_api_backup_submission'
 
-
-        # Takes a submission id, assembles all needed docs from its payload, then sends it to central mail via 
+        # Takes a submission id, assembles all needed docs from its payload, then sends it to central mail via
         # lighthouse benefits intake API - https://developer.va.gov/explore/benefits/docs/benefits?version=current
-        def initialize(submission_id, docs=[])
+        def initialize(submission_id, docs = [])
           @submission = Form526Submission.find(submission_id)
           @docs = docs
           @lighthouse_service = Form526BackupSubmission::Service.new
-          # We need an initial location/uuid as other ancillary docs want a reference id to it 
-          # (eventhough I dont think they actually use it for anything because we are just using them to 
+          # We need an initial location/uuid as other ancillary docs want a reference id to it
+          # (eventhough I dont think they actually use it for anything because we are just using them to
           # generate the pdf and not the sending portion of those classes... but it needs something there to not error)
           @initial_upload = get_upload_info
           uuid_and_location = upload_location_to_location_and_uuid(initial_upload)
@@ -48,13 +48,13 @@ module Sidekiq
 
         def process!
           # Generates or makes calls to get, all PDFs, adds all to self.docs obj
-          self.gather_docs!
+          gather_docs!
           # Iterate over self.docs obj and add required metadata to objs directly
-          self.add_meta_data_to_docs!
+          add_meta_data_to_docs!
           # Take assemebled self.docs and aggregate and send how needed
-          self.send_to_central_mail_through_lighthouse_claims_intake_api!
+          send_to_central_mail_through_lighthouse_claims_intake_api!
         end
-  
+
         private
 
         # Transforms the lighthouse response to the only info we actually need from it
@@ -85,14 +85,14 @@ module Sidekiq
         # Generate metadata for metadata.json file for the lighthouse benefits intake API to send along to Central Mail
         def get_meta_data(doc_type)
           auth_info = submission.auth_headers
-          return {
+          {
             "veteranFirstName": auth_info['va_eauth_firstName'],
             "veteranLastName": auth_info['va_eauth_lastName'],
-            "fileNumber":  auth_info['va_eauth_pnid'],
+            "fileNumber": auth_info['va_eauth_pnid'],
             "zipCode": zip,
-            "source": "va.gov backup submission",
+            "source": 'va.gov backup submission',
             "docType": doc_type,
-            "businessLine": "CMP"
+            "businessLine": 'CMP'
           }
         end
 
@@ -105,14 +105,16 @@ module Sidekiq
         def send_to_central_mail_through_lighthouse_claims_intake_api!
           payloads = []
           # Need to combine 526 form, and evidence docs into 1 payload [content=526.pdf, attachment1=evidence1, etc]
-          is_526_or_evidence = docs.group_by {|doc| doc[:type] == FORM_526_DOC_TYPE || doc[:type] == FORM_526_UPLOADS_DOC_TYPE}
+          is_526_or_evidence = docs.group_by do |doc|
+            doc[:type] == FORM_526_DOC_TYPE || doc[:type] == FORM_526_UPLOADS_DOC_TYPE
+          end
           initial_payload = is_526_or_evidence[true]
           other_payloads  = is_526_or_evidence[false]
           submit_initial_payload(initial_payload)
           submit_ancillary_payloads(other_payloads)
         end
 
-        def log_info(message:,upload_type:, uuid:)
+        def log_info(message:, upload_type:, uuid:)
           info = {
             message: message,
             upload_type: upload_type,
@@ -122,24 +124,25 @@ module Sidekiq
           ::Rails.logger.info(info)
         end
 
-
         def submit_initial_payload(initial_payload)
-          seperated = initial_payload.group_by {|doc| doc[:type]}
+          seperated = initial_payload.group_by { |doc| doc[:type] }
           form526_doc = seperated[FORM_526_DOC_TYPE].first
-          evidence_files = seperated[FORM_526_UPLOADS_DOC_TYPE].map{|doc| doc[:file]}
-          log_info(message: 'Uploading initial fallback payload to Lighthouse.', upload_type: FORM_526_DOC_TYPE, uuid: initial_upload_uuid)
+          evidence_files = seperated[FORM_526_UPLOADS_DOC_TYPE].map { |doc| doc[:file] }
+          log_info(message: 'Uploading initial fallback payload to Lighthouse.', upload_type: FORM_526_DOC_TYPE,
+                   uuid: initial_upload_uuid)
           lighthouse_service.upload_doc(
-            upload_url: initial_upload_location, 
-            file: form526_doc[:file], 
-            metadata: form526_doc[:metadata].to_json, 
-            attachments: evidence_files 
+            upload_url: initial_upload_location,
+            file: form526_doc[:file],
+            metadata: form526_doc[:metadata].to_json,
+            attachments: evidence_files
           )
         end
 
         def submit_ancillary_payloads(docs)
-          docs.each do |doc|  
+          docs.each do |doc|
             ul = get_upload_location_and_uuid
-            log_info( message: 'Uploading ancillary fallback payload(s) to Lighthouse.', upload_type: doc[:type], uuid: ul[:uuid])
+            log_info(message: 'Uploading ancillary fallback payload(s) to Lighthouse.', upload_type: doc[:type],
+                     uuid: ul[:uuid])
             lighthouse_service.upload_doc(upload_url: ul[:location], file: doc[:file], metadata: doc[:metadata].to_json)
           end
         end
@@ -147,7 +150,7 @@ module Sidekiq
         def determine_zip
           # TODO: figure out if I need to use currentMailingAddress or changeOfAddress zip? I dont think it matters too much though
           z = submission.form.dig('form526', 'form526', 'veteran', 'currentMailingAddress')
-          if z.nil? 
+          if z.nil?
             @zip = '00000'
           else
             z_final = z['zipFirstFive']
@@ -162,27 +165,29 @@ module Sidekiq
 
         def get_form526_pdf
           # TODO
-          # temp pdf from test dir until this is actually implimented 
+          # temp pdf from test dir until this is actually implimented
           docs << {
             type: FORM_526_DOC_TYPE,
             file: 'spec/fixtures/files/doctors-note.pdf'
           }
         end
 
-        def get_uploads          
-          uploads = submission.form[FORM_526_UPLOADS]      
+        def get_uploads
+          uploads = submission.form[FORM_526_UPLOADS]
           uploads.each do |upload|
             guid = upload['confirmationCode']
             sea = SupportingEvidenceAttachment.find_by(guid: guid)
             # file_body = sea&.get_file&.read
             file = sea&.get_file
             raise ArgumentError, "supporting evidence attachment with guid #{guid} has no file data" if file.nil?
-            docs << upload.merge!(file: file, type: FORM_526_UPLOADS_DOC_TYPE, evssDocType: upload['attachmentId'] )
+
+            docs << upload.merge!(file: file, type: FORM_526_UPLOADS_DOC_TYPE, evssDocType: upload['attachmentId'])
           end
         end
 
         def get_form4142_pdf
-          processor_4142 = DecisionReviewV1::Processor::Form4142Processor.new(form_data: submission.form[FORM_4142], response: initial_upload)
+          processor_4142 = DecisionReviewV1::Processor::Form4142Processor.new(form_data: submission.form[FORM_4142],
+                                                                              response: initial_upload)
           docs << {
             type: FORM_4142_DOC_TYPE,
             file: processor_4142.pdf_path
@@ -191,7 +196,7 @@ module Sidekiq
 
         def get_form0781_pdf
           # refactor away from EVSS eventually
-          files = EVSS::DisabilityCompensationForm::SubmitForm0781.new.get_docs(submission.id, initial_upload_uuid)   
+          files = EVSS::DisabilityCompensationForm::SubmitForm0781.new.get_docs(submission.id, initial_upload_uuid)
           docs.concat(files)
         end
 
@@ -210,27 +215,27 @@ module Sidekiq
         end
 
         def gather_docs!
-          get_form526_pdf      # 21-526EZ    
-          get_uploads      if submission.form[FORM_526_UPLOADS]      
+          get_form526_pdf # 21-526EZ
+          get_uploads      if submission.form[FORM_526_UPLOADS]
           get_form4142_pdf if submission.form[FORM_4142]
           get_form0781_pdf if submission.form[FORM_0781]
           get_form8940_pdf if submission.form[FORM_8940]
           get_bdd_pdf      if bdd?
           # Not going to support flashes since this JOB could have already worked and be successful
-          # Plus if the error is in BGS it wont work anyway      
+          # Plus if the error is in BGS it wont work anyway
         end
       end
-
 
       class Enqueue
         include SentryLogging
         include Sidekiq::Worker
         sidekiq_options retry: 5
-        
+
         def perform(failed_values)
           return unless enabled?
-          ap "HERE"
-          ap failed_values
+
+          Rails.logger.debug 'HERE'
+          Rails.logger.debug failed_values
         end
 
         private
