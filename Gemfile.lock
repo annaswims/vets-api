@@ -117,8 +117,17 @@ PATH
     veteran_verification (0.0.1)
 
 GEM
-  remote: https://rubygems.org/
   remote: https://enterprise.contribsys.com/
+  specs:
+    sidekiq-ent (2.5.2)
+      einhorn (>= 0.7.4)
+      sidekiq (>= 6.5.0)
+      sidekiq-pro (>= 5.5.0)
+    sidekiq-pro (5.5.4)
+      sidekiq (>= 6.5.6)
+
+GEM
+  remote: https://rubygems.org/
   specs:
     Ascii85 (1.1.0)
     aasm (5.4.0)
@@ -869,12 +878,6 @@ GEM
       connection_pool (>= 2.2.5)
       rack (~> 2.0)
       redis (>= 4.5.0, < 5)
-    sidekiq-ent (2.5.2)
-      einhorn (>= 0.7.4)
-      sidekiq (>= 6.5.0)
-      sidekiq-pro (>= 5.5.0)
-    sidekiq-pro (5.5.4)
-      sidekiq (>= 6.5.6)
     sidekiq-scheduler (4.0.3)
       redis (>= 4.2.0)
       rufus-scheduler (~> 3.2)
@@ -1180,7 +1183,7 @@ DEPENDENCIES
   yard
 
 RUBY VERSION
-   ruby 2.7.6p219
+   ruby 3.0.5p211
 
 BUNDLED WITH
-   2.1.4
+   2.2.33
