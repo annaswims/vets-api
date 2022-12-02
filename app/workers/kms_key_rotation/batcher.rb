@@ -2,7 +2,7 @@
 
 module KmsKeyRotation
   class Batcher
-    LIMIT = 100
+    LIMIT = 10000
     BULK_NUMBER = LIMIT / 10
 
     attr_reader :batch
@@ -21,14 +21,11 @@ module KmsKeyRotation
       batch.jobs do
         records.in_groups_of(BULK_NUMBER).each do |records_group|
           record_identifiers = records_group.each_with_object([]) do |record, identifiers|
+            byebug
             identifiers << [{ model: record.class.name, id: record.id }.to_json] if record.present?
           end
-
-          byebug
-          # the following is for debugging purposes only
-          record_identifiers.each { |record_identifier| KmsKeyRotation::UpdateRecordsJob.perform_async(record_identifier.first) }
           
-          # Sidekiq::Client.push_bulk('class' => KmsKeyRotation::UpdateRecordsJob, 'args' => record_identifiers)
+          Sidekiq::Client.push_bulk('class' => KmsKeyRotation::UpdateRecordsJob, 'args' => record_identifiers)
         end
       end
     end
