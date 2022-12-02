@@ -28,6 +28,10 @@ module Sidekiq
         BIRLS_KEY = 'va_eauth_birlsfilenumber'
         EVIDENCE_LOOKUP = {}.freeze
 
+        # turn into flipper for 50/50 a/b testing of effectivness
+        SUB_METHOD = :single
+        # SUB_METHOD = :multi
+
         CONSUMER_NAME = 'vets_api_backup_submission'
 
         # Takes a submission id, assembles all needed docs from its payload, then sends it to central mail via
@@ -110,8 +114,12 @@ module Sidekiq
           end
           initial_payload = is_526_or_evidence[true]
           other_payloads  = is_526_or_evidence[false]
-          submit_initial_payload(initial_payload)
-          submit_ancillary_payloads(other_payloads)
+          if SUB_METHOD == :single
+            submit_as_one(initial_payload, other_payloads)
+          else
+            submit_initial_payload(initial_payload)
+            submit_ancillary_payloads(other_payloads)
+          end
         end
 
         def log_info(message:, upload_type:, uuid:)
@@ -122,6 +130,37 @@ module Sidekiq
             submission_id: @submission.id
           }
           ::Rails.logger.info(info)
+        end
+
+
+        def generate_attachments(evidence_files, other_payloads)
+          others = []
+          other_payloads.each do |op| 
+            others << {
+              file: op[:file],
+              file_name: "#{op[:metadata][:docType]}.pdf"
+            }
+          end
+          evidence_files.concat(others)
+        end
+
+        def submit_as_one(initial_payload, other_payloads)
+          seperated = initial_payload.group_by { |doc| doc[:type] }
+          form526_doc = seperated[FORM_526_DOC_TYPE].first
+          evidence_files = seperated[FORM_526_UPLOADS_DOC_TYPE].map.with_index { |doc,i| {file: doc[:file], file_name: "evidence_#{i+1}.pdf" } }
+          attachments = generate_attachments(evidence_files, other_payloads)
+          log_info(
+            message: 'Single Submission - Uploading initial fallback payload to Lighthouse.', 
+            upload_type: FORM_526_DOC_TYPE,
+            uuid: initial_upload_uuid
+          )
+          lighthouse_service.upload_doc(
+            upload_url: initial_upload_location,
+            file: form526_doc[:file],
+            metadata: form526_doc[:metadata].to_json,
+            attachments: attachments
+          )
+
         end
 
         def submit_initial_payload(initial_payload)
@@ -223,25 +262,6 @@ module Sidekiq
           get_bdd_pdf      if bdd?
           # Not going to support flashes since this JOB could have already worked and be successful
           # Plus if the error is in BGS it wont work anyway
-        end
-      end
-
-      class Enqueue
-        include SentryLogging
-        include Sidekiq::Worker
-        sidekiq_options retry: 5
-
-        def perform(failed_values)
-          return unless enabled?
-
-          Rails.logger.debug 'HERE'
-          Rails.logger.debug failed_values
-        end
-
-        private
-
-        def enabled?
-          Flipper.enabled?(:form526_submit_to_central_mail_on_exhaustion)
         end
       end
     end

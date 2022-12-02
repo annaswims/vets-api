@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require 'sidekiq/form526_job_status_tracker/backup_submission'
+require 'sidekiq/form526_job_status_tracker/enqueue'
+
 
 module Sidekiq
   module Form526JobStatusTracker
@@ -34,11 +36,9 @@ module Sidekiq
           }
 
           # if additional_birls_to_try.empty?
-          backup = BackupSubmission::Processor.new(form526_submission_id)
-          backup.process!
-          Rails.logger.debug backup
-          raise 'KKKK'
+          BackupSubmission::Enqueue.perform_async(form526_submission_id)
           # end
+          exit 
 
           form_job_status = Form526JobStatus.find_by(job_id: job_id)
           bgjob_errors = form_job_status.bgjob_errors || {}

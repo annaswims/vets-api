@@ -26,35 +26,38 @@ module Form526BackupSubmission
       perform :post, 'uploads', request_body, headers
     end
 
+    def get_file_path_from_objs(file)
+      case file
+      when EVSS::DisabilityCompensationForm::Form8940Document
+        file.pdf_path
+      when CarrierWave::SanitizedFile
+        file.file
+      else
+        file
+      end
+    end
+
+
     def upload_doc(upload_url:, file:, metadata:, attachments: [])
       json_tmpfile = Tempfile.new('metadata.json', encoding: 'utf-8')
       json_tmpfile.write(metadata.to_s)
       json_tmpfile.rewind
 
-      file_with_full_path = case file
-                            when EVSS::DisabilityCompensationForm::Form8940Document
-                              file.pdf_path
-                            when CarrierWave::SanitizedFile
-                              file.file
-                            else
-                              file
-                            end
-
+      file_with_full_path = get_file_path_from_objs(file)
       file_name = File.basename(file_with_full_path)
 
       params = { metadata: Faraday::UploadIO.new(json_tmpfile.path, Mime[:json].to_s, 'metadata.json'),
                  content: Faraday::UploadIO.new(file_with_full_path, Mime[:pdf].to_s, file_name) }
-
-      attachments.each.with_index do |carrierwave_evidence_file, i|
-        file_path = carrierwave_evidence_file.file
-        file_name = carrierwave_evidence_file.original_filename.nil? ? File.basename(file_path) : carrierwave_evidence_file.original_filename
+      attachments.each.with_index do |attachment, i|
+        file_path = get_file_path_from_objs(attachment[:file])
+        file_name = attachment[:file_name]
         params["attachment#{i + 1}".to_sym] = Faraday::UploadIO.new(file_path, Mime[:pdf].to_s, file_name)
       end
-      response = perform :put, upload_url, params, { 'Content-Type' => 'multipart/form-data' }
-      Rails.logger.debug response
 
+      response = perform :put, upload_url, params, { 'Content-Type' => 'multipart/form-data' }
+      
       if file_with_full_path =~ /tmp/
-        if Rails.env.production?
+        if ::Rails.env.production?
           File.delete(file_with_full_path)
           attachments.each(&:delete)
         else
