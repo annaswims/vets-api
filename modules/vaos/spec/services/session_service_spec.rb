@@ -28,6 +28,8 @@ describe VAOS::SessionService do
     allow_any_instance_of(VAOS::UserService).to receive(:session).and_return('stubbed_token')
   end
 
+  # TODO: verify session calls
+
   describe 'headers' do
     it 'includes Referer, X-VAMF-JWT and X-Request-ID headers in each request' do
       VCR.use_cassette('vaos/systems/get_systems', match_requests_on: %i[method path query]) do
