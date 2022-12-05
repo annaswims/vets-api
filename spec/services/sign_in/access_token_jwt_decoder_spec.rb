@@ -12,7 +12,7 @@ RSpec.describe SignIn::AccessTokenJwtDecoder do
     let(:access_token) { create(:access_token) }
     let(:with_validation) { true }
     let(:client_id) { SignIn::Constants::ClientConfig::MOBILE_CLIENT }
-    let(:client_config) { SignIn::Constants::ClientConfig::CLIENTS[:"#{client_id}"] }
+    let(:client_config) { SignIn::ClientConfig.new(client_id: client_id) }
 
     context 'when access token jwt is expired' do
       let(:access_token_jwt) { SignIn::AccessTokenJwtEncoder.new(access_token: access_token).perform }
@@ -52,7 +52,7 @@ RSpec.describe SignIn::AccessTokenJwtDecoder do
       let(:jwt_payload) do
         {
           iss: SignIn::Constants::AccessToken::ISSUER,
-          aud: client_config[:access_token_audience],
+          aud: client_config.access_token_audience,
           client_id: client_id,
           jti: SecureRandom.hex,
           sub: access_token.user_uuid,

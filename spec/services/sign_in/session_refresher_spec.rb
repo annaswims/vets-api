@@ -37,8 +37,8 @@ RSpec.describe SignIn::SessionRefresher do
       end
       let(:session_expiration) { Time.zone.now + 5.minutes }
       let(:client_id) { SignIn::Constants::ClientConfig::MOBILE_CLIENT }
-      let(:client_config) { SignIn::Constants::ClientConfig::CLIENTS[:"#{client_id}"] }
-      let(:refresh_expiration_time) { client_config&.dig(:refresh_token_duration) }
+      let(:client_config) { SignIn::ClientConfig.new(client_id: client_id) }
+      let(:refresh_expiration_time) { client_config.refresh_token_duration }
 
       before { Timecop.freeze(Time.zone.now.floor) }
 

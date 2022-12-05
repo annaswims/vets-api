@@ -2,12 +2,14 @@
 
 module SignIn
   class ClientConfig
-    CLIENT_IDS = %w[web mobile mobile_test].freeze
+    include ActiveModel::Validations
+    attr_reader :client_id
 
-    validates :client_id, inclusion: CLIENT_IDS
+    validates :client_id, presence: true, inclusion: { in: SignIn::Constants::ClientConfig::CLIENT_IDS }
 
     def initialize(client_id:)
       @client_id = client_id
+      validate!
     end
 
     def cookie_auth?
@@ -39,11 +41,11 @@ module SignIn
     def client_config
       @client_config ||=
         case @client_id
-        when 'web'
+        when SignIn::Constants::ClientConfig::WEB_CLIENT
           web_config
-        when 'mobile'
+        when SignIn::Constants::ClientConfig::MOBILE_CLIENT
           mobile_config
-        when 'mobile_test'
+        when SignIn::Constants::ClientConfig::MOBILE_TEST_CLIENT
           mobile_test_config
         end
     end

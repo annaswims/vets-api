@@ -115,7 +115,7 @@ module SignIn
     end
 
     def validity_length
-      Constants::ClientConfig::CLIENTS[:"#{client_id}"]&.dig(:refresh_token_duration)
+      SignIn::ClientConfig.new(client_id: client_id).refresh_token_duration
     end
   end
 end

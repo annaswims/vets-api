@@ -89,7 +89,7 @@ module SignIn
     end
 
     def validity_length
-      client_config&.dig(:refresh_token_duration)
+      client_config.refresh_token_duration
     end
 
     def updated_anti_csrf_token
@@ -97,11 +97,11 @@ module SignIn
     end
 
     def anti_csrf_enabled_client?
-      client_config&.dig(:anti_csrf)
+      client_config.anti_csrf?
     end
 
     def client_config
-      @client_config ||= Constants::ClientConfig::CLIENTS[:"#{session.client_id}"]
+      @client_config ||= SignIn::ClientConfig.new(client_id: session.client_id)
     end
 
     def get_hash(object)
