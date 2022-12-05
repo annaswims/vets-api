@@ -79,7 +79,7 @@ module MebApi
         claimant_response = claimant_service.get_claimant_info
         claimant_id = claimant_response['claimant_id']
 
-        response = if claimant_id.zero?
+        response = if claimant_id.to_i.zero?
                      { enrollment_certify_responses: [] }
                    else
                      enrollment_service.submit_enrollment(
