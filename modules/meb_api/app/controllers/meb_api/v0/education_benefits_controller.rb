@@ -79,7 +79,7 @@ module MebApi
         claimant_response = claimant_service.get_claimant_info
         claimant_id = claimant_response['claimant_id']
 
-        response = enrollment_service.submit_enrollment(params[:education_benefit], claimant_id)
+        response = claimant_id == 0 ? { enrollment_certify_responses: [] } : enrollment_service.submit_enrollment(params[:education_benefit], claimant_id)
 
         render json: response, serializer: SubmitEnrollmentSerializer
       end
