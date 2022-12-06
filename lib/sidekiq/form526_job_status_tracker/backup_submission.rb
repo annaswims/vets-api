@@ -202,18 +202,18 @@ module Sidekiq
         def get_form526_pdf
           resp = EVSS::DisabilityCompensationForm::Service.new(submission.auth_headers).get_form526(submission.form_json)
           b64_enc_body = resp.body['pdf']
-          content = Base64.decode64(b64_enc_body)    
+          content = Base64.decode64(b64_enc_body)
           file = if ::Rails.env.production?
-            content_tmpfile = Tempfile.new(TMP_FILE_PREFIX, binmode: true)
-            content_tmpfile.write(content)
-            content_tmpfile.path
-          else            
-            fname = "/tmp/#{Random.uuid}.pdf" 
-            File.open(fname, "wb") do |f|
-              f.write(content)
-            end
-            fname
-          end
+                   content_tmpfile = Tempfile.new(TMP_FILE_PREFIX, binmode: true)
+                   content_tmpfile.write(content)
+                   content_tmpfile.path
+                 else
+                   fname = "/tmp/#{Random.uuid}.pdf"
+                   File.open(fname, 'wb') do |f|
+                     f.write(content)
+                   end
+                   fname
+                 end
           docs << {
             type: FORM_526_DOC_TYPE,
             file: file

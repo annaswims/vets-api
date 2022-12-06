@@ -48,7 +48,6 @@ module DecisionReviewV1
       def generate_metadata
         veteran_full_name = @form['veteranFullName']
         address = @form['veteranAddress']
-
         {
           'veteranFirstName' => veteran_full_name['first'],
           'veteranLastName' => veteran_full_name['last'],

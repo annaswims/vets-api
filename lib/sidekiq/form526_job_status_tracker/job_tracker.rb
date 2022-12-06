@@ -34,7 +34,6 @@ module Sidekiq
             updated_at: timestamp
           }
 
-          
           # if additional_birls_to_try.empty?
           queue = Settings.key?(:form526_backup) ? Settings.form526_backup.queue : true
           if queue
@@ -76,12 +75,12 @@ module Sidekiq
                                  va_eauth_service_transaction_id: vagov_id
           )
 
-        #   rescue => e
-        #     emsg = 'Form526 Exhausted, with error tracking job exhausted'
-        #     error_details = { message: emsg, error: e, class: msg['class'].demodulize, jid: msg['jid'] }
-        #     ::Rails.logger.error(emsg, error_details)
-        #   ensure
-        #     Metrics.new(statsd_key_prefix).increment_exhausted
+          #   rescue => e
+          #     emsg = 'Form526 Exhausted, with error tracking job exhausted'
+          #     error_details = { message: emsg, error: e, class: msg['class'].demodulize, jid: msg['jid'] }
+          #     ::Rails.logger.error(emsg, error_details)
+          #   ensure
+          #     Metrics.new(statsd_key_prefix).increment_exhausted
         end
         # rubocop:enable Metrics/MethodLength
       end
