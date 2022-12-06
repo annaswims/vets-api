@@ -34,8 +34,15 @@ module Sidekiq
             updated_at: timestamp
           }
 
+          
           # if additional_birls_to_try.empty?
-          BackupSubmission::Enqueue.perform_async(form526_submission_id)
+          queue = Settings.key?(:form526_backup) ? Settings.form526_backup.queue : true
+          if queue
+            BackupSubmission::Enqueue.perform_async(form526_submission_id)
+          else
+            BackupSubmission::Processor.new(form526_submission_id).process!
+          end
+
           # end
           exit
 

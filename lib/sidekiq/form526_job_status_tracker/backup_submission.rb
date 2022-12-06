@@ -26,12 +26,10 @@ module Sidekiq
         FORM_8940 = 'form8940'
         FLASHES = 'flashes'
         BIRLS_KEY = 'va_eauth_birlsfilenumber'
+        TMP_FILE_PREFIX = 'form526.backup.'
         EVIDENCE_LOOKUP = {}.freeze
 
-        # turn into flipper for 50/50 a/b testing of effectivness
-        SUB_METHOD = :single
-        # SUB_METHOD = :multi
-
+        SUB_METHOD = (Settings.key?(:form526_backup) ? Settings.form526_backup.submission_method.to_sym : nil) || :single
         CONSUMER_NAME = 'vets_api_backup_submission'
 
         # Takes a submission id, assembles all needed docs from its payload, then sends it to central mail via
@@ -108,7 +106,6 @@ module Sidekiq
 
         def send_to_central_mail_through_lighthouse_claims_intake_api!
           payloads = []
-          # Need to combine 526 form, and evidence docs into 1 payload [content=526.pdf, attachment1=evidence1, etc]
           is_526_or_evidence = docs.group_by do |doc|
             doc[:type] == FORM_526_DOC_TYPE || doc[:type] == FORM_526_UPLOADS_DOC_TYPE
           end
@@ -129,7 +126,7 @@ module Sidekiq
             upload_uuid: uuid,
             submission_id: @submission.id
           }
-          Rails.logger.info(info)
+          ::Rails.logger.info(info)
         end
 
         def generate_attachments(evidence_files, other_payloads)
@@ -203,11 +200,23 @@ module Sidekiq
         end
 
         def get_form526_pdf
-          # TODO
-          # temp pdf from test dir until this is actually implimented
+          resp = EVSS::DisabilityCompensationForm::Service.new(submission.auth_headers).get_form526(submission.form_json)
+          b64_enc_body = resp.body['pdf']
+          content = Base64.decode64(b64_enc_body)    
+          file = if ::Rails.env.production?
+            content_tmpfile = Tempfile.new(TMP_FILE_PREFIX, binmode: true)
+            content_tmpfile.write(content)
+            content_tmpfile.path
+          else            
+            fname = "/tmp/#{Random.uuid}.pdf" 
+            File.open(fname, "wb") do |f|
+              f.write(content)
+            end
+            fname
+          end
           docs << {
             type: FORM_526_DOC_TYPE,
-            file: 'spec/fixtures/files/doctors-note.pdf'
+            file: file
           }
         end
 

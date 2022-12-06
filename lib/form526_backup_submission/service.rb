@@ -62,7 +62,8 @@ module Form526BackupSubmission
         else
           Rails.logger.info("Would have deleted file #{file_with_full_path} if in production env.")
           attachments.each do |carrierwave_evidence_file|
-            Rails.logger.info("Would have deleted file #{carrierwave_evidence_file.file} if in production env.")
+            to_del = carrierwave_evidence_file.is_a?(Hash) ? carrierwave_evidence_file[:file] : carrierwave_evidence_file.file
+            Rails.logger.info("Would have deleted file #{to_del} if in production env.")
           end
         end
       end

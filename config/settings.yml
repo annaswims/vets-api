@@ -1432,6 +1432,12 @@ lgy:
   api_key: ~
   mock_coe: true
 
+form526_backup:
+  # Can be single or multi, to send 1 payload or many, to central mail
+  submission_method: 'single'
+  # Can be queued in Sidekiq, or sent directly from the existing Sidekiq job
+  queue: false
+
 form1095_b:
   s3:
     aws_access_key_id: ~
