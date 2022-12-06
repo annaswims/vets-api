@@ -13,9 +13,9 @@ RSpec.describe SignIn::SessionCreator do
     context 'when input object is a ValidatedCredential' do
       let(:validated_credential) { create(:validated_credential, client_id: client_id) }
       let(:user_uuid) { validated_credential.user_verification.backing_credential_identifier }
-      let(:client_id) { SignIn::Constants::ClientConfig::WEB_CLIENT }
-      let(:client_config) { SignIn::Constants::ClientConfig::CLIENTS[:"#{client_id}"] }
-      let(:refresh_expiration_time) { client_config&.dig(:refresh_token_duration) }
+      let(:client_id) { SignIn::Constants::Auth::WEB_CLIENT }
+      let(:client_config) { SignIn::ClientConfig.new(client_id: client_id) }
+      let(:refresh_expiration_time) { client_config.refresh_token_duration }
 
       context 'expected anti_csrf_token' do
         let(:expected_anti_csrf_token) { 'some-anti-csrf-token' }
@@ -75,7 +75,7 @@ RSpec.describe SignIn::SessionCreator do
         end
 
         context 'and client_id is set to a short token expiration configuration' do
-          let(:client_id) { SignIn::Constants::ClientConfig::WEB_CLIENT }
+          let(:client_id) { SignIn::Constants::Auth::WEB_CLIENT }
 
           it 'creates a session with the expected expiration time' do
             expect(subject.session.refresh_expiration).to eq(expected_expiration_time)
@@ -83,7 +83,7 @@ RSpec.describe SignIn::SessionCreator do
         end
 
         context 'and client_id is set to a long token expiration configuration' do
-          let(:client_id) { SignIn::Constants::ClientConfig::MOBILE_CLIENT }
+          let(:client_id) { SignIn::Constants::Auth::MOBILE_CLIENT }
 
           it 'creates a session with the expected expiration time' do
             expect(subject.session.refresh_expiration).to eq(expected_expiration_time)

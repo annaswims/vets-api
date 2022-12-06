@@ -33,7 +33,7 @@ module SignIn
     )
 
     validates :version, inclusion: Constants::AccessToken::VERSION_LIST
-    validates :client_id, inclusion: Constants::ClientConfig::CLIENT_IDS
+    validates :client_id, inclusion: Constants::Auth::CLIENT_IDS
 
     # rubocop:disable Metrics/ParameterLists
     def initialize(session_handle:,

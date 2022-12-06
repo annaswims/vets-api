@@ -5,7 +5,7 @@ module SignIn
     include ActiveModel::Validations
     attr_reader :client_id
 
-    validates :client_id, presence: true, inclusion: { in: SignIn::Constants::ClientConfig::CLIENT_IDS }
+    validates :client_id, presence: true, inclusion: { in: SignIn::Constants::Auth::CLIENT_IDS }
 
     def initialize(client_id:)
       @client_id = client_id
@@ -41,11 +41,11 @@ module SignIn
     def client_config
       @client_config ||=
         case @client_id
-        when SignIn::Constants::ClientConfig::WEB_CLIENT
+        when SignIn::Constants::Auth::WEB_CLIENT
           web_config
-        when SignIn::Constants::ClientConfig::MOBILE_CLIENT
+        when SignIn::Constants::Auth::MOBILE_CLIENT
           mobile_config
-        when SignIn::Constants::ClientConfig::MOBILE_TEST_CLIENT
+        when SignIn::Constants::Auth::MOBILE_TEST_CLIENT
           mobile_test_config
         end
     end
