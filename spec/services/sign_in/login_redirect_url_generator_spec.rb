@@ -58,8 +58,8 @@ RSpec.describe SignIn::LoginRedirectUrlGenerator do
     context 'when client_id is set to an arbitrary value' do
       let(:client_id) { 'some-client-id' }
       let(:redirect_uri) { 'some-redirect-uri' }
-      let(:expected_error) { SignIn::Errors::InvalidClientIdError }
-      let(:expected_error_log) { 'Client id is not valid' }
+      let(:expected_error) { ActiveModel::ValidationError }
+      let(:expected_error_log) { 'Validation failed: Client is not included in the list' }
 
       it 'raises an invalid client error' do
         expect { subject }.to raise_exception(expected_error, expected_error_log)

@@ -127,8 +127,8 @@ RSpec.describe SignIn::TokenSerializer do
 
     context 'when client id is arbitrary' do
       let(:client_id) { 'some-client-id' }
-      let(:expected_error) { SignIn::Errors::InvalidClientIdError }
-      let(:expected_error_message) { 'Client id is not valid' }
+      let(:expected_error) { ActiveModel::ValidationError }
+      let(:expected_error_message) { 'Validation failed: Client is not included in the list' }
 
       it 'raises client id is not valid error' do
         expect { subject }.to raise_error(expected_error, expected_error_message)
