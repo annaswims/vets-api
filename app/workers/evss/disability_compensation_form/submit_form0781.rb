@@ -39,7 +39,7 @@ module EVSS
         if parsed_forms['form0781'].present?
           ret_paths << {
             type: FORM_ID_0781,
-            file: process_0781(submission.auth_headers, uuid, FORM_ID_0781, parsed_forms['form0781'], false)
+            file: process_0781(submission.auth_headers, uuid, FORM_ID_0781, parsed_forms['form0781'], upload: false)
           }
         end
         if parsed_forms['form0781a'].present?
@@ -81,7 +81,7 @@ module EVSS
 
       private
 
-      def process_0781(auth_headers, evss_claim_id, form_id, form_content, upload = true)
+      def process_0781(auth_headers, evss_claim_id, form_id, form_content, upload: true)
         # generate and stamp PDF file
         pdf_path0781 = generate_stamp_pdf(form_content, evss_claim_id, form_id)
         upload ? upload_to_vbms(auth_headers, evss_claim_id, pdf_path0781, form_id) : pdf_path0781

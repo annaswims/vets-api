@@ -19,8 +19,8 @@ module Sidekiq
             job_status.update(status: Form526JobStatus::STATUS[:success])
           rescue => e
             ::Rails.logger.error(
-              message: "FORM526 BACKUP SUMBISSION FAILURE. Investigate immedietly, failed with message: #{exception.message}.",
-              backtrace: exception.backtrace,
+              message: "FORM526 BACKUP SUMBISSION FAILURE. Investigate immedietly: #{e.message}.",
+              backtrace: e.backtrace,
               submission_id: form526_submission_id
             )
             job_status.update(status: Form526JobStatus::STATUS[:exhausted])

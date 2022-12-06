@@ -28,8 +28,9 @@ module Sidekiq
         BIRLS_KEY = 'va_eauth_birlsfilenumber'
         TMP_FILE_PREFIX = 'form526.backup.'
         EVIDENCE_LOOKUP = {}.freeze
+        BKUP_SETTINGS = Settings.key?(:form526_backup) ? Settings.form526_backup : OpenStruct.new
 
-        SUB_METHOD = (Settings.key?(:form526_backup) ? Settings.form526_backup.submission_method.to_sym : nil) || :single
+        SUB_METHOD = (BKUP_SETTINGS.submission_method || 'single').to_sym
         CONSUMER_NAME = 'vets_api_backup_submission'
 
         # Takes a submission id, assembles all needed docs from its payload, then sends it to central mail via
@@ -105,7 +106,6 @@ module Sidekiq
         end
 
         def send_to_central_mail_through_lighthouse_claims_intake_api!
-          payloads = []
           is_526_or_evidence = docs.group_by do |doc|
             doc[:type] == FORM_526_DOC_TYPE || doc[:type] == FORM_526_UPLOADS_DOC_TYPE
           end
@@ -184,7 +184,8 @@ module Sidekiq
         end
 
         def determine_zip
-          # TODO: figure out if I need to use currentMailingAddress or changeOfAddress zip? I dont think it matters too much though
+          # TODO: Figure out if I need to use currentMailingAddress or changeOfAddress zip?
+          # TODO: I dont think it matters too much though
           z = submission.form.dig('form526', 'form526', 'veteran', 'currentMailingAddress')
           if z.nil?
             @zip = '00000'
@@ -200,7 +201,9 @@ module Sidekiq
         end
 
         def get_form526_pdf
-          resp = EVSS::DisabilityCompensationForm::Service.new(submission.auth_headers).get_form526(submission.form_json)
+          headers = submission.auth_headers
+          form_json = submission.form_json
+          resp = EVSS::DisabilityCompensationForm::Service.new(headers).get_form526(form_json)
           b64_enc_body = resp.body['pdf']
           content = Base64.decode64(b64_enc_body)
           file = if ::Rails.env.production?

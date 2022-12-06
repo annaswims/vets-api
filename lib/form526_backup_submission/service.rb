@@ -37,13 +37,40 @@ module Form526BackupSubmission
       end
     end
 
-    def upload_doc(upload_url:, file:, metadata:, attachments: [])
+    def get_file_from_obj(obj)
+      obj.is_a?(Hash) ? obj[:file] : obj.file
+    end
+
+    def generate_tmp_metadata(metadata)
       json_tmpfile = Tempfile.new('metadata.json', encoding: 'utf-8')
       json_tmpfile.write(metadata.to_s)
       json_tmpfile.rewind
+      json_tmpfile
+    end
 
+    def get_file_name(file)
       file_with_full_path = get_file_path_from_objs(file)
-      file_name = File.basename(file_with_full_path)
+      File.basename(file_with_full_path)
+    end
+
+    def upload_logging_logic(file_with_full_path:, attachments:)
+      if file_with_full_path =~ /tmp/
+        if Rails.env.production?
+          File.delete(file_with_full_path)
+          attachments.each(&:delete)
+        else
+          Rails.logger.info("Would have deleted file #{file_with_full_path} if in production env.")
+          attachments.each do |evidence_file|
+            to_del = get_file_from_obj(evidence_file)
+            Rails.logger.info("Would have deleted file #{to_del} if in production env.")
+          end
+        end
+      end
+    end
+
+    def upload_doc(upload_url:, file:, metadata:, attachments: [])
+      json_tmpfile = generate_tmp_metadata(metadata)
+      file_with_full_path = get_file_name(file)
 
       params = { metadata: Faraday::UploadIO.new(json_tmpfile.path, Mime[:json].to_s, 'metadata.json'),
                  content: Faraday::UploadIO.new(file_with_full_path, Mime[:pdf].to_s, file_name) }
@@ -55,18 +82,9 @@ module Form526BackupSubmission
 
       response = perform :put, upload_url, params, { 'Content-Type' => 'multipart/form-data' }
 
-      if file_with_full_path =~ /tmp/
-        if Rails.env.production?
-          File.delete(file_with_full_path)
-          attachments.each(&:delete)
-        else
-          Rails.logger.info("Would have deleted file #{file_with_full_path} if in production env.")
-          attachments.each do |carrierwave_evidence_file|
-            to_del = carrierwave_evidence_file.is_a?(Hash) ? carrierwave_evidence_file[:file] : carrierwave_evidence_file.file
-            Rails.logger.info("Would have deleted file #{to_del} if in production env.")
-          end
-        end
-      end
+      upload_logging_logic(file_with_full_path: file_with_full_path, evidence: evidence)
+
+      response
     ensure
       json_tmpfile.close
       json_tmpfile.unlink
