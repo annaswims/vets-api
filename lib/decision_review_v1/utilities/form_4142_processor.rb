@@ -25,11 +25,7 @@ module DecisionReviewV1
 
       def generate_stamp_pdf
         pdf = PdfFill::Filler.fill_ancillary_form(
-<<<<<<< HEAD
           @form, @uuid, FORM_ID
-=======
-          @form, @response.body['data']['id'], FORM_ID
->>>>>>> master
         )
         stamped_path = CentralMail::DatestampPdf.new(pdf).run(text: 'VA.gov', x: 5, y: 5)
         CentralMail::DatestampPdf.new(stamped_path).run(
