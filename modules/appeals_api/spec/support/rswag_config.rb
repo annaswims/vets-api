@@ -306,13 +306,13 @@ class AppealsApi::RswagConfig
   end
 
   def hlr_v2_create_schemas
-    if DocHelpers.wip_doc_enabled?(:segmented_apis)
+    if DocHelpers.decision_reviews?
+      parse_create_schema 'v2', '200996.json'
+    else
       hlr_schema = parse_create_schema('v2', '200996_with_shared_refs.json', return_raw: true)
       {
         hlrCreate: { type: 'object' }.merge!(hlr_schema.slice(*%w[description properties required]))
       }
-    else
-      parse_create_schema 'v2', '200996.json'
     end
   end
 
