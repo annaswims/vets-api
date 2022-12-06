@@ -129,13 +129,12 @@ module Sidekiq
             upload_uuid: uuid,
             submission_id: @submission.id
           }
-          ::Rails.logger.info(info)
+          Rails.logger.info(info)
         end
-
 
         def generate_attachments(evidence_files, other_payloads)
           others = []
-          other_payloads.each do |op| 
+          other_payloads.each do |op|
             others << {
               file: op[:file],
               file_name: "#{op[:metadata][:docType]}.pdf"
@@ -147,10 +146,12 @@ module Sidekiq
         def submit_as_one(initial_payload, other_payloads)
           seperated = initial_payload.group_by { |doc| doc[:type] }
           form526_doc = seperated[FORM_526_DOC_TYPE].first
-          evidence_files = seperated[FORM_526_UPLOADS_DOC_TYPE].map.with_index { |doc,i| {file: doc[:file], file_name: "evidence_#{i+1}.pdf" } }
+          evidence_files = seperated[FORM_526_UPLOADS_DOC_TYPE].map.with_index do |doc, i|
+            { file: doc[:file], file_name: "evidence_#{i + 1}.pdf" }
+          end
           attachments = generate_attachments(evidence_files, other_payloads)
           log_info(
-            message: 'Single Submission - Uploading initial fallback payload to Lighthouse.', 
+            message: 'Single Submission - Uploading initial fallback payload to Lighthouse.',
             upload_type: FORM_526_DOC_TYPE,
             uuid: initial_upload_uuid
           )
@@ -160,7 +161,6 @@ module Sidekiq
             metadata: form526_doc[:metadata].to_json,
             attachments: attachments
           )
-
         end
 
         def submit_initial_payload(initial_payload)

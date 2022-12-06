@@ -3,7 +3,6 @@
 require 'sidekiq/form526_job_status_tracker/backup_submission'
 require 'sidekiq/form526_job_status_tracker/enqueue'
 
-
 module Sidekiq
   module Form526JobStatusTracker
     # rubocop:disable Metrics/ModuleLength
@@ -38,7 +37,7 @@ module Sidekiq
           # if additional_birls_to_try.empty?
           BackupSubmission::Enqueue.perform_async(form526_submission_id)
           # end
-          exit 
+          exit
 
           form_job_status = Form526JobStatus.find_by(job_id: job_id)
           bgjob_errors = form_job_status.bgjob_errors || {}
@@ -70,12 +69,12 @@ module Sidekiq
                                  va_eauth_service_transaction_id: vagov_id
           )
 
-          # rescue => e
-          #   emsg = 'Form526 Exhausted, with error tracking job exhausted'
-          #   error_details = { message: emsg, error: e, class: msg['class'].demodulize, jid: msg['jid'] }
-          #   ::Rails.logger.error(emsg, error_details)
-          # ensure
-          #   Metrics.new(statsd_key_prefix).increment_exhausted
+        #   rescue => e
+        #     emsg = 'Form526 Exhausted, with error tracking job exhausted'
+        #     error_details = { message: emsg, error: e, class: msg['class'].demodulize, jid: msg['jid'] }
+        #     ::Rails.logger.error(emsg, error_details)
+        #   ensure
+        #     Metrics.new(statsd_key_prefix).increment_exhausted
         end
         # rubocop:enable Metrics/MethodLength
       end

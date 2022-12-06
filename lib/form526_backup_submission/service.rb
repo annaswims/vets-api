@@ -37,7 +37,6 @@ module Form526BackupSubmission
       end
     end
 
-
     def upload_doc(upload_url:, file:, metadata:, attachments: [])
       json_tmpfile = Tempfile.new('metadata.json', encoding: 'utf-8')
       json_tmpfile.write(metadata.to_s)
@@ -55,15 +54,15 @@ module Form526BackupSubmission
       end
 
       response = perform :put, upload_url, params, { 'Content-Type' => 'multipart/form-data' }
-      
+
       if file_with_full_path =~ /tmp/
-        if ::Rails.env.production?
+        if Rails.env.production?
           File.delete(file_with_full_path)
           attachments.each(&:delete)
         else
-          ::Rails.logger.info("Would have deleted file #{file_with_full_path} if in production env.")
+          Rails.logger.info("Would have deleted file #{file_with_full_path} if in production env.")
           attachments.each do |carrierwave_evidence_file|
-            ::Rails.logger.info("Would have deleted file #{carrierwave_evidence_file.file} if in production env.")
+            Rails.logger.info("Would have deleted file #{carrierwave_evidence_file.file} if in production env.")
           end
         end
       end
