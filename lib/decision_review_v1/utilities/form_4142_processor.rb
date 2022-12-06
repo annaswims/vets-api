@@ -25,7 +25,11 @@ module DecisionReviewV1
 
       def generate_stamp_pdf
         pdf = PdfFill::Filler.fill_ancillary_form(
+<<<<<<< HEAD
           @form, @uuid, FORM_ID
+=======
+          @form, @response.body['data']['id'], FORM_ID
+>>>>>>> master
         )
         stamped_path = CentralMail::DatestampPdf.new(pdf).run(text: 'VA.gov', x: 5, y: 5)
         CentralMail::DatestampPdf.new(stamped_path).run(
@@ -54,7 +58,11 @@ module DecisionReviewV1
           'veteranLastName' => veteran_full_name['last'],
           'fileNumber' => @form['vaFileNumber'] || @form['veteranSocialSecurityNumber'],
           'receiveDt' => received_date,
+<<<<<<< HEAD
           'uuid' => @uuid,
+=======
+          'uuid' => @response.body['data']['id'],
+>>>>>>> master
           'zipCode' => address['country'] == 'USA' ? address['postalCode'] : FOREIGN_POSTALCODE,
           'source' => 'VA Forms Group B',
           'hashV' => Digest::SHA256.file(@pdf_path).hexdigest,

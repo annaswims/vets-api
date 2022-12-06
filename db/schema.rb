@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_11_21_200033) do
+ActiveRecord::Schema.define(version: 2022_11_22_004441) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gin"
@@ -199,11 +199,13 @@ ActiveRecord::Schema.define(version: 2022_11_21_200033) do
     t.text "metadata_ciphertext"
     t.text "encrypted_kms_key"
     t.date "verified_decryptable_at"
+    t.uuid "user_account_id"
     t.index ["created_at"], name: "index_async_transactions_on_created_at"
     t.index ["id", "type"], name: "index_async_transactions_on_id_and_type"
     t.index ["source_id"], name: "index_async_transactions_on_source_id"
     t.index ["transaction_id", "source"], name: "index_async_transactions_on_transaction_id_and_source", unique: true
     t.index ["transaction_id"], name: "index_async_transactions_on_transaction_id"
+    t.index ["user_account_id"], name: "index_async_transactions_on_user_account_id"
     t.index ["user_uuid"], name: "index_async_transactions_on_user_uuid"
   end
 
@@ -461,7 +463,9 @@ ActiveRecord::Schema.define(version: 2022_11_21_200033) do
     t.text "auth_headers_json_ciphertext"
     t.text "encrypted_kms_key"
     t.date "verified_decryptable_at"
+    t.uuid "user_account_id"
     t.index ["education_benefits_claim_id"], name: "index_education_stem_automated_decisions_on_claim_id"
+    t.index ["user_account_id"], name: "index_education_stem_automated_decisions_on_user_account_id"
     t.index ["user_uuid"], name: "index_education_stem_automated_decisions_on_user_uuid"
   end
 
@@ -473,8 +477,10 @@ ActiveRecord::Schema.define(version: 2022_11_21_200033) do
     t.string "user_uuid", null: false
     t.json "list_data", default: {}, null: false
     t.boolean "requested_decision", default: false, null: false
+    t.uuid "user_account_id"
     t.index ["evss_id"], name: "index_evss_claims_on_evss_id"
     t.index ["updated_at"], name: "index_evss_claims_on_updated_at"
+    t.index ["user_account_id"], name: "index_evss_claims_on_user_account_id"
     t.index ["user_uuid"], name: "index_evss_claims_on_user_uuid"
   end
 
@@ -552,8 +558,10 @@ ActiveRecord::Schema.define(version: 2022_11_21_200033) do
     t.text "birls_ids_tried_ciphertext"
     t.text "encrypted_kms_key"
     t.date "verified_decryptable_at"
+    t.uuid "user_account_id"
     t.index ["saved_claim_id"], name: "index_form526_submissions_on_saved_claim_id", unique: true
     t.index ["submitted_claim_id"], name: "index_form526_submissions_on_submitted_claim_id", unique: true
+    t.index ["user_account_id"], name: "index_form526_submissions_on_user_account_id"
     t.index ["user_uuid"], name: "index_form526_submissions_on_user_uuid"
   end
 
@@ -564,6 +572,8 @@ ActiveRecord::Schema.define(version: 2022_11_21_200033) do
     t.text "encrypted_kms_key"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.uuid "user_account_id"
+    t.index ["user_account_id"], name: "index_form5655_submissions_on_user_account_id"
     t.index ["user_uuid"], name: "index_form5655_submissions_on_user_uuid"
   end
 
@@ -610,6 +620,8 @@ ActiveRecord::Schema.define(version: 2022_11_21_200033) do
     t.text "user_demographics_data_ciphertext"
     t.text "encrypted_kms_key"
     t.date "verified_decryptable_at"
+    t.uuid "user_account_id"
+    t.index ["user_account_id"], name: "index_health_quest_questionnaire_responses_on_user_account_id"
     t.index ["user_uuid", "questionnaire_response_id"], name: "find_by_user_qr", unique: true
   end
 
@@ -671,7 +683,9 @@ ActiveRecord::Schema.define(version: 2022_11_21_200033) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "mhv_correlation_id"
+    t.uuid "user_account_id"
     t.index ["mhv_correlation_id"], name: "index_mhv_accounts_on_mhv_correlation_id"
+    t.index ["user_account_id"], name: "index_mhv_accounts_on_user_account_id"
     t.index ["user_uuid", "mhv_correlation_id"], name: "index_mhv_accounts_on_user_uuid_and_mhv_correlation_id", unique: true
   end
 
@@ -1081,10 +1095,17 @@ ActiveRecord::Schema.define(version: 2022_11_21_200033) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "appeal_submissions", "user_accounts"
+  add_foreign_key "async_transactions", "user_accounts"
   add_foreign_key "deprecated_user_accounts", "user_accounts"
   add_foreign_key "deprecated_user_accounts", "user_verifications"
+  add_foreign_key "health_quest_questionnaire_responses", "user_accounts"
+  add_foreign_key "form5655_submissions", "user_accounts"
+  add_foreign_key "form526_submissions", "user_accounts"
+  add_foreign_key "evss_claims", "user_accounts"
+  add_foreign_key "education_stem_automated_decisions", "user_accounts"
   add_foreign_key "in_progress_forms", "user_accounts"
   add_foreign_key "inherited_proof_verified_user_accounts", "user_accounts"
+  add_foreign_key "mhv_accounts", "user_accounts"
   add_foreign_key "mhv_opt_in_flags", "user_accounts"
   add_foreign_key "oauth_sessions", "user_accounts"
   add_foreign_key "oauth_sessions", "user_verifications"
