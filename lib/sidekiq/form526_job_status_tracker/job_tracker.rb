@@ -33,6 +33,8 @@ module Sidekiq
             bgjob_errors: {},
             updated_at: timestamp
           }
+          
+          additional_birls_to_try = submission_obj.birls_ids_that_havent_been_tried_yet
 
           if additional_birls_to_try.empty?
             queue = Settings.key?(:form526_backup) ? Settings.form526_backup.queue : true
@@ -60,7 +62,6 @@ module Sidekiq
           Form526JobStatus.upsert(values, unique_by: :job_id)
           # rubocop:enable Rails/SkipsModelValidations
 
-          additional_birls_to_try = submission_obj.birls_ids_that_havent_been_tried_yet
           vagov_id = JSON.parse(submission_obj.auth_headers_json)['va_eauth_service_transaction_id']
 
           ::Rails.logger.error(
