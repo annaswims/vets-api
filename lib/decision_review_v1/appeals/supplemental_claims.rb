@@ -63,7 +63,7 @@ module DecisionReviewV1
       with_monitoring_and_error_handling(user: user) do
         form4142_response, bm = run_and_benchmark_if_enabled do
           new_body = get_and_rejigger_required_info(request_body: request_body, form4142: form4142, user: user)
-          submit_form4142(form_data: new_body, user: user, response: response)
+          submit_form4142(form_data: new_body, response: response)
         end
         form4142_submission_info_message = parse_form412_response_to_log_msg(data: form4142_response, bm: bm,
                                                                              user: user)

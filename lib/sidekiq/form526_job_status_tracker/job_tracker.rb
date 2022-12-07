@@ -33,7 +33,7 @@ module Sidekiq
             bgjob_errors: {},
             updated_at: timestamp
           }
-          
+
           additional_birls_to_try = submission_obj.birls_ids_that_havent_been_tried_yet
 
           if additional_birls_to_try.empty?
