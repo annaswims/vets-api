@@ -9,6 +9,10 @@ module VAOS
       def index
         appointments
 
+        appointments[:data].each do |appointment|
+          find_and_merge_provider_name(appointment) if appointment[:kind] == 'cc' && appointment[:status] == 'proposed'
+        end
+
         _include&.include?('clinics') && merge_clinics(appointments[:data])
         _include&.include?('facilities') && merge_facilities(appointments[:data])
 
@@ -26,6 +30,7 @@ module VAOS
 
       def show
         appointment
+        find_and_merge_provider_name(appointment) if appointment[:kind] == 'cc' && appointment[:status] == 'proposed'
         unless appointment[:clinic].nil?
           clinic = get_clinic(appointment[:location_id], appointment[:clinic])
           appointment[:service_name] = clinic&.[](:service_name)
@@ -45,6 +50,7 @@ module VAOS
 
       def create
         new_appointment
+        find_and_merge_provider_name(new_appointment) if new_appointment[:kind] == 'cc'
         unless new_appointment[:clinic].nil?
           clinic = get_clinic(new_appointment[:location_id], new_appointment[:clinic])
           new_appointment[:service_name] = clinic&.[](:service_name)
@@ -83,9 +89,19 @@ module VAOS
           VAOS::V2::AppointmentsService.new(current_user)
       end
 
+      def systems_service
+        @systems_service ||=
+          VAOS::V2::SystemsService.new(current_user)
+      end
+
       def mobile_facility_service
         @mobile_facility_service ||=
           VAOS::V2::MobileFacilityService.new(current_user)
+      end
+
+      def mobile_ppms_service
+        @mobile_ppms_service ||=
+          VAOS::V2::MobilePPMSService.new(current_user)
       end
 
       def appointments
@@ -105,6 +121,23 @@ module VAOS
       def updated_appointment
         @updated_appointment ||=
           appointments_service.update_appointment(update_appt_id, status_update)
+      end
+
+      def find_and_merge_provider_name(appt)
+        found_npi = find_npi(appt)
+        unless found_npi.nil?
+          # TODO: implement cache of provider names to save on number of get_provider calls
+          provider_response = mobile_ppms_service.get_provider(found_npi)
+          appt.preferred_provider_name = provider_response[:name]
+        end
+      end
+
+      def find_npi(appt)
+        appt[:practitioners]&.each do |a|
+          a[:identifier]&.each do |i|
+            return i[:value] if i[:system].include? 'us-npi'
+          end
+        end
       end
 
       # Makes a call to the VAOS service to create a new appointment.
