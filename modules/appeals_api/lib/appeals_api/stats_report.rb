@@ -2,6 +2,12 @@
 
 module AppealsApi
   class StatsReport
+    DATE_FORMAT = '%b%e, %Y'
+
+    STATUS_TRANSITION_PAIRS = [
+      %w[processing submitted], %w[submitted complete], %w[processing success], %w[error success]
+    ]
+
     def initialize(date_from, date_to)
       @date_from = date_from.to_date
       @date_to = date_to.to_date
@@ -11,17 +17,19 @@ module AppealsApi
       <<~REPORT
         Appeals stats report
         #{date_from.strftime(DATE_FORMAT)} to #{date_to.strftime(DATE_FORMAT)}
+        ===
+
+        Higher Level Reviews
         ---
+        #{formatted_stats(AppealsApi::HigherLevelReview)}
 
-        How long did it take for appeals to transition between statuses?
+        Notice of Disagreements
+        ---
+        #{formatted_stats(AppealsApi::NoticeOfDisagreement)}
 
-        #{formatted_stats('processing', 'submitted')}
-
-        #{formatted_stats('submitted', 'complete')}
-
-        #{formatted_stats('processing', 'success')}
-
-        #{formatted_stats('error', 'success')}
+        Supplemental Claims
+        ---
+        #{formatted_stats(AppealsApi::SupplementalClaim)}
       REPORT
     end
 
@@ -29,21 +37,22 @@ module AppealsApi
 
     attr_accessor :date_from, :date_to
 
-    DATE_FORMAT = '%b%e, %Y'
-
-    def status_update_records(status_from, status_to)
+    def status_update_records(statusable_type, status_from, status_to)
       @records ||= {}
-      @records[status_from] ||= {}
-      @records[status_from][status_to] ||=
+      @records[statusable_type] ||= {}
+      @records[statusable_type][status_from] ||= {}
+      @records[statusable_type][status_from][status_to] ||=
         begin
           records = AppealsApi::StatusUpdate.where(
             from: status_from,
             to: status_to,
+            statusable_type: statusable_type,
             status_update_time: date_from..date_to
           ).order(:statusable_id)
           previous_records = AppealsApi::StatusUpdate.where(
             to: status_from,
-            statusable_id: records.pluck(:statusable_id)
+            statusable_id: records.pluck(:statusable_id),
+            statusable_type: statusable_type
           ).order(:statusable_id)
           records.zip(previous_records)
         end
@@ -76,15 +85,20 @@ module AppealsApi
       "#{days}d #{hours}h #{minutes}m"
     end
 
-    def formatted_stats(status_from, status_to)
-      values = stats(status_update_records(status_from, status_to))
+    def formatted_stats(appeal_class)
+      texts = %w[]
 
-      <<~STATS
-        From '#{status_from}' to '#{status_to}':
+      STATUS_TRANSITION_PAIRS.each do |(status_from, status_to)|
+        values = stats(status_update_records(appeal_class.name, status_from, status_to))
 
-        * Average: #{timespan_in_words(values[:mean])}
-        * Median:  #{timespan_in_words(values[:median])}
-      STATS
+        texts << <<~STATS
+          From '#{status_from}' to '#{status_to}':
+          * Average: #{timespan_in_words(values[:mean])}
+          * Median:  #{timespan_in_words(values[:median])}
+        STATS
+      end
+
+      texts.join("\n")
     end
   end
 end
