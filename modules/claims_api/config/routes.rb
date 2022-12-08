@@ -50,6 +50,7 @@ ClaimsApi::Engine.routes.draw do
             ClaimsApi::V2::Veterans::IntentToFilesController::ITF_TYPES.include?(request.path_parameters[:type])
           end)
       post '/:veteranId/intent-to-files', to: 'intent_to_files#submit'
+      post '/:veteranId/intent-to-files/validate', to: 'intent_to_files#validate'
     end
   end
 

@@ -51,6 +51,18 @@ module ClaimsApi
           render json: ClaimsApi::V2::Blueprints::IntentToFileBlueprint.render(lighthouse_itf)
         end
 
+        def validate
+          validate_request!(ClaimsApi::V2::ParamsValidation::IntentToFile)
+          render json: {
+            data: {
+              type: 'intentToFileValidation',
+              attributes: {
+                status: 'valid'
+              }
+            }
+          }
+        end
+
         private
 
         def bgs_service
