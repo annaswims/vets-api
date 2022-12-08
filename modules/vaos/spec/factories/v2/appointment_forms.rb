@@ -13,7 +13,7 @@ FactoryBot.define do
       status { 'proposed' }
       location_id { '983' }
       service_type { 'podiatry' } # transforms on the front-end need to change
-      comment { 'test' }
+      comment {}
       practitioners do
         [
           {
@@ -65,6 +65,16 @@ FactoryBot.define do
         {
           'city': 'Helena',
           'state': 'MT'
+        }
+      end
+      reason_code do
+        {
+          'coding' => [
+            {
+              'code': 'Routine Follow-up'
+            }
+          ],
+          'text': 'string'
         }
       end
     end

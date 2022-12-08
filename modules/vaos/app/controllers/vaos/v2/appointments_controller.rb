@@ -5,6 +5,7 @@ require 'common/exceptions'
 module VAOS
   module V2
     class AppointmentsController < VAOS::V0::BaseController
+      #skip_before_action :verify_authenticity_token
       STATSD_KEY = 'api.vaos.va_mobile.response.partial'
       def index
         appointments
@@ -30,6 +31,7 @@ module VAOS
 
       def show
         appointment
+        #binding.pry
         find_and_merge_provider_name(appointment) if appointment[:kind] == 'cc' && appointment[:status] == 'proposed'
         unless appointment[:clinic].nil?
           clinic = get_clinic(appointment[:location_id], appointment[:clinic])
@@ -123,12 +125,33 @@ module VAOS
           appointments_service.update_appointment(update_appt_id, status_update)
       end
 
+      # uses find_npi helper method to extract npi from appointment response,
+      # then uses the npi to look up the provider name via mobile_ppms_service
+      #
+      # will cache the key value pair of npi and provider name to avoid
+      # duplicate get_provider_name calls
       def find_and_merge_provider_name(appt)
+        cached_providers = {}
         found_npi = find_npi(appt)
-        unless found_npi.nil?
-          # TODO: implement cache of provider names to save on number of get_provider calls
-          provider_response = mobile_ppms_service.get_provider(found_npi)
-          appt.preferred_provider_name = provider_response[:name]
+        if found_npi
+          if !cached_providers[found_npi]
+            begin
+              provider_response = mobile_ppms_service.get_provider(found_npi)
+              appt.preferred_provider_name = provider_response[:name]
+            rescue Common::Exceptions::BackendServiceException => e
+              npi_not_found_msg = "We're sorry, we can't display your preferred provider's information right now." +
+                                  "Try again later, or contact your VA facility:"
+              appt.preferred_provider_name = npi_not_found_msg
+              Rails.logger.warn(
+                "Error fetching provider name for npi #{found_npi}",
+                npi: found_npi,
+                vamf_msg: e.original_body
+              )
+            end
+            cached_providers[found_npi] = appt.preferred_provider_name
+          else
+            appt.preferred_provider_name = cached_providers[found_npi]
+          end
         end
       end
 
