@@ -266,7 +266,7 @@ RSpec.describe 'vaos appointments', type: :request, skip_mvi: true do
         # TODO: verify this cc request spec with NPI changes
         xit 'has access and returns appointment - cc proposed' do
           VCR.use_cassette('vaos/v2/appointments/get_appointment_200_JACQUELINE_M_PROPOSED_12082022',
-                           record: :new_episodes) do #match_requests_on: %i[method path query]
+                           record: :new_episodes) do # match_requests_on: %i[method path query]
             get '/vaos/v2/appointments/95058', headers: inflection_header
             expect(response).to have_http_status(:ok)
             expect(json_body_for(response)).to match_camelized_schema('vaos/v2/appointment', { strict: false })
