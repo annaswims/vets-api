@@ -134,6 +134,7 @@ module VAOS
       NPI_NOT_FOUND_MSG = "We're sorry, we can't display your preferred provider's information right now." \
                           'Try again later, or contact your VA facility:'
 
+      # TODO: write specs for method
       def find_and_merge_provider_name(appt)
         cached_providers = {}
         found_npi = find_npi(appt)
