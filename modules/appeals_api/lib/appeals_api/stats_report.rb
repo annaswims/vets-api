@@ -6,7 +6,9 @@ module AppealsApi
 
     STATUS_TRANSITION_PAIRS = [
       %w[processing submitted], %w[submitted complete], %w[processing success], %w[error success]
-    ]
+    ].freeze
+
+    STALLED_THRESHOLD = 2.months
 
     def initialize(date_from, date_to)
       @date_from = date_from.to_date
@@ -21,15 +23,32 @@ module AppealsApi
 
         Higher Level Reviews
         ---
+        ### Transition times
+
         #{formatted_stats(AppealsApi::HigherLevelReview)}
+        ### Stalled records
+
+        #{formatted_stalled(AppealsApi::HigherLevelReview)}
+
 
         Notice of Disagreements
         ---
+        ### Transition times
+
         #{formatted_stats(AppealsApi::NoticeOfDisagreement)}
+        ### Stalled records
+
+        #{formatted_stalled(AppealsApi::NoticeOfDisagreement)}
+
 
         Supplemental Claims
         ---
+        ### Transition times
+
         #{formatted_stats(AppealsApi::SupplementalClaim)}
+        ### Stalled records
+
+        #{formatted_stalled(AppealsApi::SupplementalClaim)}
       REPORT
     end
 
@@ -75,6 +94,15 @@ module AppealsApi
       }
     end
 
+    def stalled_records(appeal_class, status)
+      @stalled ||= {}
+      @stalled[appeal_class.name] ||= {}
+      @stalled[appeal_class.name][status] ||= appeal_class.where(
+        'updated_at < ?',
+        (date_to - STALLED_THRESHOLD).beginning_of_day
+      ).where(status: status).order(created_at: :desc)
+    end
+
     def timespan_in_words(seconds)
       return '(none)' if seconds.nil?
 
@@ -86,19 +114,34 @@ module AppealsApi
     end
 
     def formatted_stats(appeal_class)
-      texts = %w[]
-
-      STATUS_TRANSITION_PAIRS.each do |(status_from, status_to)|
+      parts = STATUS_TRANSITION_PAIRS.map do |(status_from, status_to)|
         values = stats(status_update_records(appeal_class.name, status_from, status_to))
 
-        texts << <<~STATS
+        <<~STATS
           From '#{status_from}' to '#{status_to}':
           * Average: #{timespan_in_words(values[:mean])}
           * Median:  #{timespan_in_words(values[:median])}
         STATS
       end
 
-      texts.join("\n")
+      parts.join("\n")
+    end
+
+    def formatted_stalled(appeal_class)
+      parts = STATUS_TRANSITION_PAIRS.collect(&:first).uniq.map do |status|
+        lines = ["Stalled in '#{status}':"]
+        stalled = stalled_records(appeal_class, status)
+
+        if stalled.empty?
+          lines << '(none)'
+        else
+          stalled.each { |record| lines << "* #{record.id} (since #{record.updated_at.iso8601})" }
+        end
+
+        lines.join("\n")
+      end
+
+      parts.join("\n")
     end
   end
 end

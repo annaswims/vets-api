@@ -4,10 +4,6 @@ require 'rails_helper'
 require 'appeals_api/stats_report'
 
 describe AppealsApi::StatsReport do
-  let(:end_date) { DateTime.new(2022, 3, 4, 5, 6, 7) }
-  let(:start_date) { end_date - 1.month }
-  let(:report) { described_class.new(start_date, end_date) }
-
   def create_transition_group
     [
       create(:higher_level_review_v2),
@@ -16,18 +12,28 @@ describe AppealsApi::StatsReport do
     ]
   end
 
-  def create_transition_groups(group_size = 1, num_groups = described_class::STATUS_TRANSITION_PAIRS.count)
+  def create_transition_groups(group_size: 1, num_groups: described_class::STATUS_TRANSITION_PAIRS.count)
     num_groups.times.map { group_size.times.map { create_transition_group }.flatten }
   end
 
-  let(:short_timespan_groups) { create_transition_groups(3) }
+  let(:end_date) { DateTime.new(2022, 3, 4, 5, 6, 7) }
+  let(:start_date) { end_date - 1.month }
+  let(:report) { described_class.new(start_date, end_date) }
+  let(:starting_statuses) { described_class::STATUS_TRANSITION_PAIRS.collect(&:first).uniq }
+  let(:stalled_groups) { create_transition_groups(num_groups: starting_statuses.count) }
+  let(:short_timespan_groups) { create_transition_groups(group_size: 3) }
   let(:long_timespan_groups) { create_transition_groups }
   let(:outside_range_groups) { create_transition_groups }
 
   before do
     Sidekiq::Testing.inline! do
-      Timecop.freeze(start_date)
+      # Create statuses to support lists of stalled records:
+      Timecop.freeze(start_date - described_class::STALLED_THRESHOLD - 1.day)
+      starting_statuses.each_with_index do |status, i|
+        stalled_groups[i].each { |r| r.update_status!(status: status) }
+      end
 
+      # Create statuses to support transition timespan stats:
       described_class::STATUS_TRANSITION_PAIRS.each_with_index do |(status_from, status_to), i|
         # These records should all be included in the report:
         (short_timespan_groups[i] + long_timespan_groups[i]).each do |record|
@@ -66,9 +72,11 @@ describe AppealsApi::StatsReport do
     let(:statusable_type) { AppealsApi::HigherLevelReview.name }
 
     describe '#status_update_records' do
-      let(:expected_appeals) {
-        (short_timespan_groups.first + long_timespan_groups.first).filter { |r| r.class.name === statusable_type }
-      }
+      let(:expected_appeals) do
+        (short_timespan_groups.first + long_timespan_groups.first).filter do |r|
+          r.instance_of? AppealsApi::HigherLevelReview
+        end
+      end
 
       it "finds pairs of updates that match the given from/to statuses and end within the report's timespan" do
         status_update_pairs = report.send(:status_update_records, statusable_type, status_from, status_to)
@@ -96,32 +104,47 @@ describe AppealsApi::StatsReport do
         expect(result[:median]).to be_nil
       end
     end
+
+    describe '#stalled_records' do
+      let(:status) { starting_statuses.first }
+      let(:stalled_records_in_status) do
+        stalled_groups.first.filter { |r| r.instance_of? AppealsApi::HigherLevelReview }
+      end
+
+      it 'finds records which have remained in the given status for longer than the stalled threshold' do
+        records = report.send(:stalled_records, AppealsApi::HigherLevelReview, status)
+        expect(records.pluck(:id)).to match_array(stalled_records_in_status.pluck(:id))
+        expect(records).to all(have_attributes(
+                                 { status: status, updated_at: be < start_date - described_class::STALLED_THRESHOLD }
+                               ))
+      end
+    end
   end
 
   describe '#text' do
     let(:text) { report.text }
-    let(:expected_means_medians) {
+    let(:expected_means_medians) do
       [
         [ # Higher Level Reviews
           ['7d 20h 15m', '1d 4h 30m'],
           ['8d 14h 15m', '2d 4h 30m'],
           ['9d 8h 15m', '3d 4h 30m'],
-          ['10d 2h 15m', '4d 4h 30m'],
+          ['10d 2h 15m', '4d 4h 30m']
         ],
         [ # Notice of Disagreements
           ['7d 21h 0m', '1d 5h 30m'],
           ['8d 15h 0m', '2d 5h 30m'],
           ['9d 9h 0m', '3d 5h 30m'],
-          ['10d 3h 0m', '4d 5h 30m'],
+          ['10d 3h 0m', '4d 5h 30m']
         ],
         [ # Supplemental Claims
           ['7d 21h 45m', '1d 6h 30m'],
           ['8d 15h 45m', '2d 6h 30m'],
           ['9d 9h 45m', '3d 6h 30m'],
-          ['10d 3h 45m', '4d 6h 30m'],
+          ['10d 3h 45m', '4d 6h 30m']
         ]
       ]
-    }
+    end
 
     it 'includes the start and end dates' do
       expect(text).to match(/Feb 4, 2022 to Mar 4, 2022/)
@@ -131,16 +154,29 @@ describe AppealsApi::StatsReport do
       expected_means_medians.each do |expected_mean_median|
         described_class::STATUS_TRANSITION_PAIRS.each_with_index do |(status_from, status_to), i|
           mean, median = expected_mean_median[i]
-          expect(text).to
-            match(/From '#{status_from}' to '#{status_to}':\n\* Average: #{mean}\n\* Median:  #{median}/)
+          expect(text).to match(/From '#{status_from}' to '#{status_to}':\n\* Average: #{mean}\n\* Median:  #{median}/)
         end
       end
     end
 
-    it 'includes empty states for status transitions where no data was found' do
-      empty_report = described_class.new(end_date, end_date + 1.minute)
-      expect(empty_report.text).to
-        match(/From 'processing' to 'submitted':\n\* Average: \(none\)\n\* Median:  \(none\)/)
+    it 'includes lists of stalled records' do
+      starting_statuses.each_with_index do |status, i|
+        stalled_groups[i].pluck(:id).each do |id|
+          expect(text).to match(/Stalled in '#{status}':\n\* #{id} \(since 2021-12-03T05:06:07Z\)/)
+        end
+      end
+    end
+
+    context 'when there is no data' do
+      let(:report) { described_class.new(end_date - 2.months - 1.minute, end_date - 2.months) }
+
+      it 'includes empty stats for status transitions where no data was found' do
+        expect(text).to match(/From 'processing' to 'submitted':\n\* Average: \(none\)\n\* Median:  \(none\)/)
+      end
+
+      it 'includes empty lists for stalled records' do
+        expect(text).to match(/Stalled in 'processing':\n\(none\)/)
+      end
     end
   end
 end
