@@ -1440,8 +1440,6 @@ lgy:
 form526_backup:
   # Can be single or multi, to send 1 payload or many, to central mail
   submission_method: 'single'
-  # Can be queued in Sidekiq, or sent directly from the existing Sidekiq job
-  queue: false
   api_key: ~
   url: https://sandbox-api.va.gov/services/vba_documents/v1/
 
