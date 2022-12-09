@@ -12,9 +12,10 @@ describe Sidekiq::Form526JobStatusTracker::JobTracker do
 
   context 'with an exhausted callback message' do
     let!(:form526_submission) { create :form526_submission }
-    let!(:from526_job_status) do
+    let!(:form526_job_status) do
       create :form526_job_status, job_id: msg['jid'], form526_submission: form526_submission
     end
+
     let(:msg) do
       {
         'class' => 'EVSS::DisabilityCompensationForm::SubmitForm526AllClaim',
@@ -33,12 +34,15 @@ describe Sidekiq::Form526JobStatusTracker::JobTracker do
       expect(job_status.status).to eq 'exhausted'
       expect(job_status.job_class).to eq 'SubmitForm526AllClaim'
       expect(job_status.error_message).to eq msg['error_message']
-      expect(job_status.form526_submission_id).to eq 123
+      expect(job_status.form526_submission_id).to eq form526_submission.id
 
       expect(job_status.bgjob_errors).to be_a Hash
       key = job_status.bgjob_errors.keys.first
       expect(job_status.bgjob_errors[key].keys).to match_array %w[timestamp caller_method error_class error_message]
       expect(job_status.bgjob_errors[key]['caller_method']).to match 'job_exhausted'
+    end
+
+    it 'submits a backup submission to Central Mail via Lighthouse Benefits Intake API' do
     end
   end
 

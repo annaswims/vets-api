@@ -14,7 +14,7 @@ module Form526BackupSubmission
     # @return [String] Base path for decision review URLs.
     #
     def base_path
-      Settings.form_526_backup_submission.url
+      Settings.form526_backup.url
     end
 
     ##
@@ -28,7 +28,7 @@ module Form526BackupSubmission
     # @return [Hash] The basic headers required for any decision review API call.
     #
     def self.base_request_headers
-      super.merge('apiKey' => Settings.form_526_backup_submission.api_key)
+      super.merge('apiKey' => Settings.form526_backup.api_key)
     end
 
     ##
@@ -54,7 +54,7 @@ module Form526BackupSubmission
     # @return [Boolean] Should the service use mock data in lower environments.
     #
     def mock_enabled?
-      Settings.form_526_backup_submission.mock || false
+      Settings.form526_backup.mock || false
     end
 
     def breakers_error_threshold

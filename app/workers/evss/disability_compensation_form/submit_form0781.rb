@@ -35,18 +35,13 @@ module EVSS
         @submission_id = submission_id
         parsed_forms = JSON.parse(submission.form_to_json(Form526Submission::FORM_0781))
         ret_paths = []
-        # process 0781 and 0781a
-        if parsed_forms['form0781'].present?
-          ret_paths << {
-            type: FORM_ID_0781,
-            file: process_0781(submission.auth_headers, uuid, FORM_ID_0781, parsed_forms['form0781'], upload: false)
-          }
-        end
-        if parsed_forms['form0781a'].present?
-          ret_paths << {
-            type: FORM_ID_0781A,
-            file: process_0781(submission.auth_headers, uuid, FORM_ID_0781A, parsed_forms['form0781a'], false)
-          }
+        { 'form0781' => FORM_ID_0781, 'form0781a' => FORM_ID_0781A }.each do |f, c|
+          if parsed_forms[f].present?
+            ret_paths << {
+              type: c,
+              file: process_0781(submission.auth_headers, uuid, FORM_ID_0781, parsed_forms[f], upload: false)
+            }
+          end
         end
         ret_paths
       end

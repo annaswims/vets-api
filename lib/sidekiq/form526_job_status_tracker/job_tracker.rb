@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-require 'sidekiq/form526_job_status_tracker/backup_submission'
-require 'sidekiq/form526_job_status_tracker/enqueue'
+require 'sidekiq/form526_backup_submission_process/submit'
 
 module Sidekiq
   module Form526JobStatusTracker
@@ -34,17 +33,6 @@ module Sidekiq
             updated_at: timestamp
           }
 
-          additional_birls_to_try = submission_obj.birls_ids_that_havent_been_tried_yet
-
-          if additional_birls_to_try.empty?
-            queue = Settings.key?(:form526_backup) ? Settings.form526_backup.queue : true
-            if queue
-              BackupSubmission::Enqueue.perform_async(form526_submission_id)
-            else
-              BackupSubmission::Processor.new(form526_submission_id).process!
-            end
-          end
-
           form_job_status = Form526JobStatus.find_by(job_id: job_id)
           bgjob_errors = form_job_status.bgjob_errors || {}
           new_error = {
@@ -61,6 +49,12 @@ module Sidekiq
           # rubocop:disable Rails/SkipsModelValidations
           Form526JobStatus.upsert(values, unique_by: :job_id)
           # rubocop:enable Rails/SkipsModelValidations
+          submission_obj ||= Form526Submission.find(form526_submission_id)
+          additional_birls_to_try = submission_obj.birls_ids_that_havent_been_tried_yet
+
+          if additional_birls_to_try.empty? && Flipper.enabled?(:form526_submit_to_central_mail_on_exhaustion)
+            Sidekiq::Form526BackupSubmissionProcess::Submit.perform_async(form526_submission_id)
+          end
 
           vagov_id = JSON.parse(submission_obj.auth_headers_json)['va_eauth_service_transaction_id']
 
@@ -73,13 +67,18 @@ module Sidekiq
                                  remaining_birls: additional_birls_to_try,
                                  va_eauth_service_transaction_id: vagov_id
           )
-
-          #   rescue => e
-          #     emsg = 'Form526 Exhausted, with error tracking job exhausted'
-          #     error_details = { message: emsg, error: e, class: msg['class'].demodulize, jid: msg['jid'] }
-          #     ::Rails.logger.error(emsg, error_details)
-          #   ensure
-          #     Metrics.new(statsd_key_prefix).increment_exhausted
+        rescue => e
+          emsg = 'Form526 Exhausted, with error tracking job exhausted'
+          error_details = {
+            message: emsg,
+            error: e,
+            class: msg['class'].demodulize,
+            jid: msg['jid'],
+            backtrace: e.backtrace
+          }
+          ::Rails.logger.error(emsg, error_details)
+        ensure
+          Metrics.new(statsd_key_prefix).increment_exhausted
         end
         # rubocop:enable Metrics/MethodLength
       end

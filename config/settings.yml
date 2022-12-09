@@ -1442,6 +1442,8 @@ form526_backup:
   submission_method: 'single'
   # Can be queued in Sidekiq, or sent directly from the existing Sidekiq job
   queue: false
+  api_key: ~
+  url: https://sandbox-api.va.gov/services/vba_documents/v1/
 
 form1095_b:
   s3:
