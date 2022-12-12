@@ -6,10 +6,14 @@ FactoryBot.define do
     api_version { 'V2' }
     evidence_submission_indicated { true }
     auth_headers do
-      JSON.parse File.read "#{::Rails.root}/modules/appeals_api/spec/fixtures/v2/valid_200995_headers.json"
+      JSON.parse File
+        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_headers.json'.split('/')))
+      # JSON.parse File.read "#{::Rails.root}/modules/appeals_api/spec/fixtures/v2/valid_200995_headers.json"
     end
     form_data do
-      JSON.parse File.read "#{::Rails.root}/modules/appeals_api/spec/fixtures/v2/valid_200995.json"
+      JSON.parse File
+        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995.json'.split('/')))
+      # JSON.parse File.read "#{::Rails.root}/modules/appeals_api/spec/fixtures/v2/valid_200995.json"
     end
 
     trait :status_success do
@@ -30,14 +34,21 @@ FactoryBot.define do
     api_version { 'V2' }
     evidence_submission_indicated { true }
     auth_headers do
-      JSON.parse(
-        File.read(
-          "#{::Rails.root}/modules/appeals_api/spec/fixtures/v2/valid_200995_headers_extra.json"
+      JSON.parse File
+        .read(
+          ::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_headers_extra.json'.split('/'))
         )
-      ).transform_values(&:strip)
+        .transform_values(&:strip)
+      # JSON.parse(
+      #   File.read(
+      #     "#{::Rails.root}/modules/appeals_api/spec/fixtures/v2/valid_200995_headers_extra.json"
+      #   )
+      # ).transform_values(&:strip)
     end
     form_data do
-      JSON.parse File.read "#{::Rails.root}/modules/appeals_api/spec/fixtures/v2/valid_200995_extra.json"
+      JSON.parse File
+        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_extra.json'.split('/')))
+      # JSON.parse File.read "#{::Rails.root}/modules/appeals_api/spec/fixtures/v2/valid_200995_extra.json"
     end
   end
 
@@ -45,10 +56,14 @@ FactoryBot.define do
     id { SecureRandom.uuid }
     api_version { 'V2' }
     auth_headers do
-      JSON.parse File.read "#{::Rails.root}/modules/appeals_api/spec/fixtures/v2/valid_200995_headers_minimum.json"
+      JSON.parse File
+        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_headers_minimum.json'.split('/')))
+      # JSON.parse File.read "#{::Rails.root}/modules/appeals_api/spec/fixtures/v2/valid_200995_headers_minimum.json"
     end
     form_data do
-      JSON.parse File.read "#{::Rails.root}/modules/appeals_api/spec/fixtures/v2/valid_200995.json"
+      JSON.parse File
+        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995.json'.split('/')))
+      # JSON.parse File.read "#{::Rails.root}/modules/appeals_api/spec/fixtures/v2/valid_200995.json"
     end
   end
 end
