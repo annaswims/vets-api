@@ -6,8 +6,8 @@ FactoryBot.define do
     status { 'submitted' }
     auth_headers { { va_eauth_pnid: '796378881' } }
     form_data do
-      json = JSON.parse File
-             .read(::Rails.root.join(*'/modules/claims_api/spec/fixtures/form_2122_json_api.json'.split('/')).to_s)
+      json = JSON.parse(File
+             .read(::Rails.root.join(*'/modules/claims_api/spec/fixtures/form_2122_json_api.json'.split('/')).to_s))
       json['data']['attributes']
     end
     source_data { { name: 'Abe Lincoln', icn: '123', email: '1@2.com' } }
@@ -44,8 +44,8 @@ FactoryBot.define do
     auth_headers { {} }
     source_data { { name: 'Abe Lincoln', icn: '123', email: '1@2.com' } }
     form_data do
-      json = JSON.parse File
-             .read(::Rails.root.join(*'/modules/claims_api/spec/fixtures/form_2122_json_api.json'.split('/')).to_s)
+      json = JSON.parse(File
+             .read(::Rails.root.join(*'/modules/claims_api/spec/fixtures/form_2122_json_api.json'.split('/')).to_s))
       json['data']['attributes']
     end
   end

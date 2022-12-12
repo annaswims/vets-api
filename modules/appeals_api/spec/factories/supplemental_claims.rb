@@ -6,12 +6,12 @@ FactoryBot.define do
     api_version { 'V2' }
     evidence_submission_indicated { true }
     auth_headers do
-      JSON.parse File
-        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_headers.json'.split('/')).to_s)
+      JSON.parse(File
+        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_headers.json'.split('/')).to_s))
     end
     form_data do
-      JSON.parse File
-        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995.json'.split('/')).to_s)
+      JSON.parse(File
+        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995.json'.split('/')).to_s))
     end
 
     trait :status_success do
@@ -32,15 +32,14 @@ FactoryBot.define do
     api_version { 'V2' }
     evidence_submission_indicated { true }
     auth_headers do
-      JSON.parse File
+      JSON.parse(File
         .read(
           ::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_headers_extra.json'.split('/')).to_s
-        )
-        .transform_values(&:strip)
+        )).transform_values(&:strip)
     end
     form_data do
-      JSON.parse File
-        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_extra.json'.split('/')).to_s)
+      JSON.parse(File
+        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_extra.json'.split('/')).to_s))
     end
   end
 
@@ -48,12 +47,13 @@ FactoryBot.define do
     id { SecureRandom.uuid }
     api_version { 'V2' }
     auth_headers do
-      JSON.parse File
-        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_headers_minimum.json'.split('/')).to_s)
+      JSON.parse(File
+        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_headers_minimum.json'.split('/'))
+        .to_s))
     end
     form_data do
-      JSON.parse File
-        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995.json'.split('/')).to_s)
+      JSON.parse(File
+        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995.json'.split('/')).to_s))
     end
   end
 end
