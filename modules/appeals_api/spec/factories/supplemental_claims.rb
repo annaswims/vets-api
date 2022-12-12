@@ -7,11 +7,11 @@ FactoryBot.define do
     evidence_submission_indicated { true }
     auth_headers do
       JSON.parse File
-        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_headers.json'.split('/')))
+        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_headers.json'.split('/')).to_s)
     end
     form_data do
       JSON.parse File
-        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995.json'.split('/')))
+        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995.json'.split('/')).to_s)
     end
 
     trait :status_success do
@@ -34,13 +34,13 @@ FactoryBot.define do
     auth_headers do
       JSON.parse File
         .read(
-          ::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_headers_extra.json'.split('/'))
+          ::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_headers_extra.json'.split('/')).to_s
         )
         .transform_values(&:strip)
     end
     form_data do
       JSON.parse File
-        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_extra.json'.split('/')))
+        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_extra.json'.split('/')).to_s)
     end
   end
 
@@ -49,11 +49,11 @@ FactoryBot.define do
     api_version { 'V2' }
     auth_headers do
       JSON.parse File
-        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_headers_minimum.json'.split('/')))
+        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_headers_minimum.json'.split('/')).to_s)
     end
     form_data do
       JSON.parse File
-        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995.json'.split('/')))
+        .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995.json'.split('/')).to_s)
     end
   end
 end
