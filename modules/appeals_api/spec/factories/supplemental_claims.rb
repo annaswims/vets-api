@@ -8,12 +8,10 @@ FactoryBot.define do
     auth_headers do
       JSON.parse File
         .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_headers.json'.split('/')))
-      # JSON.parse File.read "#{::Rails.root}/modules/appeals_api/spec/fixtures/v2/valid_200995_headers.json"
     end
     form_data do
       JSON.parse File
         .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995.json'.split('/')))
-      # JSON.parse File.read "#{::Rails.root}/modules/appeals_api/spec/fixtures/v2/valid_200995.json"
     end
 
     trait :status_success do
@@ -39,16 +37,10 @@ FactoryBot.define do
           ::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_headers_extra.json'.split('/'))
         )
         .transform_values(&:strip)
-      # JSON.parse(
-      #   File.read(
-      #     "#{::Rails.root}/modules/appeals_api/spec/fixtures/v2/valid_200995_headers_extra.json"
-      #   )
-      # ).transform_values(&:strip)
     end
     form_data do
       JSON.parse File
         .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_extra.json'.split('/')))
-      # JSON.parse File.read "#{::Rails.root}/modules/appeals_api/spec/fixtures/v2/valid_200995_extra.json"
     end
   end
 
@@ -58,12 +50,10 @@ FactoryBot.define do
     auth_headers do
       JSON.parse File
         .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995_headers_minimum.json'.split('/')))
-      # JSON.parse File.read "#{::Rails.root}/modules/appeals_api/spec/fixtures/v2/valid_200995_headers_minimum.json"
     end
     form_data do
       JSON.parse File
         .read(::Rails.root.join(*'/modules/appeals_api/spec/fixtures/v2/valid_200995.json'.split('/')))
-      # JSON.parse File.read "#{::Rails.root}/modules/appeals_api/spec/fixtures/v2/valid_200995.json"
     end
   end
 end
