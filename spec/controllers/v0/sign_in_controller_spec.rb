@@ -1882,10 +1882,7 @@ RSpec.describe V0::SignInController, type: :controller do
       let(:access_token_object) do
         create(:access_token, session_handle: oauth_session.handle)
       end
-      let!(:user) do
-        create(:user, :loa3, :api_auth,
-               uuid: access_token_object.user_uuid, logingov_uuid: logingov_uuid)
-      end
+      let!(:user) { create(:user, :loa3, :api_auth, uuid: access_token_object.user_uuid, logingov_uuid: logingov_uuid) }
       let(:statsd_success) { SignIn::Constants::Statsd::STATSD_SIS_LOGOUT_SUCCESS }
       let(:logingov_uuid) { 'some-logingov-uuid' }
       let(:expected_log) { '[SignInService] [V0::SignInController] logout' }
