@@ -15,37 +15,29 @@ module Mobile
 
       private
 
+      def match
+
       def call
         filters = filter_params.map(&:to_unsafe_hash)
         filters = gather_filters(filters)
-        # move all validations to separate class
-        filters = validate_request(filters)
         filter_records
       end
 
-      def self.filter(records, filter_params = {})
-        return [] if records.blank?
+      # def gather_filters(requested_filters)
+      #   requested_filters.each do |_filter|
+      #     attribute = requested_filters.keys.first
+      #     operation = requested_filters[attribute].keys.first
+      #     search_term = requested_filters[attribute][operation]
+      #     filter_pair = { attribute: attribute, search_term: search_term }
+      #     # raise if not valid operation
+      #     # raise if model does not have attribute
+      #     if @processed_filters[operation].include?(filter_pair)
+      #       # log error
+      #     end
 
-        filterer = new(records, filter_params)
-        filterer.call
-        filterer.records
-      end
-
-      def gather_filters(requested_filters)
-        requested_filters.each do |_filter|
-          attribute = requested_filters.keys.first
-          operation = requested_filters[attribute].keys.first
-          search_term = requested_filters[attribute][operation]
-          filter_pair = { attribute: attribute, search_term: search_term }
-          # raise if not valid operation
-          # raise if model does not have attribute
-          if @processed_filters[operation].include?(filter_pair)
-            # log error
-          end
-
-          @processed_filters[operation] << filter_pair
-        end
-      end
+      #     @processed_filters[operation] << filter_pair
+      #   end
+      # end
 
 
       # needs to be per operation
