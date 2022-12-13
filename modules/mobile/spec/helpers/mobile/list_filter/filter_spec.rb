@@ -2,10 +2,10 @@
 
 require 'rails_helper'
 
-class TestModel < VAProfile::Models::Base
-  attribute :type, Types::String.optional
-  attribute :active, Types::Bool.optional
-  attribute :created_at, Types::DateTime
+class TestModel < Common::Base
+  attribute :type, String
+  # attribute :active, Bool
+  # attribute :created_at, DateTime
 end
 
 describe Mobile::ListFilter::Filter do
@@ -14,14 +14,17 @@ describe Mobile::ListFilter::Filter do
   end
 
   let(:list) do
-    Common::Collection.new([record])
+    Common::Collection.new(data: [record])
   end
 
   describe '.matches' do
     it 'finds matches' do
-      filters = { type: { eq: 'dog' }}
-      results = subject.match(list, filters)
+      filters = [{ type: { eq: 'dog' }}]
+      results = Mobile::ListFilter::Filter.matches(list, filters)
       expect(results).to eq(list)
     end
+
+    it 'works with collections'
+    it 'works with arrays'
   end
 end

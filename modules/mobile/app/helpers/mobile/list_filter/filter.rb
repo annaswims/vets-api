@@ -3,57 +3,44 @@
 module Mobile
   module ListFilter
     class Filter
-      def initialize(list, filter_params)
-        @list = list
-        @filter_params = filter_params
+
+      attr_reader :records
+
+      def initialize(records, filters)
+        @records = records
+        @filters = filters
       end
 
-      def self.matches(list, filter_params)
-        filterer = new(list, filter_params)
-        filterer.filter
+      def self.matches(records, filters)
+        filterer = new(records, filters)
+        filterer.filter_records
+        filterer.records
       end
 
-      private
+      # private
 
-      def match
-
-      def call
-        filters = filter_params.map(&:to_unsafe_hash)
-        filters = gather_filters(filters)
-        filter_records
-      end
-
-      # def gather_filters(requested_filters)
-      #   requested_filters.each do |_filter|
-      #     attribute = requested_filters.keys.first
-      #     operation = requested_filters[attribute].keys.first
-      #     search_term = requested_filters[attribute][operation]
-      #     filter_pair = { attribute: attribute, search_term: search_term }
-      #     # raise if not valid operation
-      #     # raise if model does not have attribute
-      #     if @processed_filters[operation].include?(filter_pair)
-      #       # log error
-      #     end
-
-      #     @processed_filters[operation] << filter_pair
-      #   end
+      # def call
+      #   filters = filters.map(&:to_unsafe_hash)
+      #   filters = gather_filters(filters)
+      #   filter_records
       # end
+
+
 
 
       # needs to be per operation
       def filter_records
-        # @processed_filters.each_pair do |operation, filter_pairs|
-        #   case operation
-        #   when :andEqual
-        #     @records.filter! { |r| r[k.to_sym] == v }
-        #   when :orEqual
-        #     @records.
-        #   end
-        # end
-      end
+        @filters.each_pair do |match_attribute, remainder|
+          # ugliness
+          operation = remainder.keys.first
+          value = remainder.keys.first
 
-      def and_group_ids
-        @processed_filters[:equal].each do |filter|
+          case operation
+          when :eq
+            @records.filter! { |r| r[match_attribute.to_sym] == v }
+          when :notEq
+            @records.filter! { |r| r[match_attribute.to_sym] != v }
+          end
         end
       end
     end
