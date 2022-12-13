@@ -7,7 +7,7 @@ module Form526BackupSubmission
     self.read_timeout = Settings.caseflow.timeout || 20 # using the same timeout as lighthouse
 
     ##
-    # @return [String] Base path 
+    # @return [String] Base path
     #
     def base_path
       Settings.form526_backup.url

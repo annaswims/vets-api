@@ -55,7 +55,7 @@ module Sidekiq
         # Generates or makes calls to get, all PDFs, adds all to self.docs obj
         gather_docs!
         # Iterate over self.docs obj and add required metadata to objs directly
-        docs.each {|doc| doc[:metadata] = get_meta_data(doc[:type]) }
+        docs.each { |doc| doc[:metadata] = get_meta_data(doc[:type]) }
         # Take assemebled self.docs and aggregate and send how needed
         send_to_central_mail_through_lighthouse_claims_intake_api!
       end
@@ -112,18 +112,21 @@ module Sidekiq
       end
 
       def log_info(message:, upload_type:, uuid:)
-        ::Rails.logger.info({ message: message, upload_type: upload_type, upload_uuid: uuid, submission_id: @submission.id })
+        ::Rails.logger.info({ message: message, upload_type: upload_type, upload_uuid: uuid,
+                              submission_id: @submission.id })
       end
 
       def log_resp(message:, resp:)
-        ::Rails.logger.info({message: message, response: resp, submission_id: @submission.id})
+        ::Rails.logger.info({ message: message, response: resp, submission_id: @submission.id })
       end
 
       def generate_attachments(evidence_files, other_payloads)
-        evidence_files.concat(other_payloads.map {|op| {file: op[:file], file_name: "#{op[:metadata][:docType]}.pdf"}})
+        evidence_files.concat(other_payloads.map do |op|
+                                { file: op[:file], file_name: "#{op[:metadata][:docType]}.pdf" }
+                              end)
       end
 
-      def submit_as_one(initial_payload, other_payloads=nil)
+      def submit_as_one(initial_payload, other_payloads = nil)
         seperated = initial_payload.group_by { |doc| doc[:type] }
         form526_doc = seperated[FORM_526_DOC_TYPE].first
         evidence_files = []

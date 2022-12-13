@@ -7,52 +7,57 @@ require 'evss/disability_compensation_auth_headers' # required to build a Form52
 
 RSpec.describe Sidekiq::Form526BackupSubmissionProcess::Submit, type: :job do
   subject { described_class }
+
   before do
     Sidekiq::Worker.clear_all
   end
+
   let(:user) { FactoryBot.create(:user, :loa3) }
   let(:auth_headers) do
     EVSS::DisabilityCompensationAuthHeaders.new(user).add_headers(EVSS::AuthHeaders.new(user).to_h)
   end
 
   describe '.perform_async, flipper disabled' do
-    #TODO add tests for this, just make sure it doesnt do anything if flipper disabled
-    before do 
+    # TODO: add tests for this, just make sure it doesnt do anything if flipper disabled
+    before do
       Flipper.disable(:form526_submit_to_central_mail_on_exhaustion)
     end
+
     let(:form_json) do
       File.read('spec/support/disability_compensation_form/submissions/with_everything.json')
     end
     let(:submission) do
       Form526Submission.create(user_uuid: user.uuid,
-                              auth_headers_json: auth_headers.to_json,
-                              saved_claim_id: saved_claim.id,
-                              form_json: form_json)
+                               auth_headers_json: auth_headers.to_json,
+                               saved_claim_id: saved_claim.id,
+                               form_json: form_json)
     end
     let(:saved_claim) { FactoryBot.create(:va526ez) }
+
     it 'creates a submission job' do
       expect { subject.perform_async(submission.id) }.to change(subject.jobs, :size).by(1)
     end
+
     it 'does not create an additional Form526JobStatus record (meaning it returned right away)' do
       expect { subject.perform_async(submission.id) }.to change(Form526JobStatus.all.count, :size).by(0)
     end
-
   end
 
-  ['single', 'multi'].each do |payload_method|
+  %w[single multi].each do |payload_method|
     describe ".perform_async, flipper enabled, #{payload_method} payload" do
-      before do 
+      before do
         Settings.form526_backup.submission_method = payload_method
         Flipper.enable(:form526_submit_to_central_mail_on_exhaustion)
       end
+
       let(:form_json) do
         File.read('spec/support/disability_compensation_form/submissions/with_everything.json')
       end
       let(:submission) do
         Form526Submission.create(user_uuid: user.uuid,
-                                auth_headers_json: auth_headers.to_json,
-                                saved_claim_id: saved_claim.id,
-                                form_json: form_json)
+                                 auth_headers_json: auth_headers.to_json,
+                                 saved_claim_id: saved_claim.id,
+                                 form_json: form_json)
       end
       let(:saved_claim) { FactoryBot.create(:va526ez) }
 

@@ -55,8 +55,8 @@ module Sidekiq
           if additional_birls_to_try.empty?
             backup_enabled = Flipper.enabled?(:form526_submit_to_central_mail_on_exhaustion)
             Sidekiq::Form526BackupSubmissionProcess::Submit.perform_async(form526_submission_id) if backup_enabled
-          end          
-          
+          end
+
           vagov_id = JSON.parse(submission_obj.auth_headers_json)['va_eauth_service_transaction_id']
 
           ::Rails.logger.error(
@@ -148,8 +148,7 @@ module Sidekiq
 
       private
 
-      def queue_backup_job(form526_submission_id)
-      end
+      def queue_backup_job(form526_submission_id); end
 
       def upsert_job_status(status, error = nil)
         timestamp = Time.now.utc
