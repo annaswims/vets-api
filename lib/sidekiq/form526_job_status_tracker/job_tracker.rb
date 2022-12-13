@@ -52,8 +52,8 @@ module Sidekiq
           submission_obj ||= Form526Submission.find(form526_submission_id)
           additional_birls_to_try = submission_obj.birls_ids_that_havent_been_tried_yet
 
-          if additional_birls_to_try.empty?
-            Sidekiq::Form526BackupSubmissionProcess::Submit.perform_async(form526_submission_id) if Settings.form526_backup.enabled
+          if additional_birls_to_try.empty? && Settings.form526_backup.enabled
+            Sidekiq::Form526BackupSubmissionProcess::Submit.perform_async(form526_submission_id)
           end
 
           vagov_id = JSON.parse(submission_obj.auth_headers_json)['va_eauth_service_transaction_id']
