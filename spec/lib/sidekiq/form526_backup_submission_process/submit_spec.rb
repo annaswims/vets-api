@@ -17,10 +17,10 @@ RSpec.describe Sidekiq::Form526BackupSubmissionProcess::Submit, type: :job do
     EVSS::DisabilityCompensationAuthHeaders.new(user).add_headers(EVSS::AuthHeaders.new(user).to_h)
   end
 
-  describe '.perform_async, flipper disabled' do
+  describe '.perform_async, disabled' do
     # TODO: add tests for this, just make sure it doesnt do anything if flipper disabled
     before do
-      Flipper.disable(:form526_submit_to_central_mail_on_exhaustion)
+      Settings.form526_backup.enabled = false
     end
 
     let(:form_json) do
@@ -44,10 +44,10 @@ RSpec.describe Sidekiq::Form526BackupSubmissionProcess::Submit, type: :job do
   end
 
   %w[single multi].each do |payload_method|
-    describe ".perform_async, flipper enabled, #{payload_method} payload" do
+    describe ".perform_async, enabled, #{payload_method} payload" do
       before do
         Settings.form526_backup.submission_method = payload_method
-        Flipper.enable(:form526_submit_to_central_mail_on_exhaustion)
+        Settings.form526_backup.enabled = true
       end
 
       let(:form_json) do

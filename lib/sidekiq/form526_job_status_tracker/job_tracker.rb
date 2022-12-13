@@ -53,8 +53,7 @@ module Sidekiq
           additional_birls_to_try = submission_obj.birls_ids_that_havent_been_tried_yet
 
           if additional_birls_to_try.empty?
-            backup_enabled = Flipper.enabled?(:form526_submit_to_central_mail_on_exhaustion)
-            Sidekiq::Form526BackupSubmissionProcess::Submit.perform_async(form526_submission_id) if backup_enabled
+            Sidekiq::Form526BackupSubmissionProcess::Submit.perform_async(form526_submission_id) if Settings.form526_backup.enabled
           end
 
           vagov_id = JSON.parse(submission_obj.auth_headers_json)['va_eauth_service_transaction_id']

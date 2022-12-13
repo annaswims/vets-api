@@ -48,7 +48,7 @@ describe Sidekiq::Form526JobStatusTracker::JobTracker do
       allow_any_instance_of(Form526Submission).to receive(:birls_ids_that_havent_been_tried_yet).and_return([])
       form526_submission.auth_headers.delete('va_eauth_birlsfilenumber')
       form526_submission.save!
-      Flipper.enable(:form526_submit_to_central_mail_on_exhaustion)
+      Settings.form526_backup.enabled = true
       VCR.use_cassette('form526_backup/200_lighthouse_intake_upload_location') do
         VCR.use_cassette('form526_backup/200_evss_get_pdf') do
           VCR.use_cassette('form526_backup/200_lighthouse_intake_upload') do

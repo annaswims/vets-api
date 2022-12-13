@@ -11,7 +11,7 @@ module Sidekiq
       sidekiq_options retry: 0
 
       def perform(form526_submission_id)
-        return unless enabled?
+        return unless Settings.form526_backup.enabled
 
         job_status = Form526JobStatus.create!(job_class: 'BackupSubmission', status: 'pending',
                                               form526_submission_id: form526_submission_id, job_id: jid)
@@ -43,10 +43,6 @@ module Sidekiq
             timestamp: timestamp
           }
         }
-      end
-
-      def enabled?
-        Flipper.enabled?(:form526_submit_to_central_mail_on_exhaustion)
       end
     end
   end
