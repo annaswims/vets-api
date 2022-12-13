@@ -27,16 +27,19 @@ module ClaimStatusTool
     end
 
     def get_letter(document_id)
-      verify_letter_in_folder(document_id)
+      letter_details = get_letter_details(document_id)
+      raise Common::Exceptions::RecordNotFound, document_id if letter_details.blank?
+
+      filename = filename_with_date('ClaimLetter', letter_details[0][:received_at])
 
       if !Rails.env.development? && !Rails.env.test?
         req = VBMS::Requests::GetDocumentContent.new(document_id)
         res = @client.send_request(req)
 
-        yield res.content, 'application/pdf', 'attachment', 'ClaimLetter.pdf'
+        yield res.content, 'application/pdf', 'attachment', filename
       else
         File.open(ClaimLetterTestData::TEST_FILE_PATH, 'r') do |f|
-          yield f.read, 'application/pdf', 'attachment', 'ClaimLetter.pdf'
+          yield f.read, 'application/pdf', 'attachment', filename
         end
       end
     end
@@ -68,12 +71,13 @@ module ClaimStatusTool
       letters.sort_by { |d| d[:received_at] }.reverse
     end
 
-    def verify_letter_in_folder(document_id)
+    def get_letter_details(document_id)
       letters = get_letters
+      letters.select { |d| d[:document_id] == document_id }
+    end
 
-      raise Common::Exceptions::Unauthorized unless letters.any? do |document|
-        document[:document_id] == document_id
-      end
+    def filename_with_date(filename, filedate)
+      "#{filename}-#{filedate.year}-#{filedate.month}-#{filedate.day}.pdf"
     end
   end
 end

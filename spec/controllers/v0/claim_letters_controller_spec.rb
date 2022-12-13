@@ -24,5 +24,11 @@ RSpec.describe V0::ClaimLettersController, type: :controller do
 
       expect(response.header['Content-Type']).to eq('application/pdf')
     end
+
+    it 'has a dated filename' do
+      get(:show, params: { document_id: document_id })
+
+      expect(response.header['Content-Disposition']).to include('filename="ClaimLetter-2022-9-22.pdf"')
+    end
   end
 end
