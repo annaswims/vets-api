@@ -38,7 +38,7 @@ describe 'IntentToFile', swagger_doc: Rswag::TextHelpers.new.claims_api_docs,
           schema JSON.parse(
             File.read(
               Rails.root.join(
-                'spec', 'support', 'schemas', 'claims_api', 'v2', 'veterans', 'intent_to_files', 'intent_to_file.json'
+                'spec', 'support', 'schemas', 'claims_api', 'v2', 'veterans', 'intent_to_file', 'intent_to_file.json'
               )
             )
           )
@@ -46,7 +46,7 @@ describe 'IntentToFile', swagger_doc: Rswag::TextHelpers.new.claims_api_docs,
           let(:bgs_response) do
             JSON.parse(
               File.read(
-                Rails.root.join('modules', 'claims_api', 'spec', 'fixtures', 'v2', 'veterans', 'intent_to_files',
+                Rails.root.join('modules', 'claims_api', 'spec', 'fixtures', 'v2', 'veterans', 'intent_to_file',
                                 'find_by_ptcpnt_id_and_itf_type.json')
               ),
               symbolize_names: true
@@ -197,7 +197,7 @@ describe 'IntentToFile', swagger_doc: Rswag::TextHelpers.new.claims_api_docs,
           schema JSON.parse(
             File.read(
               Rails.root.join(
-                'spec', 'support', 'schemas', 'claims_api', 'v2', 'veterans', 'intent_to_files', 'intent_to_file.json'
+                'spec', 'support', 'schemas', 'claims_api', 'v2', 'veterans', 'intent_to_file', 'intent_to_file.json'
               )
             )
           )
