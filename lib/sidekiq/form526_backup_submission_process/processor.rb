@@ -55,7 +55,7 @@ module Sidekiq
         # Generates or makes calls to get, all PDFs, adds all to self.docs obj
         gather_docs!
         # Iterate over self.docs obj and add required metadata to objs directly
-        add_meta_data_to_docs!
+        docs.each {|doc| doc[:metadata] = get_meta_data(doc[:type]) }
         # Take assemebled self.docs and aggregate and send how needed
         send_to_central_mail_through_lighthouse_claims_intake_api!
       end
@@ -91,20 +91,10 @@ module Sidekiq
       def get_meta_data(doc_type)
         auth_info = submission.auth_headers
         {
-          "veteranFirstName": auth_info['va_eauth_firstName'],
-          "veteranLastName": auth_info['va_eauth_lastName'],
-          "fileNumber": auth_info['va_eauth_pnid'],
-          "zipCode": zip,
-          "source": 'va.gov backup submission',
-          "docType": doc_type,
-          "businessLine": 'CMP'
+          "veteranFirstName": auth_info['va_eauth_firstName'], "veteranLastName": auth_info['va_eauth_lastName'],
+          "fileNumber": auth_info['va_eauth_pnid'], "zipCode": zip, "source": 'va.gov backup submission',
+          "docType": doc_type, "businessLine": 'CMP'
         }
-      end
-
-      def add_meta_data_to_docs!
-        docs.each do |doc|
-          doc[:metadata] = get_meta_data(doc[:type])
-        end
       end
 
       def send_to_central_mail_through_lighthouse_claims_intake_api!
@@ -122,36 +112,18 @@ module Sidekiq
       end
 
       def log_info(message:, upload_type:, uuid:)
-        info = {
-          message: message,
-          upload_type: upload_type,
-          upload_uuid: uuid,
-          submission_id: @submission.id
-        }
-        ::Rails.logger.info(info)
+        ::Rails.logger.info({ message: message, upload_type: upload_type, upload_uuid: uuid, submission_id: @submission.id })
       end
 
       def log_resp(message:, resp:)
-        info = {
-          message: message,
-          response: resp,
-          submission_id: @submission.id
-        }
-        ::Rails.logger.info(info)
+        ::Rails.logger.info({message: message, response: resp, submission_id: @submission.id})
       end
 
       def generate_attachments(evidence_files, other_payloads)
-        others = []
-        other_payloads.each do |op|
-          others << {
-            file: op[:file],
-            file_name: "#{op[:metadata][:docType]}.pdf"
-          }
-        end
-        evidence_files.concat(others)
+        evidence_files.concat(other_payloads.map {|op| {file: op[:file], file_name: "#{op[:metadata][:docType]}.pdf"}})
       end
 
-      def submit_as_one(initial_payload, other_payloads)
+      def submit_as_one(initial_payload, other_payloads=nil)
         seperated = initial_payload.group_by { |doc| doc[:type] }
         form526_doc = seperated[FORM_526_DOC_TYPE].first
         evidence_files = []
@@ -160,7 +132,7 @@ module Sidekiq
             { file: doc[:file], file_name: "evidence_#{i + 1}.pdf" }
           end
         end
-        attachments = generate_attachments(evidence_files, other_payloads)
+        attachments = other_payloads.nil? ? [] : generate_attachments(evidence_files, other_payloads)
         log_info(message: 'Uploading single fallback payload to Lighthouse', upload_type: FORM_526_DOC_TYPE,
                  uuid: initial_upload_uuid)
         lighthouse_service.upload_doc(

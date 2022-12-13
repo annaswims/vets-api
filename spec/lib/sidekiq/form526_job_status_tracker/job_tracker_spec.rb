@@ -42,7 +42,25 @@ describe Sidekiq::Form526JobStatusTracker::JobTracker do
       expect(job_status.bgjob_errors[key]['caller_method']).to match 'job_exhausted'
     end
 
-    it 'submits a backup submission to Central Mail via Lighthouse Benefits Intake API' do
+    it 'submits a backup submission to Central Mail via Lighthouse Benefits Intake API, if flipper enabled' do
+      # Removing the additional_birls from the submission auth headers for this test
+      # In order for it to kick off a backup submission, additional_birls must not exist 
+      allow_any_instance_of(Form526Submission).to receive(:birls_ids_that_havent_been_tried_yet).and_return([])
+      form526_submission.auth_headers.delete('va_eauth_birlsfilenumber')
+      form526_submission.save!
+      Flipper.enable(:form526_submit_to_central_mail_on_exhaustion)        
+      VCR.use_cassette('form526_backup/200_lighthouse_intake_upload_location') do
+        VCR.use_cassette('form526_backup/200_evss_get_pdf') do
+          VCR.use_cassette('form526_backup/200_lighthouse_intake_upload') do
+            expect do 
+              worker_class.job_exhausted(msg, 'stats_key')
+              worker_class.drain
+            end.to change(Sidekiq::Form526BackupSubmissionProcess::Submit.jobs, :size).by(1)
+            Sidekiq::Form526BackupSubmissionProcess::Submit.drain
+            expect(Form526JobStatus.last.job_class).to eq('BackupSubmission')
+          end
+        end
+      end
     end
   end
 

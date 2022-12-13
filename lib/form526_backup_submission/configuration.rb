@@ -3,15 +3,11 @@
 require 'common/client/configuration/rest'
 
 module Form526BackupSubmission
-  ##
-  # HTTP client configuration for the {DecisionReview::Service},
-  # sets the base path, the base request headers, and a service name for breakers and metrics.
-  #
   class Configuration < Common::Client::Configuration::REST
     self.read_timeout = Settings.caseflow.timeout || 20 # using the same timeout as lighthouse
 
     ##
-    # @return [String] Base path for decision review URLs.
+    # @return [String] Base path 
     #
     def base_path
       Settings.form526_backup.url
@@ -25,7 +21,7 @@ module Form526BackupSubmission
     end
 
     ##
-    # @return [Hash] The basic headers required for any decision review API call.
+    # @return [Hash] The basic headers required for any Lighthouse API call
     #
     def self.base_request_headers
       super.merge('apiKey' => Settings.form526_backup.api_key)

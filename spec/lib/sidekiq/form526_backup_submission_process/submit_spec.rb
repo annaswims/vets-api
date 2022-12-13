@@ -7,12 +7,9 @@ require 'evss/disability_compensation_auth_headers' # required to build a Form52
 
 RSpec.describe Sidekiq::Form526BackupSubmissionProcess::Submit, type: :job do
   subject { described_class }
-
   before do
     Sidekiq::Worker.clear_all
-    
   end
-
   let(:user) { FactoryBot.create(:user, :loa3) }
   let(:auth_headers) do
     EVSS::DisabilityCompensationAuthHeaders.new(user).add_headers(EVSS::AuthHeaders.new(user).to_h)

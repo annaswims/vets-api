@@ -15,7 +15,7 @@ module Sidekiq
         # @param msg [Hash] The message payload from Sidekiq
         #
         # rubocop:disable Metrics/MethodLength
-        def job_exhausted(msg, _statsd_key_prefix)
+        def job_exhausted(msg, statsd_key_prefix)
           job_id = msg['jid']
           error_class = msg['error_class']
           error_message = msg['error_message']
@@ -52,10 +52,11 @@ module Sidekiq
           submission_obj ||= Form526Submission.find(form526_submission_id)
           additional_birls_to_try = submission_obj.birls_ids_that_havent_been_tried_yet
 
-          if additional_birls_to_try.empty? && Flipper.enabled?(:form526_submit_to_central_mail_on_exhaustion)
-            Sidekiq::Form526BackupSubmissionProcess::Submit.perform_async(form526_submission_id)
-          end
-
+          if additional_birls_to_try.empty?
+            backup_enabled = Flipper.enabled?(:form526_submit_to_central_mail_on_exhaustion)
+            Sidekiq::Form526BackupSubmissionProcess::Submit.perform_async(form526_submission_id) if backup_enabled
+          end          
+          
           vagov_id = JSON.parse(submission_obj.auth_headers_json)['va_eauth_service_transaction_id']
 
           ::Rails.logger.error(
@@ -146,6 +147,9 @@ module Sidekiq
       end
 
       private
+
+      def queue_backup_job(form526_submission_id)
+      end
 
       def upsert_job_status(status, error = nil)
         timestamp = Time.now.utc
