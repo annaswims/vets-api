@@ -48,7 +48,7 @@ module ClaimsApi
                               header_request: header_request?,
                               ptcpnt_id: target_veteran.participant_id.present?,
                               birls_id: target_veteran.birls_id.present?,
-                              icn: target_veteran.mpi[:user_identity][:icn])
+                              icn: get_icn)
 
         mpi_add_response = target_veteran.mpi.add_person_proxy
 
@@ -61,7 +61,7 @@ module ClaimsApi
                               rid: request.request_id, mpi_res_ok: mpi_add_response.ok?,
                               ptcpnt_id: target_veteran.participant_id.present?,
                               birls_id: target_veteran.birls_id.present?,
-                              icn: target_veteran.mpi[:user_identity][:icn])
+                              icn: get_icn)
       rescue ::Common::Exceptions::UnprocessableEntity
         raise ::Common::Exceptions::UnprocessableEntity.new(detail:
           "Unable to locate Veteran's Participant ID in Master Person Index (MPI)." \
@@ -83,6 +83,10 @@ module ClaimsApi
       end
 
       private
+
+      def get_icn
+        target_veteran.mpi[:user_identity][:icn].present? == true ? target_veteran.mpi[:user_identity][:icn] : nil
+      end
 
       def claims_service
         ClaimsApi::UnsynchronizedEVSSClaimService.new(target_veteran)
