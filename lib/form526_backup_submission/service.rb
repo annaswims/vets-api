@@ -6,7 +6,6 @@ require 'common/client/errors'
 require 'common/exceptions/forbidden'
 require 'common/exceptions/schema_validation_errors'
 require 'form526_backup_submission/configuration'
-require 'form526_backup_submission/service_exception'
 
 module Form526BackupSubmission
   ##
