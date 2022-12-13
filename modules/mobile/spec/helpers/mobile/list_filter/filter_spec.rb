@@ -9,22 +9,31 @@ class TestModel < Common::Base
 end
 
 describe Mobile::ListFilter::Filter do
-  let(:record) do
+  let(:dog) do
     TestModel.new(type: "dog")
   end
-
+  let(:cat) do
+    TestModel.new(type: "cat")
+  end
   let(:list) do
-    Common::Collection.new(data: [record])
+    Common::Collection.new(data: [dog, cat])
   end
 
   describe '.matches' do
-    it 'finds matches' do
-      filters = [{ type: { eq: 'dog' }}]
-      results = Mobile::ListFilter::Filter.matches(list, filters)
-      expect(results).to eq(list)
+    describe 'eq operator' do
+      it 'finds matches' do
+        filters = { type: { eq: 'dog' }}
+        results = Mobile::ListFilter::Filter.matches(list, filters)
+        expect(results.data).to eq([dog])
+      end
     end
 
-    it 'works with collections'
-    it 'works with arrays'
+    describe 'notEq operator' do
+      it 'excludes non-matches' do
+        filters = { type: { notEq: 'dog' }}
+        results = Mobile::ListFilter::Filter.matches(list, filters)
+        expect(results.data).to eq([cat])
+      end
+    end
   end
 end
