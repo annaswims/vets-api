@@ -24,7 +24,7 @@ module Form526BackupSubmission
     # @return [Hash] The basic headers required for any Lighthouse API call
     #
     def self.base_request_headers
-      super.merge('apiKey' => Settings.form526_backup.api_key)
+      super.merge('apikey' => Settings.form526_backup.api_key)
     end
 
     ##
