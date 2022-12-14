@@ -45,4 +45,22 @@ describe Mobile::ListFilter::Filter do
     results = Mobile::ListFilter::Filter.matches(list, filters)
     expect(results.data).to eq([rex])
   end
+
+  it 'returns an empty collection when no matches are found' do
+    filters = { species: { eq: 'turtle' } }
+    results = Mobile::ListFilter::Filter.matches(list, filters)
+    expect(results.class).to eq(Common::Collection)
+    expect(results.data).to eq([])
+  end
+
+  it 'retains any errors or metadata contained in the original collection' do
+    errors = { error: 'the original error' }
+    metadata = { meta: 'data' }
+    list.errors = errors
+    list.metadata = metadata
+    filters = {}
+    results = Mobile::ListFilter::Filter.matches(list, filters)
+    expect(results.errors).to eq(errors)
+    expect(results.metadata).to eq(metadata)
+  end
 end
