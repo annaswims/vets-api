@@ -152,44 +152,26 @@ http_interactions:
                 "releasedDateTime": "2016-02-04T17:51:56Z",
                 "enteredDateTime": "2016-02-04T17:51:56Z"
               }
-           ],
-          "letterDestination": {
-            "country": "USA",
-            "addressLine1": "2476 MAIN STREET",
-            "addressLine2": "STE # 12",
-            "addressLine3": "West",
-            "city": "RESTON",
-            "state": "VA",
-            "zipCode": "12345",
-            "fullName": "John A Smith"
-          },
-          "militaryServices": [
-            {
-              "branch": "Army",
-              "characterOfService": "HONORABLE",
-              "releasedDateTime": "2016-02-04T17:51:56Z",
-              "enteredDateTime": "2016-02-04T17:51:56Z"
+            ],
+            "benefitInformation": {
+              "serviceConnectedPercentage": 2,
+              "awardEffectiveDateTime": "2016-02-04T17:51:56Z",
+              "monthlyAwardAmount": {
+                "value": 2673,
+                "currency": "USD"
+              },
+              "serviceConnectedDisabilities": true,
+              "nonServiceConnectedPension": false,
+              "individualUnemployabilityGranted": false,
+              "chapter35Eligibility": true,
+              "specialMonthlyCompensation": false,
+              "adaptedHousing": false,
+              "chapter35EligibilityDateTime": "2016-02-04T17:51:56Z",
+              "hasDeathResultOfDisability": false,
+              "hasSurvivorsIndemnityCompensationAward": false,
+              "hasSurvivorsPensionAward": false
             }
-          ],
-          "benefitInformation": {
-            "serviceConnectedPercentage": 2,
-            "awardEffectiveDateTime": "2016-02-04T17:51:56Z",
-            "monthlyAwardAmount": {
-              "value": 2673,
-              "currency": "USD"
-            },
-            "serviceConnectedDisabilities": true,
-            "nonServiceConnectedPension": false,
-            "individualUnemployabilityGranted": false,
-            "chapter35Eligibility": true,
-            "specialMonthlyCompensation": false,
-            "adaptedHousing": false,
-            "chapter35EligibilityDateTime": "2016-02-04T17:51:56Z",
-            "hasDeathResultOfDisability": false,
-            "hasSurvivorsIndemnityCompensationAward": false,
-            "hasSurvivorsPensionAward": false
           }
-        }
-    http_version: 
-  recorded_at: Wed, 23 Nov 2022 23:26:33 GMT
+      http_version:
+    recorded_at: Wed, 23 Nov 2022 23:26:33 GMT
 recorded_with: VCR 3.0.3

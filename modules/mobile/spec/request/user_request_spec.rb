@@ -248,7 +248,6 @@ RSpec.describe 'user', type: :request do
       end
 
       context 'with a user who does not have access to evss but is using Lighthouse letters service' do
-
         before do
           user = FactoryBot.build(:iam_user, :no_edipi_id)
           iam_sign_in(user)
@@ -259,7 +258,6 @@ RSpec.describe 'user', type: :request do
             end
           end
         end
-
 
         it 'does not include edipi services (claims, direct deposit, military history) except for letters' do
           expect(attributes['authorizedServices']).to eq(

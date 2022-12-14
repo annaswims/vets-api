@@ -76,6 +76,8 @@ RSpec.describe 'letters', type: :request do
           get '/mobile/v0/letters', headers: iam_headers
           expect(response).to have_http_status(:ok)
           expect(JSON.parse(response.body)).to eq(letters_body)
+
+          # match_json_schema also uses the read method of File objects so we need to revert the stub being done above
           allow(File).to receive(:read).and_call_original
           expect(response.body).to match_json_schema('letters')
         end
