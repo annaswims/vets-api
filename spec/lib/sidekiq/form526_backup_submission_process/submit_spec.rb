@@ -22,17 +22,7 @@ RSpec.describe Sidekiq::Form526BackupSubmissionProcess::Submit, type: :job do
     before do
       Settings.form526_backup.enabled = false
     end
-
-    let(:form_json) do
-      File.read('spec/support/disability_compensation_form/submissions/with_everything.json')
-    end
-    let(:submission) do
-      Form526Submission.create(user_uuid: user.uuid,
-                               auth_headers_json: auth_headers.to_json,
-                               saved_claim_id: saved_claim.id,
-                               form_json: form_json)
-    end
-    let(:saved_claim) { FactoryBot.create(:va526ez) }
+    let!(:submission) { create :form526_submission, :with_everything }
 
     it 'creates a submission job' do
       expect { subject.perform_async(submission.id) }.to change(subject.jobs, :size).by(1)
@@ -49,19 +39,8 @@ RSpec.describe Sidekiq::Form526BackupSubmissionProcess::Submit, type: :job do
         Settings.form526_backup.submission_method = payload_method
         Settings.form526_backup.enabled = true
       end
-
-      let(:form_json) do
-        File.read('spec/support/disability_compensation_form/submissions/with_everything.json')
-      end
-      let(:submission) do
-        Form526Submission.create(user_uuid: user.uuid,
-                                 auth_headers_json: auth_headers.to_json,
-                                 saved_claim_id: saved_claim.id,
-                                 form_json: form_json)
-      end
-      let(:saved_claim) { FactoryBot.create(:va526ez) }
-
       let!(:upload_data) { submission.form[Form526Submission::FORM_526_UPLOADS] }
+      let!(:submission) { create :form526_submission, :with_everything }
 
       context 'successfully' do
         before do
@@ -92,6 +71,7 @@ RSpec.describe Sidekiq::Form526BackupSubmissionProcess::Submit, type: :job do
                 expect(job_status.job_class).to eq('BackupSubmission')
                 expect(job_status.job_id).to eq(jid)
                 expect(job_status.status).to eq('success')
+                expect(submission.backup_submitted_claim_id).not_to be(nil)
               end
             end
           end

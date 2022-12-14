@@ -67,7 +67,7 @@ module Sidekiq
             remaining_birls: additional_birls_to_try,
             va_eauth_service_transaction_id: vagov_id
           }
-          log_message['backup_job_id'] = backup_job_jid unless backup_job_id.nil?
+          log_message['backup_job_id'] = backup_job_jid unless backup_job_jid.nil?
           ::Rails.logger.error('Form526 Exhausted', log_message)
         rescue => e
           emsg = 'Form526 Exhausted, with error tracking job exhausted'
