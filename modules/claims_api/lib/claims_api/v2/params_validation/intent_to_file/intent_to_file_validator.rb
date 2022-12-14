@@ -11,6 +11,10 @@ module ClaimsApi
             validate_participant_vet_id(record)
           end
 
+          def self.itf_types
+            %w[compensation pension burial].freeze
+          end
+
           private
 
           def validate_type(record)
