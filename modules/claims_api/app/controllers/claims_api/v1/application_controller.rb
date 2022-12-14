@@ -85,7 +85,9 @@ module ClaimsApi
       private
 
       def get_icn
+        if target_veteran.present? && target_veteran.mpi.present? && target_veteran.mpi[:user_identity].present?
         target_veteran.mpi[:user_identity][:icn].present? == true ? target_veteran.mpi[:user_identity][:icn] : nil
+        end
       end
 
       def claims_service
