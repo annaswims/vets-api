@@ -26,6 +26,7 @@ module V0
              meta: { successful_sync: synchronized }
     end
 
+    # BEGIN lighthouse_migration
     def request_decision
       claim = EVSSClaim.for_user(current_user).find_by(evss_id: params[:id])
       unless claim
@@ -37,6 +38,7 @@ module V0
       claim.update(requested_decision: true)
       render_job_id(jid)
     end
+    # END lighthouse_migration
 
     private
 

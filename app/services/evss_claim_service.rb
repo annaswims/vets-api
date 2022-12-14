@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# BEGIN lighthouse_migration
 require 'evss/claims_service'
 require 'evss/documents_service'
 require 'evss/auth_headers'
@@ -82,3 +83,4 @@ class EVSSClaimService
     claim
   end
 end
+# END lighthouse_migration

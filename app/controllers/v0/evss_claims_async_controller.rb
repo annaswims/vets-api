@@ -1,3 +1,4 @@
+# BEGIN lighthouse_migration
 # frozen_string_literal: true
 
 module V0
@@ -34,3 +35,5 @@ module V0
     end
   end
 end
+
+# END lighthouse_migration
