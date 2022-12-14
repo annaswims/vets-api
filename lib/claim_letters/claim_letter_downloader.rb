@@ -4,6 +4,8 @@ require 'claim_letters/claim_letter_test_data'
 
 module ClaimStatusTool
   class ClaimLetterDownloader
+    FILENAME = 'ClaimLetter'
+
     def initialize(user)
       @user = user
       @client = VBMS::Client.from_env_vars(env_name: Settings.vbms.env) unless Rails.env.development? || Rails.env.test?
@@ -28,9 +30,9 @@ module ClaimStatusTool
 
     def get_letter(document_id)
       letter_details = get_letter_details(document_id)
-      raise Common::Exceptions::RecordNotFound, document_id if letter_details.blank?
+      raise Common::Exceptions::RecordNotFound, document_id if letter_details.nil?
 
-      filename = filename_with_date('ClaimLetter', letter_details[0][:received_at])
+      filename = filename_with_date(FILENAME, letter_details[:received_at])
 
       if !Rails.env.development? && !Rails.env.test?
         req = VBMS::Requests::GetDocumentContent.new(document_id)
@@ -73,7 +75,7 @@ module ClaimStatusTool
 
     def get_letter_details(document_id)
       letters = get_letters
-      letters.select { |d| d[:document_id] == document_id }
+      letters.find { |d| d[:document_id] == document_id }
     end
 
     def filename_with_date(filename, filedate)
