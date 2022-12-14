@@ -59,17 +59,16 @@ module Sidekiq
 
           vagov_id = JSON.parse(submission_obj.auth_headers_json)['va_eauth_service_transaction_id']
           log_message = {
-            'Form526 Exhausted', submission_id: form526_submission_id,
-                                 job_id: job_id,
-                                 job_class: values[:job_class],
-                                 error_class: error_class,
-                                 error_message: error_message,
-                                 remaining_birls: additional_birls_to_try,
-                                 va_eauth_service_transaction_id: vagov_id
+            submission_id: form526_submission_id,
+            job_id: job_id,
+            job_class: values[:job_class],
+            error_class: error_class,
+            error_message: error_message,
+            remaining_birls: additional_birls_to_try,
+            va_eauth_service_transaction_id: vagov_id
           }
           log_message['backup_job_id'] = backup_job_jid unless backup_job_id.nil?
-          ::Rails.logger.error(log_message)
-            
+          ::Rails.logger.error('Form526 Exhausted', log_message)
         rescue => e
           emsg = 'Form526 Exhausted, with error tracking job exhausted'
           error_details = {
