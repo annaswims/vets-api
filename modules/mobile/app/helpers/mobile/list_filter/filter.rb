@@ -4,6 +4,8 @@ module Mobile
   module ListFilter
     class Filter
 
+      ALLOWED_OPERATIONS = %i[eq notEq].freeze
+
       attr_reader :records
 
       def initialize(records, filters)
