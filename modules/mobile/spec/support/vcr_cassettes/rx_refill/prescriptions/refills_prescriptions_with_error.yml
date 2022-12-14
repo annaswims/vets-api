@@ -2,10 +2,10 @@
 http_interactions:
 - request:
     method: post
-    uri: "<MHV_HOST>/mhv-api/patient/v1/prescription/rxrefill/13650545"
+    uri: "<MHV_HOST>/mhv-api/patient/v1/prescription/rxrefill"
     body:
       encoding: UTF-8
-      string: "{}"
+      string: '[7417954, 6970769, 8398465]'
     headers:
       Accept:
       - application/json
@@ -31,7 +31,18 @@ http_interactions:
       - Thu, 02 Feb 2017 17:53:25 GMT
     body:
       encoding: UTF-8
-      string: '{"status":"success" }'
-    http_version: 
+      string: '{
+                 "failedStationList": "",
+                 "successfulStationList": "SLC4, VAMCSLC-OUTPTRX",
+                 "lastUpdatedTime": "Tue, 30 Aug 2022 12:30:38 EDT",
+                 "prescriptionList": null,
+                 "errors": [   {
+                    "errorCode": 139,
+                    "developerMessage": "Prescription not refillable for id : 8398465",
+                    "message": "Prescription is not Refillable"
+                 }],
+                 "infoMessages": []
+              }'
+    http_version:
   recorded_at: Thu, 02 Feb 2017 17:53:25 GMT
 recorded_with: VCR 3.0.3
