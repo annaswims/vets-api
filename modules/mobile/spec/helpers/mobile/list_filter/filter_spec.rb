@@ -9,14 +9,17 @@ class Pet < Common::Base
 end
 
 describe Mobile::ListFilter::Filter do
-  let(:dog) do
+  let(:fido) do
     Pet.new(species: 'dog', name: 'Fido', age: 5)
+  end
+  let(:rex) do
+    Pet.new(species: 'dog', name: 'Rex', age: 2)
   end
   let(:cat) do
     Pet.new(species: 'cat', name: 'Purrsival', age: 12)
   end
   let(:list) do
-    Common::Collection.new(data: [dog, cat])
+    Common::Collection.new(data: [fido, rex, cat])
   end
 
   describe '.matches' do
@@ -24,7 +27,7 @@ describe Mobile::ListFilter::Filter do
       it 'finds matches' do
         filters = { species: { eq: 'dog' } }
         results = Mobile::ListFilter::Filter.matches(list, filters)
-        expect(results.data).to eq([dog])
+        expect(results.data).to eq([fido, rex])
       end
     end
 
@@ -40,6 +43,6 @@ describe Mobile::ListFilter::Filter do
   it 'handles multiple filters' do
     filters = { species: { eq: 'dog' }, age: { notEq: 5 } }
     results = Mobile::ListFilter::Filter.matches(list, filters)
-    expect(results.data).to eq([])
+    expect(results.data).to eq([rex])
   end
 end

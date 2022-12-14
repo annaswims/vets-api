@@ -15,21 +15,31 @@ module Mobile
 
       def self.matches(records, filters)
         filterer = new(records, filters)
-        filterer.filter_records
-        filterer.records
+        filterer.result
       end
 
-      def filter_records
-        @filters.each_pair do |match_attribute, remainder|
-          # ugliness
+      def result
+        # may also need to add any errors and metadata, but it doesn't seem like the metadata really does anything
+        Common::Collection.new(data: matches)
+      end
+
+      private
+
+      def matches
+        @records.data.select { |record| matches_filters?(record) }
+      end
+
+      def matches_filters?(record)
+        @filters.all? do |match_attribute, remainder|
+          # ugliness. perhaps at least validate that there is only one key
           operation = remainder.keys.first
           value = remainder.values.first
 
           case operation
           when :eq
-            @records.data.keep_if { |r| r[match_attribute.to_sym] == value }
+            record[match_attribute.to_sym] == value
           when :notEq
-            @records.data.keep_if { |r| r[match_attribute.to_sym] != value }
+            record[match_attribute.to_sym] != value
           end
         end
       end
