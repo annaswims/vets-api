@@ -52,13 +52,13 @@ module Sidekiq
           submission_obj ||= Form526Submission.find(form526_submission_id)
           additional_birls_to_try = submission_obj.birls_ids_that_havent_been_tried_yet
 
+          backup_job_jid = nil
           if additional_birls_to_try.empty? && Settings.form526_backup.enabled
-            Sidekiq::Form526BackupSubmissionProcess::Submit.perform_async(form526_submission_id)
+            backup_job_jid = Sidekiq::Form526BackupSubmissionProcess::Submit.perform_async(form526_submission_id)
           end
 
           vagov_id = JSON.parse(submission_obj.auth_headers_json)['va_eauth_service_transaction_id']
-
-          ::Rails.logger.error(
+          log_message = {
             'Form526 Exhausted', submission_id: form526_submission_id,
                                  job_id: job_id,
                                  job_class: values[:job_class],
@@ -66,7 +66,10 @@ module Sidekiq
                                  error_message: error_message,
                                  remaining_birls: additional_birls_to_try,
                                  va_eauth_service_transaction_id: vagov_id
-          )
+          }
+          log_message['backup_job_id'] = backup_job_jid unless backup_job_id.nil?
+          ::Rails.logger.error(log_message)
+            
         rescue => e
           emsg = 'Form526 Exhausted, with error tracking job exhausted'
           error_details = {
