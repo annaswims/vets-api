@@ -17,8 +17,8 @@ module Mobile
       end
 
       def refill
-        client.post_refill_rx(params[:id])
-        head :no_content
+        resource = client.post_refill_rxs(ids)
+        render json: Mobile::V0::PrescriptionsRefillsSerializer.new(@current_user.uuid, resource.body)
       end
 
       def tracking
@@ -53,6 +53,13 @@ module Mobile
 
           valid_filter_params
         end
+      end
+
+      def ids
+        ids = params.require(:ids)
+        raise Common::Exceptions::InvalidFieldValue.new('ids', ids) unless ids.is_a? Array
+
+        ids.map(&:to_i)
       end
     end
   end

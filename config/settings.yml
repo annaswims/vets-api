@@ -892,6 +892,7 @@ flipper:
     - ggupta@kindsys.us # Gaurav Gupta (Kindsys), BE Engineer Health Care Experience/Check-In
     - gescobar@governmentcio.com
     - grodriguez@governmentcio.com
+    - holden.hinkle@oddball.io # Holden (Emmerson) Hinkle (Oddball), Rails Engineer
     - ian.hundere@oddball.io # Ian Hundere (Oddball), Identity, DevOps Engineer
     - jacob.gacek@thoughtworks.com # Virtual Agent
     - james.childers@gcio.com
@@ -929,6 +930,7 @@ flipper:
     - mark.dewey@va.gov
     - metrowebz@gmail.com
     - micah@adhocteam.us
+    - michael.moyer@va.gov # MHV Secure Messaging Team
     - michel.mcdonald@adhocteam.us
     - michael.chaffee@va.gov # DHP team tech lead
     - michael.chelen@va.gov
@@ -937,6 +939,7 @@ flipper:
     - n.ratana@gmail.com
     - nathaniel.buck@gmail.com # AFS - My Education Benefits
     - narin@adhocteam.us
+    - oleksii.morgun@va.gov # MHV Secure Messaging Team
     - patrick.bateman@va.gov
     - patrick@adhocteam.us
     - patrickryll@yahoo.com
@@ -1172,6 +1175,7 @@ vanotify:
         ch31_vbms_form_confirmation_email: ch31_vbms_fake_template_id
         ch31_central_mail_form_confirmation_email: ch31_central_mail_fake_template_id
         career_counseling_confirmation_email: career_counseling_confirmation_email_template_id
+        form527ez_confirmation_email: form527ez_confirmation_email_template_id
         preneeds_burial_form_email: preneeds_burial_form_email_template_id
         contact_info_change: fake_template_id
         form526_confirmation_email: fake_template_id
@@ -1417,6 +1421,15 @@ lighthouse_health_immunization:
     - "launch launch/patient"
     - "patient/Immunization.read"
     - "patient/Location.read"
+
+mobile_lighthouse_letters:
+  client_id: '0oajpx78t3M8kurld2p7'
+  key_path: ~
+  aud_claim_url: "https://deptva-eval.okta.com/oauth2/ausftw7zk6eHr7gMN2p7/v1/token"
+  access_token_url: 'https://sandbox-api.va.gov/oauth2/va-letter-generator/system/v1/token'
+  api_url: 'https://sandbox-api.va.gov/services/va-letter-generator/v1/'
+  api_scopes:
+    - "letters.read"
 
 token_validation:
   url: https://dev-api.va.gov/internal/auth
