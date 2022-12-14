@@ -33,13 +33,13 @@ module Mobile
       private
 
       def token(api)
-        LighthouseAssertion.new.token(api)
+        LighthouseAssertion.new(api).token
       end
 
       def scopes
         {
-          health: Settings.mobile_lighthouse.health.api_scopes.join(' '),
-          letters: Settings.mobile_lighthouse.letters.api_scopes.join(' ')
+          health: Settings.lighthouse_health_immunization.scopes.join(' '),
+          letters: Settings.mobile_lighthouse_letters.api_scopes.join(' ')
         }
       end
 

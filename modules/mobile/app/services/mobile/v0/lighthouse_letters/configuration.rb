@@ -20,7 +20,7 @@ module Mobile
         # @return String the access token URL
         #
         def access_token_url
-          Settings.mobile_lighthouse.letters.access_token_url
+          Settings.mobile_lighthouse_letters.access_token_url
         end
 
         # The base URL to use when querying the Health FHIR API
@@ -28,7 +28,7 @@ module Mobile
         # @return String the base URL
         #
         def api_url
-          Settings.mobile_lighthouse.letters.api_url
+          Settings.mobile_lighthouse_letters.api_url
         end
 
         # Distinct Faraday connection for hitting the access token endpoint

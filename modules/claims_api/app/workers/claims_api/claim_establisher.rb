@@ -5,13 +5,12 @@ require 'evss/disability_compensation_form/service_exception'
 require 'evss/disability_compensation_form/service'
 require 'sentry_logging'
 require 'claims_api/claim_logger'
-require 'claims_api/common/exceptions/missing_id_exception'
 
 module ClaimsApi
   class ClaimEstablisher
     include Sidekiq::Worker
     include SentryLogging
-    sidekiq_options retry: 10
+    include Sidekiq::MonitoredWorker
 
     def perform(auto_claim_id) # rubocop:disable Metrics/MethodLength
       auto_claim = ClaimsApi::AutoEstablishedClaim.find(auto_claim_id)
@@ -19,26 +18,6 @@ module ClaimsApi
       orig_form_data = auto_claim.form_data
       form_data = auto_claim.to_internal
       auth_headers = auto_claim.auth_headers
-
-      if auth_headers['va_eauth_pid'].blank? || auth_headers['va_eauth_birlsfilenumber'].blank?
-        # call MPI to get missing values
-        mpi = veteran_from_headers(auth_headers)&.mpi
-        auth_headers['va_eauth_pid'] = mpi&.mvi_response&.profile&.participant_id
-        auth_headers['va_eauth_birlsfilenumber'] = mpi&.mvi_response&.profile&.birls_id
-
-        if auth_headers['va_eauth_pid'].blank? || auth_headers['va_eauth_birlsfilenumber'].blank?
-          # Save original data and retry
-          auto_claim.form_data = orig_form_data
-          auto_claim.save
-
-          # Raise error to trigger a retry
-          raise ClaimsApi::Error::MissingIdException, auto_claim_id
-        else
-          # Save IDs
-          auto_claim.auth_headers = auth_headers
-          auto_claim.save
-        end
-      end
 
       response = service(auth_headers).submit_form526(form_data)
       ClaimsApi::Logger.log('526',
