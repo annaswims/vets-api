@@ -10,7 +10,7 @@ require 'form526_backup_submission/configuration'
 module Form526BackupSubmission
   ##
   # Proxy Service for the Lighthouse Claims Intake API Service.
-  # We are using it here to submit claims that cannot be auto-eastblished, via paper submission (electronic PDF submissiont to CMP)
+  # We are using it here to submit claims that cannot be auto-established, via paper submission (electronic PDF submissiont to CMP)
   #
   class Service < Common::Client::Base
     include SentryLogging
@@ -78,7 +78,7 @@ module Form526BackupSubmission
       end
 
       response = perform :put, upload_url, params, { 'Content-Type' => 'multipart/form-data' }
-      
+
       raise response.body unless response.success?
 
       upload_deletion_logic(file_with_full_path: file_with_full_path, attachments: attachments)

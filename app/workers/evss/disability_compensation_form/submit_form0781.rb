@@ -32,10 +32,10 @@ module EVSS
       end
 
       # This method generates the PDF documents but does NOT send them anywhere.
-      # It just generates them to the filesystem and returns the path to them to be used by other methods. 
+      # It just generates them to the filesystem and returns the path to them to be used by other methods.
       #
       # @param submission_id [Integer] The {Form526Submission} id
-      # @param uuid [String] The Central Mail UUID, not actually used, but is passed along as the existing process_0781 function requires something here 
+      # @param uuid [String] The Central Mail UUID, not actually used, but is passed along as the existing process_0781 function requires something here
       # @return [Hash] Returns a hash with the keys `type` (to discern between if it is a 0781 or 0781a form) and `file`, which is the generated file location
       def get_docs(submission_id, uuid)
         @submission_id = submission_id
@@ -45,7 +45,8 @@ module EVSS
           if parsed_forms[form_type_key].present?
             file_type_and_file_objs << {
               type: actual_form_types,
-              file: process_0781(submission.auth_headers, uuid, FORM_ID_0781, parsed_forms[form_type_key], upload: false)
+              file: process_0781(submission.auth_headers, uuid, FORM_ID_0781, parsed_forms[form_type_key],
+                                 upload: false)
             }
           end
         end
