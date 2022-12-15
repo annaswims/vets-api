@@ -9,7 +9,8 @@ require 'form526_backup_submission/configuration'
 
 module Form526BackupSubmission
   ##
-  # Proxy Service for the Lighthouse Decision Reviews API.
+  # Proxy Service for the Lighthouse Claims Intake API Service.
+  # We are using it here to submit claims that cannot be auto-eastblished, via paper submission (electronic PDF submissiont to CMP)
   #
   class Service < Common::Client::Base
     include SentryLogging
