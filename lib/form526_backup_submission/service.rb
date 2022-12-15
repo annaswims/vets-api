@@ -78,9 +78,7 @@ module Form526BackupSubmission
       end
 
       response = perform :put, upload_url, params, { 'Content-Type' => 'multipart/form-data' }
-
-      # dont delete bdd or other static docs
-
+      
       raise response.body unless response.success?
 
       upload_deletion_logic(file_with_full_path: file_with_full_path, attachments: attachments)
