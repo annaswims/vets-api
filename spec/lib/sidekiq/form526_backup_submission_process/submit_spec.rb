@@ -22,6 +22,7 @@ RSpec.describe Sidekiq::Form526BackupSubmissionProcess::Submit, type: :job do
     before do
       Settings.form526_backup.enabled = false
     end
+
     let!(:submission) { create :form526_submission, :with_everything }
 
     it 'creates a submission job' do
@@ -39,6 +40,7 @@ RSpec.describe Sidekiq::Form526BackupSubmissionProcess::Submit, type: :job do
         Settings.form526_backup.submission_method = payload_method
         Settings.form526_backup.enabled = true
       end
+
       let!(:upload_data) { submission.form[Form526Submission::FORM_526_UPLOADS] }
       let!(:submission) { create :form526_submission, :with_everything }
 
@@ -71,6 +73,7 @@ RSpec.describe Sidekiq::Form526BackupSubmissionProcess::Submit, type: :job do
                 expect(job_status.job_class).to eq('BackupSubmission')
                 expect(job_status.job_id).to eq(jid)
                 expect(job_status.status).to eq('success')
+                submission = Form526Submission.last
                 expect(submission.backup_submitted_claim_id).not_to be(nil)
               end
             end

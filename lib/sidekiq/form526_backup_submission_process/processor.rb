@@ -143,7 +143,7 @@ module Sidekiq
           file: form526_doc[:file],
           metadata: form526_doc[:metadata].to_json,
           attachments: attachments
-        )        
+        )
         log_info(message: 'Uploading single fallback payload to Lighthouse Successful', upload_type: FORM_526_DOC_TYPE,
                  uuid: initial_upload_uuid)
         @submission.update!(backup_submitted_claim_id: initial_upload_uuid)
@@ -226,6 +226,7 @@ module Sidekiq
           # file_body = sea&.get_file&.read
           file = sea&.get_file
           raise ArgumentError, "supporting evidence attachment with guid #{guid} has no file data" if file.nil?
+
           docs << upload.merge!(file: file, type: FORM_526_UPLOADS_DOC_TYPE, evssDocType: upload['attachmentId'])
         end
       end
