@@ -80,7 +80,7 @@ describe MPIData, skip_mvi: true do
 
   describe '#add_person_proxy' do
     context 'with a successful add' do
-      let(:given_names) { %w[kitty puppy] }
+      let(:given_names) { %w[kitty] }
       let(:family_name) { 'banana' }
       let(:suffix) { 'Jr' }
       let(:birth_date) { '19801010' }
@@ -93,7 +93,7 @@ describe MPIData, skip_mvi: true do
           postal_code: '20500'
         }
       end
-      let(:icn_with_aaid) { 'some-icn-with-aaid' }
+      let(:icn) { 'some-icn' }
       let(:edipi) { 'some-edipi' }
       let(:search_token) { 'some-search_token' }
       let(:gender) { 'M' }
@@ -105,7 +105,7 @@ describe MPIData, skip_mvi: true do
               given_names: given_names,
               family_name: family_name,
               birth_date: birth_date,
-              icn_with_aaid: icn_with_aaid,
+              icn: icn,
               edipi: edipi,
               search_token: search_token,
               ssn: ssn,
@@ -116,12 +116,11 @@ describe MPIData, skip_mvi: true do
         build(:user_identity,
               :loa3,
               first_name: given_names.first,
-              middle_name: given_names.last,
               last_name: family_name,
               suffix: suffix,
               birth_date: birth_date,
               address: address,
-              icn_with_aaid: icn_with_aaid,
+              icn: icn,
               edipi: edipi,
               search_token: search_token,
               gender: gender,
