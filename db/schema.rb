@@ -100,10 +100,6 @@ ActiveRecord::Schema.define(version: 2022_12_14_161602) do
     t.text "upload_metadata_ciphertext"
     t.text "encrypted_kms_key"
     t.date "verified_decryptable_at"
-    t.text "form_json_ciphertext"
-    t.text "headers_ciphertext"
-    t.string "sidekiq_job_id"
-    t.string "submission_status"
     t.uuid "user_account_id"
     t.index ["user_account_id"], name: "index_appeal_submissions_on_user_account_id"
   end
