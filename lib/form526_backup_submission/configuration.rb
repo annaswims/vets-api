@@ -28,7 +28,7 @@ module Form526BackupSubmission
     end
 
     ##
-    # Creates the a connection with parsing json and adding breakers functionality.
+    # Creates a connection with json parsing and breaker functionality.
     #
     # @return [Faraday::Connection] a Faraday connection instance.
     #
