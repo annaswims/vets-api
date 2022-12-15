@@ -53,7 +53,8 @@ module Sidekiq
           additional_birls_to_try = submission_obj.birls_ids_that_havent_been_tried_yet
 
           backup_job_jid = nil
-          if additional_birls_to_try.empty? && Settings.form526_backup.enabled && Flipper.enabled?(:form526_backup_submission_temp_killswitch)
+          flipper_sym = :form526_backup_submission_temp_killswitch
+          if additional_birls_to_try.empty? && Settings.form526_backup.enabled && Flipper.enabled?(flipper_sym)
             backup_job_jid = Sidekiq::Form526BackupSubmissionProcess::Submit.perform_async(form526_submission_id)
           end
 

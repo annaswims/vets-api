@@ -35,8 +35,11 @@ module EVSS
       # It just generates them to the filesystem and returns the path to them to be used by other methods.
       #
       # @param submission_id [Integer] The {Form526Submission} id
-      # @param uuid [String] The Central Mail UUID, not actually used, but is passed along as the existing process_0781 function requires something here
-      # @return [Hash] Returns a hash with the keys `type` (to discern between if it is a 0781 or 0781a form) and `file`, which is the generated file location
+      # @param uuid [String] The Central Mail UUID, not actually used,
+      # but is passed along as the existing process_0781 function requires something here
+      # @return [Hash] Returns a hash with the keys
+      # `type` (to discern between if it is a 0781 or 0781a form) and
+      # `file`, which is the generated file location
       def get_docs(submission_id, uuid)
         @submission_id = submission_id
         parsed_forms = JSON.parse(submission.form_to_json(Form526Submission::FORM_0781))
