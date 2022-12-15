@@ -54,7 +54,9 @@ module Sidekiq
 
           backup_job_jid = nil
           if additional_birls_to_try.empty? && Settings.form526_backup.enabled
-            backup_job_jid = Sidekiq::Form526BackupSubmissionProcess::Submit.perform_async(form526_submission_id)
+            if Flipper.enabled?(:form526_backup_submission_temp_killswitch)
+              backup_job_jid = Sidekiq::Form526BackupSubmissionProcess::Submit.perform_async(form526_submission_id)
+            end
           end
 
           vagov_id = JSON.parse(submission_obj.auth_headers_json)['va_eauth_service_transaction_id']
