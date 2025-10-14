@@ -2,7 +2,6 @@
 
 Vets API requires:
 
-
 - Ruby 3.3.6
 - PostgreSQL 15.x (including PostGIS 3)
 - Redis 6.2.x
@@ -32,7 +31,6 @@ For example: `rvm install 3.3.6 -C --with-openssl-dir=/$(brew --prefix openssl@3
 
 1. Follow the common [base setup](https://github.com/department-of-veterans-affairs/vets-api/blob/master/README.md#Base%20setup). Or alternatively use [binstubs](binstubs.md).
 
-
 1. Install Bundler to manage Ruby dependencies
 
    ```bash
@@ -50,6 +48,7 @@ For example: `rvm install 3.3.6 -C --with-openssl-dir=/$(brew --prefix openssl@3
    More information about installing _with_ Sidekiq Enterprise as well as our credentials are on the internal system [here](https://github.com/department-of-veterans-affairs/vets.gov-team/blob/master/Products/Platform/Vets-API/Sidekiq%20Enterprise%20Setup.md)
 
 1. Setup local databases and run schema migrations:
+
    ```bash
    cd vets-api; rails db:setup; rails db:migrate
    ```
@@ -74,13 +73,15 @@ For example: `rvm install 3.3.6 -C --with-openssl-dir=/$(brew --prefix openssl@3
 1. Run `bin/setup` to setup the database and start the server.
 
 ### pg_stat_statements
+
 If you have trouble enabling query stats from the PgHero dashboard, try enabling it manually
 
 Add the lines below to your main postgresql.conf file
 
-On Mac it should be located somewhere similiar to the following:
+On Mac it should be located somewhere similar to the following:
 
-`~/Library/Application Support/Postgres/var-12/postgresql.conf`
+`~/Library/Application Support/Postgres/var-14/postgresql.conf`
+
 ```
 shared_preload_libraries = 'pg_stat_statements'
 pg_stat_statements.track = all
@@ -126,18 +127,17 @@ Specific notes for our most common native installation platforms are in this sec
 
 ### OSX
 
-
 All of the OSX instructions assume `homebrew` is your [package manager](https://brew.sh/)
 
 1. Install Postgresql & PostGIS
 
-   1. It is *_MUCH_* easier to use the [Postgres.app](https://postgresapp.com/downloads.html) which installs the correct combination of Postgresql and PostGIS versions.
-
+   1. It is _*MUCH*_ easier to use the [Postgres.app](https://postgresapp.com/downloads.html) which installs the correct combination of Postgresql and PostGIS versions.
 
    - Download the Postgres.app with PostgreSQL 15
    - Install Instructions here: https://postgresapp.com/
    - `sudo mkdir -p /etc/paths.d && echo /Applications/Postgres.app/Contents/Versions/latest/bin | sudo tee /etc/paths.d/postgresapp`
    - `ARCHFLAGS="-arch x86_64" gem install pg -v 1.5.6`
+
    2. Alternatively Postgresql 15 & PostGIS 3 can be installed with homebrew
       - `brew install postgresql@15`
       - `brew services start postgresql@15`
@@ -146,19 +146,21 @@ All of the OSX instructions assume `homebrew` is your [package manager](https://
       - ```bash
          PG_CPPFLAGS='-DACCEPT_USE_OF_DEPRECATED_PROJ_API_H -I/usr/local/include' CFLAGS='-DACCEPT_USE_OF_DEPRECATED_PROJ_API_H -I/usr/local/include' pex install postgis
         ```
+
    - run postgres (e.g. open postgres.app, create a new server, and click "initialize")
 
 2. Install redis
-    ```bash
-    brew install redis
-    brew services start redis
-    ```
+
+   ```bash
+   brew install redis
+   brew services start redis
+   ```
 
 3. Install binary dependencies:
-    ```bash
-    brew bundle
-    ```
 
+   ```bash
+   brew bundle
+   ```
 
 4. (Optional see Running Natively for more info) Enable ClamAV daemon:
 
@@ -230,6 +232,7 @@ All of the OSX instructions assume `homebrew` is your [package manager](https://
 8. Updating Postgres and PostGIS if you already have them installed
 
    Backup your existing database
+
    ```bash
    sudo su -
    cd /home
@@ -242,13 +245,14 @@ All of the OSX instructions assume `homebrew` is your [package manager](https://
    ```
 
    Backup your configuration files (replace hashes with the db vsn eg 11)
+
    ```bash
    cp /etc/postgresql/##/main/pg_hba.conf .
    cp /etc/postgresql/##/main/postgresql.conf .
    ```
 
-
    Remove any unwanted versions (replace hashes with the db vsn eg 11)
+
    ```bash
    dpkg -l | grep postgres
    sudo apt --purge remove postgresql-## postgresql-client-##
@@ -259,12 +263,14 @@ All of the OSX instructions assume `homebrew` is your [package manager](https://
    ```
 
    Upgrade any packages that need to be updated
+
    ```bash
    sudo apt update
    sudo apt upgrade
    ```
 
    Upgrade the database (replace hashes with the new db vsn eg 14)
+
    ```bash
    sudo apt install postgresql-## postgresql-server-dev-##
 
@@ -279,12 +285,15 @@ All of the OSX instructions assume `homebrew` is your [package manager](https://
    ```
 
    List all installed versions (again)
+
    ```bash
    dpkg -l | grep postgres
 
      you should see the current version and the version you just installed
    ```
+
    Stop the postgresql service
+
    ```bash
    sudo systemctl stop postgresql.service
 
@@ -334,4 +343,8 @@ All of the OSX instructions assume `homebrew` is your [package manager](https://
    sudo pg_dropcluster ## main
 
    Done!!!
-  ```
+   ```
+
+```
+
+```
