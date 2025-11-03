@@ -176,10 +176,10 @@ class SavedClaim < ApplicationRecord
       errors.add('schema', "Schema can't be blank")
       return [{ message: 'Schema not found' }]
     end
-    errors = JSONSchemer.validate_schema(schema).to_a
-    return [] if errors.empty?
+    json_schemer_errors = JSONSchemer.validate_schema(schema).to_a
+    return [] if json_schemer_errors.empty?
 
-    schema_errors = reformatted_schemer_errors(errors)
+    schema_errors = reformatted_schemer_errors(json_schemer_errors)
 
     unless schema_errors.empty?
       Rails.logger.error('SavedClaim schema failed validation.',
@@ -215,8 +215,8 @@ class SavedClaim < ApplicationRecord
   # the error logging smooth and identical for both options.
   # This method also filters out the `data` key because it could
   # potentially contain pii.
-  def reformatted_schemer_errors(errors)
-    errors.map do |error|
+  def reformatted_schemer_errors(json_schemer_errors)
+    json_schemer_errors.map do |error|
       symbolized = error.symbolize_keys
       {
         data_pointer: symbolized[:data_pointer],
