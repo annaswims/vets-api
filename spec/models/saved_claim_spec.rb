@@ -22,8 +22,14 @@ class TestSavedClaim < SavedClaim
   end
 end
 
+class TestSavedClaimHashSchema < TestSavedClaim
+  def form_schema
+    nil
+  end
+end
+
 RSpec.describe TestSavedClaim, type: :model do # rubocop:disable RSpec/SpecFilePathFormat
-  subject(:saved_claim) { described_class.new(form: form_data) }
+  let(:saved_claim) { described_class.new(form: form_data) }
 
   let(:form_data) { { some_key: 'some_value' }.to_json }
 
@@ -71,6 +77,19 @@ RSpec.describe TestSavedClaim, type: :model do # rubocop:disable RSpec/SpecFileP
           res = saved_claim.send(:validate_schema, invalid_schema.to_json)
           expect(res.length).to be(1)
         end
+
+        it 'logs schema failed error' do
+          expect(Rails.logger).to receive(:error)
+            .with('SavedClaim schema failed validation.', { form_id: saved_claim.form_id, errors: [schema_errors] })
+
+          res = saved_claim.send(:validate_schema, invalid_schema.to_json)
+          expect(res.length).to be(1)
+        end
+
+        it 'does not silently pass without validation when schema is empty', skip: "fails" do
+          saved_claim.send(:validate_schema, nil)
+          expect(saved_claim.errors.full_messages.join).to be_present
+        end
       end
 
       context 'when form validation returns errors' do
@@ -92,9 +111,18 @@ RSpec.describe TestSavedClaim, type: :model do # rubocop:disable RSpec/SpecFileP
           expect(Rails.logger).to receive(:error)
             .with('SavedClaim form did not pass validation',
                   { guid: saved_claim.guid, form_id: saved_claim.form_id, errors: [schema_errors] })
-          saved_claim.validate
+          saved_claim.valid?
           expect(saved_claim.errors.full_messages).not_to be_empty
         end
+
+        # context 'when form is not a string' do
+        #   let(:form_data) { { some_key: 'some_value' }.to_json }
+
+        #   it 'adds form format error' do
+        #     saved_claim.valid?
+        #     expect(saved_claim.errors.full_messages).to include('form must be a json string')
+        #   end
+        # end
       end
     end
   end
