@@ -60,7 +60,7 @@ class SavedClaim < ApplicationRecord
   # Run after a claim is saved, this processes any files and workflows that are present
   # and sends them to our internal partners for processing.
   def process_attachments!
-    # todo: check if saved claim is persisted?
+    # TODO: check if saved claim is persisted?
     refs = attachment_keys.map { |key| Array(open_struct_form.send(key)) }.flatten
     files = PersistentAttachment.where(guid: refs.map(&:confirmationCode))
     files.find_each { |f| f.update(saved_claim_id: id) }
@@ -94,27 +94,23 @@ class SavedClaim < ApplicationRecord
   end
 
   def form_schema
-    VetsJsonSchema::SCHEMAS[self.class::FORM]
+     VetsJsonSchema::SCHEMAS[self.class::FORM]
+  end
+
+  def allow_blank_schema
+    !Rails.env.test?
+  end
+
+  def allow_blank_parsed_form
+    false
   end
 
   def form_matches_schema
     return unless form_is_string
+    validate_schema(form_schema)
+    validate_form(form_schema)
 
-    schema = form_schema || VetsJsonSchema::SCHEMAS[self.class::FORM]
-
-    schema_errors = validate_schema(schema)
-
-    validation_errors = validate_form(schema)
-    validation_errors.each do |e|
-      errors.add(e[:fragment], e[:message])
-      e[:errors]&.flatten(2)&.each { |nested| errors.add(nested[:fragment], nested[:message]) if nested.is_a? Hash }
-    end
-
-    unless validation_errors.empty?
-      Rails.logger.error('SavedClaim form did not pass validation', { form_id:, guid:, errors: validation_errors })
-    end
-
-    schema_errors.empty? && validation_errors.empty?
+    errors.empty?
   end
 
   def to_pdf(file_name = nil)
@@ -176,20 +172,33 @@ class SavedClaim < ApplicationRecord
   private
 
   def validate_schema(schema)
-    errors = JSONSchemer.validate_schema(schema).to_a
-    return [] if errors.empty?
+    if schema.blank? && !allow_blank_schema
+      errors.add('schema', "can't be blank")
+      return false
+    end
+    schema_errors = JSONSchemer.validate_schema(schema).to_a
+    return true if schema_errors.empty?
 
     schema_errors = reformatted_schemer_errors(errors)
-    Rails.logger.error('SavedClaim schema failed validation.',
-                       { form_id:, errors: schema_errors })
-    schema_errors
+    errors.add(:schema, 'is not valid')
   end
 
   def validate_form(schema)
-    errors = JSONSchemer.schema(schema).validate(parsed_form).to_a
-    return [] if errors.empty?
+    if parsed_form.blank? && !allow_blank_parsed_form
+      errors.add(:form, message: 'form JSON Must not be blank')
+      return false
+    end
+    schemer_errors = JSONSchemer.schema(schema).validate(parsed_form).to_a
+    return true if schemer_errors.empty?
 
-    reformatted_schemer_errors(errors)
+    validation_errors = reformatted_schemer_errors(schemer_errors)
+
+    validation_errors.each do |e|
+      errors.add(e[:fragment], e[:message])
+      e[:errors]&.flatten(2)&.each { |nested| errors.add(nested[:fragment], nested[:message]) if nested.is_a? Hash }
+    end
+
+    Rails.logger.error('SavedClaim form did not pass validation', { form_id:, guid:, errors: validation_errors })
   end
 
   # This method exists to change the json_schemer errors

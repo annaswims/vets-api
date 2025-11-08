@@ -74,16 +74,8 @@ RSpec.describe TestSavedClaim, type: :model do # rubocop:disable RSpec/SpecFileP
           expect(Rails.logger).to receive(:error)
             .with('SavedClaim schema failed validation.', { form_id: saved_claim.form_id, errors: [schema_errors] })
 
-          res = saved_claim.send(:validate_schema, invalid_schema.to_json)
-          expect(res.length).to be(1)
-        end
-
-        it 'logs schema failed error' do
-          expect(Rails.logger).to receive(:error)
-            .with('SavedClaim schema failed validation.', { form_id: saved_claim.form_id, errors: [schema_errors] })
-
-          res = saved_claim.send(:validate_schema, invalid_schema.to_json)
-          expect(res.length).to be(1)
+          saved_claim.send(:validate_schema, invalid_schema.to_json)
+          expect(saved_claim.errors.full_messages).to include('Schema is not valid')
         end
 
         it 'does not silently pass without validation when schema is empty', skip: "fails" do
