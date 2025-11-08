@@ -1,10 +1,13 @@
 # frozen_string_literal: true
 
 require 'rails_helper'
-
 class TestSavedClaim < SavedClaim
   FORM = 'some_form_id'
   CONFIRMATION = 'test'
+  SCHEMA = { '$schema' => 'http://json-schema.org/draft-04/schema#',
+             'type' => 'object',
+             'properties' => { 'some_key' => { 'type' => 'string', 'maxLength' => 10 } },
+             'required' => ['some_key'] }.freeze
 
   def regional_office
     'test_office'
@@ -13,19 +16,20 @@ class TestSavedClaim < SavedClaim
   def attachment_keys
     %i[some_key]
   end
+
+  def form_schema
+    SCHEMA.to_json
+  end
 end
 
 RSpec.describe TestSavedClaim, type: :model do # rubocop:disable RSpec/SpecFilePathFormat
   subject(:saved_claim) { described_class.new(form: form_data) }
 
   let(:form_data) { { some_key: 'some_value' }.to_json }
-  let(:schema) { { some_key: 'some_value' }.to_json }
 
   before do
     allow(Flipper).to receive(:enabled?).with(:validate_saved_claims_with_json_schemer).and_return(false)
     allow(Flipper).to receive(:enabled?).with(:saved_claim_pdf_overflow_tracking).and_return(true)
-    allow(VetsJsonSchema::SCHEMAS).to receive(:[]).and_return(schema)
-    allow(JSON::Validator).to receive_messages(fully_validate_schema: [], fully_validate: [])
   end
 
   describe 'associations' do
@@ -42,48 +46,52 @@ RSpec.describe TestSavedClaim, type: :model do # rubocop:disable RSpec/SpecFileP
     end
 
     context 'validation errors' do
-      let(:allowed_errors) do
-        {
-          data_pointer: 'data_pointer',
-          error: 'some error',
-          details: { detail: 'thing' },
-          schema: { detail: 'schema' },
-          root_schema: { detail: 'root_schema' }
-        }
-      end
-
-      let(:filtered_out_errors) { { data: { key: 'this could be pii' } } }
-
-      let(:schema_errors) { [allowed_errors.merge(filtered_out_errors)] }
-
-      let(:formatted_errors) { { message: 'some error', fragment: 'data_pointer' } }
-      let(:filtered_schema_errors) { [allowed_errors.merge(formatted_errors)] }
-
       context 'when validate_schema returns errors' do
-        before do
-          allow(JSONSchemer).to receive_messages(validate_schema: schema_errors)
+        let(:schema_errors) do
+          message = 'value at `/properties/some_key/maxLength` is not an integer'
+          { data_pointer: '/properties/some_key/maxLength',
+            error: message,
+            details: nil,
+            schema: JSONSchemer::Draft4::SCHEMA['definitions']['positiveInteger'],
+            root_schema: JSONSchemer::Draft4::SCHEMA,
+            message:,
+            fragment: '/properties/some_key/maxLength' }
+        end
+
+        let(:invalid_schema) do
+          s = described_class::SCHEMA.deep_dup
+          s['properties']['some_key']['maxLength'] = 'cat'
+          s
         end
 
         it 'logs schema failed error' do
           expect(Rails.logger).to receive(:error)
-            .with('SavedClaim schema failed validation.', { errors: filtered_schema_errors,
-                                                            form_id: saved_claim.form_id })
+            .with('SavedClaim schema failed validation.', { form_id: saved_claim.form_id, errors: [schema_errors] })
 
-          expect(saved_claim.validate).to be(true)
+          res = saved_claim.send(:validate_schema, invalid_schema.to_json)
+          expect(res.length).to be(1)
         end
       end
 
       context 'when form validation returns errors' do
-        before do
-          allow(JSONSchemer).to receive_messages(validate_schema: [])
-          allow(JSONSchemer).to receive(:schema).and_return(double(:fake_schema,
-                                                                   validate: schema_errors))
+        let(:form_data) { { some_key: 'Too long!!!!!!!!!!!!!!!!!!!!!!' }.to_json }
+        let(:schema_errors) do
+          message = 'string length at `/some_key` is greater than: 10'
+          root_schema = JSON.parse(saved_claim.form_schema)
+          fragment = '/some_key'
+          { data_pointer: fragment,
+            error: message,
+            details: nil,
+            schema: root_schema['properties']['some_key'],
+            root_schema:,
+            message:,
+            fragment: }
         end
 
         it 'adds validation errors to the form' do
           expect(Rails.logger).to receive(:error)
             .with('SavedClaim form did not pass validation',
-                  { guid: saved_claim.guid, form_id: saved_claim.form_id, errors: filtered_schema_errors })
+                  { guid: saved_claim.guid, form_id: saved_claim.form_id, errors: [schema_errors] })
           saved_claim.validate
           expect(saved_claim.errors.full_messages).not_to be_empty
         end
@@ -147,7 +155,7 @@ RSpec.describe TestSavedClaim, type: :model do # rubocop:disable RSpec/SpecFileP
     it 'processes attachments associated with the claim' do
       attachment = create(:persistent_attachment, guid: confirmation_code, saved_claim:)
       saved_claim.process_attachments!
-
+      # expect(saved_claim.id).to be_present
       expect(attachment.reload.saved_claim_id).to eq(saved_claim.id)
       expect(Lighthouse::SubmitBenefitsIntakeClaim).to have_enqueued_sidekiq_job(saved_claim.id)
     end
@@ -155,12 +163,14 @@ RSpec.describe TestSavedClaim, type: :model do # rubocop:disable RSpec/SpecFileP
 
   describe '#confirmation_number' do
     it 'returns the claim GUID' do
+      expect(saved_claim.confirmation_number).to be_present
       expect(saved_claim.confirmation_number).to eq(saved_claim.guid)
     end
   end
 
   describe '#submitted_at' do
     it 'returns the created_at' do
+      # expect(saved_claim.submitted_at).to be_present
       expect(saved_claim.submitted_at).to eq(saved_claim.created_at)
     end
   end

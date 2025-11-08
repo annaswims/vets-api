@@ -60,6 +60,7 @@ class SavedClaim < ApplicationRecord
   # Run after a claim is saved, this processes any files and workflows that are present
   # and sends them to our internal partners for processing.
   def process_attachments!
+    # todo: check if saved claim is persisted?
     refs = attachment_keys.map { |key| Array(open_struct_form.send(key)) }.flatten
     files = PersistentAttachment.where(guid: refs.map(&:confirmationCode))
     files.find_each { |f| f.update(saved_claim_id: id) }
@@ -102,10 +103,6 @@ class SavedClaim < ApplicationRecord
     schema = form_schema || VetsJsonSchema::SCHEMAS[self.class::FORM]
 
     schema_errors = validate_schema(schema)
-    unless schema_errors.empty?
-      Rails.logger.error('SavedClaim schema failed validation.',
-                         { form_id:, errors: schema_errors })
-    end
 
     validation_errors = validate_form(schema)
     validation_errors.each do |e|
@@ -182,7 +179,10 @@ class SavedClaim < ApplicationRecord
     errors = JSONSchemer.validate_schema(schema).to_a
     return [] if errors.empty?
 
-    reformatted_schemer_errors(errors)
+    schema_errors = reformatted_schemer_errors(errors)
+    Rails.logger.error('SavedClaim schema failed validation.',
+                       { form_id:, errors: schema_errors })
+    schema_errors
   end
 
   def validate_form(schema)
