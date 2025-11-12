@@ -42,6 +42,8 @@ module V0
                 filename: "21-0779_#{SecureRandom.uuid}.pdf",
                 type: 'application/pdf',
                 disposition: 'attachment'
+    rescue ActiveRecord::RecordNotFound
+      raise Common::Exceptions::ResourceNotFound.new(detail: 'SavedClaim::Form210779 not found')
     ensure
       File.delete(source_file_path) if source_file_path && File.exist?(source_file_path)
     end

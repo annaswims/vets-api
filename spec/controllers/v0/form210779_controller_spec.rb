@@ -3,6 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe V0::Form210779Controller, type: :controller do
+  include RequestHelper
   let(:form_id) { '21-0779' }
   let(:form_data) { VetsJsonSchema::EXAMPLES[form_id].to_json }
 
@@ -96,6 +97,13 @@ RSpec.describe V0::Form210779Controller, type: :controller do
 
       expect(response).to have_http_status(:ok)
       expect(response.headers['Content-Type']).to eq('application/pdf')
+    end
+
+    it 'responds with not found when the claim is not found' do
+      get(:download_pdf, params: { guid: 'BAD-SHA' })
+
+      expect(response).to have_http_status(:not_found)
+      expect(errors_for(response)).to include 'SavedClaim::Form210779 not found'
     end
 
     it 'includes proper filename with UUID' do
