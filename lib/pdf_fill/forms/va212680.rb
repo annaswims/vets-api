@@ -38,17 +38,19 @@ module PdfFill
       private
 
       def transform_country_codes
+        # Transform claimant address country code from 3-char to 2-char
         claimant_address = @form_data.dig('claimantInformation', 'address')
-        claimant_address['country'] = extract_country_expanded(claimant_address) if claimant_address
+        if claimant_address&.key?('country')
+          transformed = extract_country(claimant_address)
+          claimant_address['country'] = transformed if transformed
+        end
+
+        # Transform hospital address country code from 3-char to 2-char
         hospital_address = @form_data.dig('additionalInformation', 'hospitalAddress')
-        hospital_address['country'] = extract_country_expanded(hospital_address) if hospital_address
-      end
-
-      def extract_country_expanded(address)
-        country = address['country']
-        return country if country.blank? || country.length == 2
-
-        extract_country(address)
+        if hospital_address&.key?('country')
+          transformed = extract_country(hospital_address)
+          hospital_address['country'] = transformed if transformed
+        end
       end
 
       # TODO: review everything below here for nil checks
