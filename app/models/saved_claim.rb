@@ -94,27 +94,19 @@ class SavedClaim < ApplicationRecord
     VetsJsonSchema::SCHEMAS[self.class::FORM]
   end
 
+  def allow_blank_schema
+    false
+  end
+
+  def allow_blank_parsed_form
+    false
+  end
+
   def form_matches_schema
     return unless form_is_string
 
-    schema = form_schema || VetsJsonSchema::SCHEMAS[self.class::FORM]
-
-    schema_errors = validate_schema(schema)
-    unless schema_errors.empty?
-      Rails.logger.error('SavedClaim schema failed validation.',
-                         { form_id:, errors: schema_errors })
-    end
-
-    validation_errors = validate_form(schema)
-    validation_errors.each do |e|
-      errors.add(e[:fragment], e[:message])
-      e[:errors]&.flatten(2)&.each { |nested| errors.add(nested[:fragment], nested[:message]) if nested.is_a? Hash }
-    end
-
-    unless validation_errors.empty?
-      Rails.logger.error('SavedClaim form did not pass validation', { form_id:, guid:, errors: validation_errors })
-    end
-
+    schema_errors = validate_schema(form_schema)
+    validation_errors = validate_form(form_schema)
     schema_errors.empty? && validation_errors.empty?
   end
 
@@ -188,17 +180,43 @@ class SavedClaim < ApplicationRecord
   private
 
   def validate_schema(schema)
-    errors = JSONSchemer.validate_schema(schema).to_a
-    return [] if errors.empty?
+    if schema.blank? && !allow_blank_schema
+      Rails.logger.error('SavedClaim schema blank.', { form_id: })
+      errors.add('schema', "Schema can't be blank")
+      return [{ message: 'Schema not found' }]
+    end
+    json_schemer_errors = JSONSchemer.validate_schema(schema).to_a
+    return [] if json_schemer_errors.empty?
 
-    reformatted_schemer_errors(errors)
+    schema_errors = reformatted_schemer_errors(json_schemer_errors)
+
+    unless schema_errors.empty?
+      Rails.logger.error('SavedClaim schema failed validation.',
+                         { form_id:, errors: schema_errors })
+    end
+    schema_errors
   end
 
   def validate_form(schema)
-    errors = JSONSchemer.schema(schema).validate(parsed_form).to_a
-    return [] if errors.empty?
+    if parsed_form.blank? && !allow_blank_parsed_form
+      errors.add(:form, message: 'form Json Must not be blank')
+      Rails.logger.error('SavedClaim form did not pass validation', { form_id: })
+      return [{ message: 'parsed_form was blank' }]
+    end
+    json_schemer_errors = JSONSchemer.schema(schema).validate(parsed_form).to_a
+    return [] if json_schemer_errors.empty?
 
-    reformatted_schemer_errors(errors)
+    validation_errors = reformatted_schemer_errors(json_schemer_errors)
+
+    validation_errors.each do |e|
+      errors.add(e[:fragment], e[:message])
+      e[:errors]&.flatten(2)&.each { |nested| errors.add(nested[:fragment], nested[:message]) if nested.is_a? Hash }
+    end
+
+    unless validation_errors.empty?
+      Rails.logger.error('SavedClaim form did not pass validation', { form_id:, guid:, errors: validation_errors })
+    end
+    validation_errors
   end
 
   # This method exists to change the json_schemer errors
@@ -206,8 +224,8 @@ class SavedClaim < ApplicationRecord
   # the error logging smooth and identical for both options.
   # This method also filters out the `data` key because it could
   # potentially contain pii.
-  def reformatted_schemer_errors(errors)
-    errors.map do |error|
+  def reformatted_schemer_errors(json_schemer_errors)
+    json_schemer_errors.map do |error|
       symbolized = error.symbolize_keys
       {
         data_pointer: symbolized[:data_pointer],
